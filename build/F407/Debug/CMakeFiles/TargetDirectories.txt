@@ -1,5 +1,0 @@
-C:/OmniLayer/build/F407/Debug/CMakeFiles/OmniLayer_F407.dir
-C:/OmniLayer/build/F407/Debug/CMakeFiles/flash.dir
-C:/OmniLayer/build/F407/Debug/CMakeFiles/erase.dir
-C:/OmniLayer/build/F407/Debug/CMakeFiles/edit_cache.dir
-C:/OmniLayer/build/F407/Debug/CMakeFiles/rebuild_cache.dir
