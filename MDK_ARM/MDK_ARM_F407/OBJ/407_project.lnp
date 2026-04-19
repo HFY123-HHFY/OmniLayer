@@ -1,0 +1,12 @@
+--cpu=Cortex-M4.fp.sp
+".\obj\startup_stm32f40_41xxx.o"
+".\obj\f407_sys.o"
+".\obj\f407_gpio.o"
+".\obj\enroll.o"
+".\obj\led.o"
+".\obj\main.o"
+".\obj\control_task.o"
+--strict --scatter ".\OBJ\407_project.sct"
+--summary_stderr --info summarysizes --map --load_addr_map_info --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list ".\Listings\407_project.map" -o .\OBJ\407_project.axf

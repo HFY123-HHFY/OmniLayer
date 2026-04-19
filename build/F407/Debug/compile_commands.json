@@ -1,0 +1,44 @@
+[
+{
+  "directory": "C:/OmniLayer/build/F407/Debug",
+  "command": "C:\\PROGRA~2\\ARMGNU~1\\13C7F1~1.2RE\\bin\\AR19DD~1.EXE -DENROLL_MCU_TARGET=ENROLL_MCU_F407 -DSTM32F40_41xxx -IC:/OmniLayer/app -IC:/OmniLayer/Enroll -IC:/OmniLayer/BSP/LED -IC:/OmniLayer/Core/STM32F407/inc -IC:/OmniLayer/SYSTEM/F407_SYS -IC:/OmniLayer/Drivers/Drivers_STM32F4/Start -IC:/OmniLayer/Drivers/Drivers_STM32F4/FWLIB/inc -ffunction-sections -fdata-sections -Og -g3 -std=gnu11 -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Wall -Wextra -o CMakeFiles\\OmniLayer_F407.dir\\app\\main.c.obj -c C:\\OmniLayer\\app\\main.c",
+  "file": "C:/OmniLayer/app/main.c",
+  "output": "C:/OmniLayer/build/F407/Debug/CMakeFiles/OmniLayer_F407.dir/app/main.c.obj"
+},
+{
+  "directory": "C:/OmniLayer/build/F407/Debug",
+  "command": "C:\\PROGRA~2\\ARMGNU~1\\13C7F1~1.2RE\\bin\\AR19DD~1.EXE -DENROLL_MCU_TARGET=ENROLL_MCU_F407 -DSTM32F40_41xxx -IC:/OmniLayer/app -IC:/OmniLayer/Enroll -IC:/OmniLayer/BSP/LED -IC:/OmniLayer/Core/STM32F407/inc -IC:/OmniLayer/SYSTEM/F407_SYS -IC:/OmniLayer/Drivers/Drivers_STM32F4/Start -IC:/OmniLayer/Drivers/Drivers_STM32F4/FWLIB/inc -ffunction-sections -fdata-sections -Og -g3 -std=gnu11 -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Wall -Wextra -o CMakeFiles\\OmniLayer_F407.dir\\Enroll\\Enroll.c.obj -c C:\\OmniLayer\\Enroll\\Enroll.c",
+  "file": "C:/OmniLayer/Enroll/Enroll.c",
+  "output": "C:/OmniLayer/build/F407/Debug/CMakeFiles/OmniLayer_F407.dir/Enroll/Enroll.c.obj"
+},
+{
+  "directory": "C:/OmniLayer/build/F407/Debug",
+  "command": "C:\\PROGRA~2\\ARMGNU~1\\13C7F1~1.2RE\\bin\\AR19DD~1.EXE -DENROLL_MCU_TARGET=ENROLL_MCU_F407 -DSTM32F40_41xxx -IC:/OmniLayer/app -IC:/OmniLayer/Enroll -IC:/OmniLayer/BSP/LED -IC:/OmniLayer/Core/STM32F407/inc -IC:/OmniLayer/SYSTEM/F407_SYS -IC:/OmniLayer/Drivers/Drivers_STM32F4/Start -IC:/OmniLayer/Drivers/Drivers_STM32F4/FWLIB/inc -ffunction-sections -fdata-sections -Og -g3 -std=gnu11 -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Wall -Wextra -o CMakeFiles\\OmniLayer_F407.dir\\BSP\\LED\\LED.c.obj -c C:\\OmniLayer\\BSP\\LED\\LED.c",
+  "file": "C:/OmniLayer/BSP/LED/LED.c",
+  "output": "C:/OmniLayer/build/F407/Debug/CMakeFiles/OmniLayer_F407.dir/BSP/LED/LED.c.obj"
+},
+{
+  "directory": "C:/OmniLayer/build/F407/Debug",
+  "command": "C:\\PROGRA~2\\ARMGNU~1\\13C7F1~1.2RE\\bin\\AR19DD~1.EXE -DENROLL_MCU_TARGET=ENROLL_MCU_F407 -DSTM32F40_41xxx -IC:/OmniLayer/app -IC:/OmniLayer/Enroll -IC:/OmniLayer/BSP/LED -IC:/OmniLayer/Core/STM32F407/inc -IC:/OmniLayer/SYSTEM/F407_SYS -IC:/OmniLayer/Drivers/Drivers_STM32F4/Start -IC:/OmniLayer/Drivers/Drivers_STM32F4/FWLIB/inc -ffunction-sections -fdata-sections -Og -g3 -std=gnu11 -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Wall -Wextra -o CMakeFiles\\OmniLayer_F407.dir\\Core\\STM32F407\\src\\f407_gpio.c.obj -c C:\\OmniLayer\\Core\\STM32F407\\src\\f407_gpio.c",
+  "file": "C:/OmniLayer/Core/STM32F407/src/f407_gpio.c",
+  "output": "C:/OmniLayer/build/F407/Debug/CMakeFiles/OmniLayer_F407.dir/Core/STM32F407/src/f407_gpio.c.obj"
+},
+{
+  "directory": "C:/OmniLayer/build/F407/Debug",
+  "command": "C:\\PROGRA~2\\ARMGNU~1\\13C7F1~1.2RE\\bin\\AR19DD~1.EXE -DENROLL_MCU_TARGET=ENROLL_MCU_F407 -DSTM32F40_41xxx -IC:/OmniLayer/app -IC:/OmniLayer/Enroll -IC:/OmniLayer/BSP/LED -IC:/OmniLayer/Core/STM32F407/inc -IC:/OmniLayer/SYSTEM/F407_SYS -IC:/OmniLayer/Drivers/Drivers_STM32F4/Start -IC:/OmniLayer/Drivers/Drivers_STM32F4/FWLIB/inc -ffunction-sections -fdata-sections -Og -g3 -std=gnu11 -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Wall -Wextra -o CMakeFiles\\OmniLayer_F407.dir\\Drivers\\Drivers_STM32F4\\Start\\system_stm32f4xx.c.obj -c C:\\OmniLayer\\Drivers\\Drivers_STM32F4\\Start\\system_stm32f4xx.c",
+  "file": "C:/OmniLayer/Drivers/Drivers_STM32F4/Start/system_stm32f4xx.c",
+  "output": "C:/OmniLayer/build/F407/Debug/CMakeFiles/OmniLayer_F407.dir/Drivers/Drivers_STM32F4/Start/system_stm32f4xx.c.obj"
+},
+{
+  "directory": "C:/OmniLayer/build/F407/Debug",
+  "command": "C:\\PROGRA~2\\ARMGNU~1\\13C7F1~1.2RE\\bin\\AR19DD~1.EXE -DENROLL_MCU_TARGET=ENROLL_MCU_F407 -DSTM32F40_41xxx -IC:/OmniLayer/app -IC:/OmniLayer/Enroll -IC:/OmniLayer/BSP/LED -IC:/OmniLayer/Core/STM32F407/inc -IC:/OmniLayer/SYSTEM/F407_SYS -IC:/OmniLayer/Drivers/Drivers_STM32F4/Start -IC:/OmniLayer/Drivers/Drivers_STM32F4/FWLIB/inc -ffunction-sections -fdata-sections -Og -g3 -std=gnu11 -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Wall -Wextra -o CMakeFiles\\OmniLayer_F407.dir\\Drivers\\Drivers_STM32F4\\Start\\stm32f4xx_it.c.obj -c C:\\OmniLayer\\Drivers\\Drivers_STM32F4\\Start\\stm32f4xx_it.c",
+  "file": "C:/OmniLayer/Drivers/Drivers_STM32F4/Start/stm32f4xx_it.c",
+  "output": "C:/OmniLayer/build/F407/Debug/CMakeFiles/OmniLayer_F407.dir/Drivers/Drivers_STM32F4/Start/stm32f4xx_it.c.obj"
+},
+{
+  "directory": "C:/OmniLayer/build/F407/Debug",
+  "command": "C:\\PROGRA~2\\ARMGNU~1\\13C7F1~1.2RE\\bin\\AR19DD~1.EXE -DENROLL_MCU_TARGET=ENROLL_MCU_F407 -DSTM32F40_41xxx -IC:/OmniLayer/app -IC:/OmniLayer/Enroll -IC:/OmniLayer/BSP/LED -IC:/OmniLayer/Core/STM32F407/inc -IC:/OmniLayer/SYSTEM/F407_SYS -IC:/OmniLayer/Drivers/Drivers_STM32F4/Start -IC:/OmniLayer/Drivers/Drivers_STM32F4/FWLIB/inc -ffunction-sections -fdata-sections -Og -g3 -std=gnu11 -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Wall -Wextra -o CMakeFiles\\OmniLayer_F407.dir\\Drivers\\Drivers_STM32F4\\Start\\startup_stm32f407vetx_gcc.c.obj -c C:\\OmniLayer\\Drivers\\Drivers_STM32F4\\Start\\startup_stm32f407vetx_gcc.c",
+  "file": "C:/OmniLayer/Drivers/Drivers_STM32F4/Start/startup_stm32f407vetx_gcc.c",
+  "output": "C:/OmniLayer/build/F407/Debug/CMakeFiles/OmniLayer_F407.dir/Drivers/Drivers_STM32F4/Start/startup_stm32f407vetx_gcc.c.obj"
+}
+]

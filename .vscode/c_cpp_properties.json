@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "ARM-GCC",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/Core/STM32F103/inc",
+                "${workspaceFolder}/Core/STM32F407/inc",
+                "${workspaceFolder}/Drivers/Drivers_STM32F1/Start",
+                "${workspaceFolder}/Drivers/Drivers_STM32F4/Start"
+            ],
+            "defines": [
+                "ENROLL_MCU_TARGET=ENROLL_MCU_F407"
+            ],
+            "compilerPath": "C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/13.2 Rel1/bin/arm-none-eabi-gcc.exe",
+            "compileCommands": "${workspaceFolder}/build/Debug/compile_commands.json",
+            "cStandard": "c11",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "gcc-arm"
+        }
+    ],
+    "version": 4
+}

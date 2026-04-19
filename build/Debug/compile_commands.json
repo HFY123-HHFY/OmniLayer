@@ -1,0 +1,44 @@
+[
+{
+  "directory": "C:/OmniLayer/build/Debug",
+  "command": "C:\\PROGRA~2\\ARMGNU~1\\13C7F1~1.2RE\\bin\\AR19DD~1.EXE -DSTM32F10X_MD -IC:/OmniLayer/app -IC:/OmniLayer/Enroll -IC:/OmniLayer/BSP/LED -IC:/OmniLayer/Core/STM32F103/inc -IC:/OmniLayer/SYSTEM/F103_SYS -IC:/OmniLayer/Drivers/Drivers_STM32F1/Start -IC:/OmniLayer/Drivers/Drivers_STM32F1/FWLIB/inc -ffunction-sections -fdata-sections -Og -g3 -std=gnu11 -mcpu=cortex-m3 -mthumb -Wall -Wextra -o CMakeFiles\\OmniLayer_F103.dir\\app\\main.c.obj -c C:\\OmniLayer\\app\\main.c",
+  "file": "C:/OmniLayer/app/main.c",
+  "output": "C:/OmniLayer/build/Debug/CMakeFiles/OmniLayer_F103.dir/app/main.c.obj"
+},
+{
+  "directory": "C:/OmniLayer/build/Debug",
+  "command": "C:\\PROGRA~2\\ARMGNU~1\\13C7F1~1.2RE\\bin\\AR19DD~1.EXE -DSTM32F10X_MD -IC:/OmniLayer/app -IC:/OmniLayer/Enroll -IC:/OmniLayer/BSP/LED -IC:/OmniLayer/Core/STM32F103/inc -IC:/OmniLayer/SYSTEM/F103_SYS -IC:/OmniLayer/Drivers/Drivers_STM32F1/Start -IC:/OmniLayer/Drivers/Drivers_STM32F1/FWLIB/inc -ffunction-sections -fdata-sections -Og -g3 -std=gnu11 -mcpu=cortex-m3 -mthumb -Wall -Wextra -o CMakeFiles\\OmniLayer_F103.dir\\Enroll\\Enroll.c.obj -c C:\\OmniLayer\\Enroll\\Enroll.c",
+  "file": "C:/OmniLayer/Enroll/Enroll.c",
+  "output": "C:/OmniLayer/build/Debug/CMakeFiles/OmniLayer_F103.dir/Enroll/Enroll.c.obj"
+},
+{
+  "directory": "C:/OmniLayer/build/Debug",
+  "command": "C:\\PROGRA~2\\ARMGNU~1\\13C7F1~1.2RE\\bin\\AR19DD~1.EXE -DSTM32F10X_MD -IC:/OmniLayer/app -IC:/OmniLayer/Enroll -IC:/OmniLayer/BSP/LED -IC:/OmniLayer/Core/STM32F103/inc -IC:/OmniLayer/SYSTEM/F103_SYS -IC:/OmniLayer/Drivers/Drivers_STM32F1/Start -IC:/OmniLayer/Drivers/Drivers_STM32F1/FWLIB/inc -ffunction-sections -fdata-sections -Og -g3 -std=gnu11 -mcpu=cortex-m3 -mthumb -Wall -Wextra -o CMakeFiles\\OmniLayer_F103.dir\\BSP\\LED\\LED.c.obj -c C:\\OmniLayer\\BSP\\LED\\LED.c",
+  "file": "C:/OmniLayer/BSP/LED/LED.c",
+  "output": "C:/OmniLayer/build/Debug/CMakeFiles/OmniLayer_F103.dir/BSP/LED/LED.c.obj"
+},
+{
+  "directory": "C:/OmniLayer/build/Debug",
+  "command": "C:\\PROGRA~2\\ARMGNU~1\\13C7F1~1.2RE\\bin\\AR19DD~1.EXE -DSTM32F10X_MD -IC:/OmniLayer/app -IC:/OmniLayer/Enroll -IC:/OmniLayer/BSP/LED -IC:/OmniLayer/Core/STM32F103/inc -IC:/OmniLayer/SYSTEM/F103_SYS -IC:/OmniLayer/Drivers/Drivers_STM32F1/Start -IC:/OmniLayer/Drivers/Drivers_STM32F1/FWLIB/inc -ffunction-sections -fdata-sections -Og -g3 -std=gnu11 -mcpu=cortex-m3 -mthumb -Wall -Wextra -o CMakeFiles\\OmniLayer_F103.dir\\Core\\STM32F103\\src\\f103_gpio.c.obj -c C:\\OmniLayer\\Core\\STM32F103\\src\\f103_gpio.c",
+  "file": "C:/OmniLayer/Core/STM32F103/src/f103_gpio.c",
+  "output": "C:/OmniLayer/build/Debug/CMakeFiles/OmniLayer_F103.dir/Core/STM32F103/src/f103_gpio.c.obj"
+},
+{
+  "directory": "C:/OmniLayer/build/Debug",
+  "command": "C:\\PROGRA~2\\ARMGNU~1\\13C7F1~1.2RE\\bin\\AR19DD~1.EXE -DSTM32F10X_MD -IC:/OmniLayer/app -IC:/OmniLayer/Enroll -IC:/OmniLayer/BSP/LED -IC:/OmniLayer/Core/STM32F103/inc -IC:/OmniLayer/SYSTEM/F103_SYS -IC:/OmniLayer/Drivers/Drivers_STM32F1/Start -IC:/OmniLayer/Drivers/Drivers_STM32F1/FWLIB/inc -ffunction-sections -fdata-sections -Og -g3 -std=gnu11 -mcpu=cortex-m3 -mthumb -Wall -Wextra -o CMakeFiles\\OmniLayer_F103.dir\\Drivers\\Drivers_STM32F1\\Start\\system_stm32f10x.c.obj -c C:\\OmniLayer\\Drivers\\Drivers_STM32F1\\Start\\system_stm32f10x.c",
+  "file": "C:/OmniLayer/Drivers/Drivers_STM32F1/Start/system_stm32f10x.c",
+  "output": "C:/OmniLayer/build/Debug/CMakeFiles/OmniLayer_F103.dir/Drivers/Drivers_STM32F1/Start/system_stm32f10x.c.obj"
+},
+{
+  "directory": "C:/OmniLayer/build/Debug",
+  "command": "C:\\PROGRA~2\\ARMGNU~1\\13C7F1~1.2RE\\bin\\AR19DD~1.EXE -DSTM32F10X_MD -IC:/OmniLayer/app -IC:/OmniLayer/Enroll -IC:/OmniLayer/BSP/LED -IC:/OmniLayer/Core/STM32F103/inc -IC:/OmniLayer/SYSTEM/F103_SYS -IC:/OmniLayer/Drivers/Drivers_STM32F1/Start -IC:/OmniLayer/Drivers/Drivers_STM32F1/FWLIB/inc -ffunction-sections -fdata-sections -Og -g3 -std=gnu11 -mcpu=cortex-m3 -mthumb -Wall -Wextra -o CMakeFiles\\OmniLayer_F103.dir\\Drivers\\Drivers_STM32F1\\Start\\stm32f10x_it.c.obj -c C:\\OmniLayer\\Drivers\\Drivers_STM32F1\\Start\\stm32f10x_it.c",
+  "file": "C:/OmniLayer/Drivers/Drivers_STM32F1/Start/stm32f10x_it.c",
+  "output": "C:/OmniLayer/build/Debug/CMakeFiles/OmniLayer_F103.dir/Drivers/Drivers_STM32F1/Start/stm32f10x_it.c.obj"
+},
+{
+  "directory": "C:/OmniLayer/build/Debug",
+  "command": "C:\\PROGRA~2\\ARMGNU~1\\13C7F1~1.2RE\\bin\\AR19DD~1.EXE -DSTM32F10X_MD -IC:/OmniLayer/app -IC:/OmniLayer/Enroll -IC:/OmniLayer/BSP/LED -IC:/OmniLayer/Core/STM32F103/inc -IC:/OmniLayer/SYSTEM/F103_SYS -IC:/OmniLayer/Drivers/Drivers_STM32F1/Start -IC:/OmniLayer/Drivers/Drivers_STM32F1/FWLIB/inc -ffunction-sections -fdata-sections -Og -g3 -std=gnu11 -mcpu=cortex-m3 -mthumb -Wall -Wextra -o CMakeFiles\\OmniLayer_F103.dir\\Drivers\\Drivers_STM32F1\\Start\\startup_stm32f103c8tx_gcc.c.obj -c C:\\OmniLayer\\Drivers\\Drivers_STM32F1\\Start\\startup_stm32f103c8tx_gcc.c",
+  "file": "C:/OmniLayer/Drivers/Drivers_STM32F1/Start/startup_stm32f103c8tx_gcc.c",
+  "output": "C:/OmniLayer/build/Debug/CMakeFiles/OmniLayer_F103.dir/Drivers/Drivers_STM32F1/Start/startup_stm32f103c8tx_gcc.c.obj"
+}
+]

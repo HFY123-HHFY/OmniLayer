@@ -1,0 +1,9 @@
+.\obj\sys.o: ..\..\SYSTEM\F407_SYS\sys.c
+.\obj\sys.o: ..\..\SYSTEM\F407_SYS\sys.h
+.\obj\sys.o: ..\..\Drivers\Drivers_STM32F4\Start\stm32f4xx.h
+.\obj\sys.o: ..\..\Drivers\Drivers_STM32F4\Start\core_cm4.h
+.\obj\sys.o: D:\kei5_39\MDK_539\ARM\ARMCC\Bin\..\include\stdint.h
+.\obj\sys.o: ..\..\Drivers\Drivers_STM32F4\Start\core_cmInstr.h
+.\obj\sys.o: ..\..\Drivers\Drivers_STM32F4\Start\core_cmFunc.h
+.\obj\sys.o: ..\..\Drivers\Drivers_STM32F4\Start\core_cmSimd.h
+.\obj\sys.o: ..\..\Drivers\Drivers_STM32F4\Start\system_stm32f4xx.h

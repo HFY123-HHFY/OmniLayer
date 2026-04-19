@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/OmniLayer/build/F407/Debug/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
