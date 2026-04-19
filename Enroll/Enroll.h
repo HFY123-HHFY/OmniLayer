@@ -13,7 +13,7 @@
  * 默认F103。
  */
 #ifndef ENROLL_MCU_TARGET
-#define ENROLL_MCU_TARGET  ENROLL_MCU_F103
+#define ENROLL_MCU_TARGET  ENROLL_MCU_F407
 #endif
 
 /*

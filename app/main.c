@@ -1,4 +1,5 @@
 #include "Enroll.h"
+#include "Delay.h"
 
 int main(void)	
 {
@@ -8,5 +9,8 @@ int main(void)
 	while(1)
 	{
 		Enroll_LED_Control(LED1, LED_HIGH);
+		Delay_ms(1000);
+		Enroll_LED_Control(LED1, LED_LOW);
+		Delay_ms(1000);
 	}
 }

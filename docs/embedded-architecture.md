@@ -13,12 +13,7 @@
 - `oepnocd/`：按 MCU 分类管理 OpenOCD 配置。
 - `CMakeLists.txt` / `CMakePresets.json`：统一构建入口与目标选择。
 
-当前命名示例：
-
-- `oepnocd/f103_openocd.cfg`
-- `oepnocd/f407_oepnocd.cfg`
-
-## 2. 当前工程怎么管理
+## 2. 工程管理
 
 当前统一使用：
 

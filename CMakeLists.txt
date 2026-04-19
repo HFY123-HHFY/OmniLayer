@@ -36,6 +36,26 @@ endif()
 
 message(STATUS "Resolved MCU target: ${RESOLVED_MCU_TARGET}")
 
+# ============================== 维护说明 ==============================
+#
+# 1) 新增/删除 .c 文件：
+#    - 按模块归类，修改 APP_LAYER_SOURCES / ENROLL_LAYER_SOURCES /
+#      BSP_LAYER_SOURCES / MCU_SOURCES 中对应列表。
+#    - 最终会汇总到 TARGET_SOURCES，因此只要列表里有就会参与编译。
+#
+# 2) 新增/删除头文件目录：
+#    - 修改 MCU_INCLUDE_DIRS（不同 MCU 分支分别维护）。
+#    - 仅新增 .h 文件（目录不变）通常不需要改 CMake。
+#
+# 3) F103/F407 差异文件：
+#    - 放在 if(RESOLVED_MCU_TARGET STREQUAL "F103") / "F407" 各自分支。
+#    - 避免把仅某一芯片可用的驱动误加到另一分支。
+#
+# 4) 改完后验证：
+#    - 重新 Configure/Build；若报“undefined reference”通常是漏加 .c 文件。
+#    - 若报“header not found”通常是漏加头文件目录到 MCU_INCLUDE_DIRS。
+# ======================================================================
+
 # 应用层（app）：业务入口与任务调度。
 set(APP_LAYER_SOURCES
     ${CMAKE_SOURCE_DIR}/app/main.c
@@ -62,15 +82,17 @@ if(RESOLVED_MCU_TARGET STREQUAL "F103")
         STM32F10X_MD
     )
     set(MCU_INCLUDE_DIRS
+        # 头文件搜索路径：新增目录在这里加，删除目录在这里移除。
         ${CMAKE_SOURCE_DIR}/app
         ${CMAKE_SOURCE_DIR}/Enroll
         ${CMAKE_SOURCE_DIR}/BSP/LED
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/inc
-        ${CMAKE_SOURCE_DIR}/SYSTEM/F103_SYS
+        ${CMAKE_SOURCE_DIR}/SYSTEM
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F1/Start
-        ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F1/FWLIB/inc
     )
     set(MCU_SOURCES
+        # F103 专属源码：新增/删除 .c 文件在这里改。
+        ${CMAKE_SOURCE_DIR}/Core/STM32F103/f103_delay.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_gpio.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F1/Start/system_stm32f10x.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F1/Start/stm32f10x_it.c
@@ -87,15 +109,17 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
         STM32F40_41xxx
     )
     set(MCU_INCLUDE_DIRS
+        # 头文件搜索路径：新增目录在这里加，删除目录在这里移除。
         ${CMAKE_SOURCE_DIR}/app
         ${CMAKE_SOURCE_DIR}/Enroll
         ${CMAKE_SOURCE_DIR}/BSP/LED
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/inc
-        ${CMAKE_SOURCE_DIR}/SYSTEM/F407_SYS
+        ${CMAKE_SOURCE_DIR}/SYSTEM
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start
-        ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/FWLIB/inc
     )
     set(MCU_SOURCES
+        # F407 专属源码：新增/删除 .c 文件在这里改。
+        ${CMAKE_SOURCE_DIR}/Core/STM32F407/f407_delay.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_gpio.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start/system_stm32f4xx.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start/stm32f4xx_it.c
