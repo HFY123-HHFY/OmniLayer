@@ -68,6 +68,7 @@ endif()
 set(APP_LAYER_SOURCES
     ${CMAKE_SOURCE_DIR}/app/main.c
     ${CMAKE_SOURCE_DIR}/app/My_Usart/My_Usart.c
+    ${CMAKE_SOURCE_DIR}/app/My_I2c/My_I2c.c
     ${CMAKE_SOURCE_DIR}/app/Control_Task/Control_Task.c
 )
 
@@ -103,6 +104,7 @@ if(RESOLVED_MCU_TARGET STREQUAL "F103")
         ${CMAKE_SOURCE_DIR}/app
         ${CMAKE_SOURCE_DIR}/app/Control_Task
         ${CMAKE_SOURCE_DIR}/app/My_Usart
+        ${CMAKE_SOURCE_DIR}/app/My_I2c
         ${CMAKE_SOURCE_DIR}/API
         ${CMAKE_SOURCE_DIR}/API/inc
         ${CMAKE_SOURCE_DIR}/Enroll
@@ -136,6 +138,7 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
         ${CMAKE_SOURCE_DIR}/app
         ${CMAKE_SOURCE_DIR}/app/Control_Task
         ${CMAKE_SOURCE_DIR}/app/My_Usart
+        ${CMAKE_SOURCE_DIR}/app/My_I2c
         ${CMAKE_SOURCE_DIR}/API
         ${CMAKE_SOURCE_DIR}/API/inc
         ${CMAKE_SOURCE_DIR}/Enroll

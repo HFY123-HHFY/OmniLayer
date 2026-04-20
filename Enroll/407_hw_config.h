@@ -2,6 +2,7 @@
 #define __407_HW_CONFIG_H
 
 #include "LED.h"
+#include "My_I2c.h"
 #include "usart.h"
 
 /*
@@ -26,9 +27,15 @@ LED1 绿 LED2 红 LED3 蓝
 #define HW_USART_MAP(X) \
 	X(API_USART1, GPIOA, GPIO_Pin_9, GPIOA, GPIO_Pin_10)
 
+/* I2C 板级映射：当前板子注册 1 路软件 I2C。 */
+#define HW_I2C_MAP(X) \
+	X(GPIOB, GPIO_Pin_8, GPIO_Pin_9)
+
 /* 当前板子上注册了 3 个 LED。 */
 #define HW_LED_COUNT  3U
 /* 当前板子上注册了 1 路 USART。 */
 #define HW_USART_COUNT  1U
+/* 当前板子上注册了 1 路软件 I2C。 */
+#define HW_I2C_COUNT  1U
 
 #endif /* __407_HW_CONFIG_H */

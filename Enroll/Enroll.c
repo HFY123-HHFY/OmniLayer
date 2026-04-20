@@ -18,6 +18,10 @@
 #define ENROLL_USART_ITEM(id, txPort, txPin, rxPort, rxPin) \
 	{ id, txPort, txPin, rxPort, rxPin },
 
+/* ENROLL_I2C_ITEM 负责把 I2C 映射展开成 MyI2C_Config_t 结构体项。 */
+#define ENROLL_I2C_ITEM(port, sclPin, sdaPin) \
+	{ port, sclPin, sdaPin },
+
 /* 当前板子的 LED 注册表。 */
 static const LED_Config_t s_ledTable[] =
 {
@@ -30,8 +34,15 @@ static const API_USART_Config_t s_usartTable[] =
 	HW_USART_MAP(ENROLL_USART_ITEM)
 };
 
+/* 当前板子的 I2C 注册表。 */
+static const MyI2C_Config_t s_i2cTable[] =
+{
+	HW_I2C_MAP(ENROLL_I2C_ITEM)
+};
+
 #undef ENROLL_LED_ITEM
 #undef ENROLL_USART_ITEM
+#undef ENROLL_I2C_ITEM
 
 /*
  * Enroll_LED_Init：
@@ -53,4 +64,10 @@ void Enroll_LED_Control(LED_Id_t id, LED_Level_t level)
 void Enroll_USART_Register(void)
 {
 	API_USART_Register(s_usartTable, HW_USART_COUNT);
+}
+
+/* Enroll_I2C_Register：把当前板子的 I2C 引脚映射注册给应用层。 */
+void Enroll_I2C_Register(void)
+{
+	MyI2C_Register(s_i2cTable, HW_I2C_COUNT);
 }

@@ -20,6 +20,7 @@
 #endif
 
 #include "LED.h"
+#include "My_I2c.h"
 #include "gpio.h"
 #include "usart.h"
 
@@ -52,6 +53,9 @@ void Enroll_LED_Control(LED_Id_t id, LED_Level_t level);
 
 /* 注册当前板子的 USART 资源表。 */
 void Enroll_USART_Register(void);
+
+/* 注册当前板子的 I2C 资源表。 */
+void Enroll_I2C_Register(void);
 
 #ifdef __cplusplus
 }
