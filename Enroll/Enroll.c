@@ -14,13 +14,24 @@
 #define ENROLL_LED_ITEM(id, port, pin) \
 	{ id, port, pin, ENROLL_GPIO_INIT_FN, ENROLL_GPIO_WRITE_FN },
 
+/* ENROLL_USART_ITEM 负责把串口映射展开成 API_USART_Config_t 结构体项。 */
+#define ENROLL_USART_ITEM(id, txPort, txPin, rxPort, rxPin) \
+	{ id, txPort, txPin, rxPort, rxPin },
+
 /* 当前板子的 LED 注册表。 */
 static const LED_Config_t s_ledTable[] =
 {
 	HW_LED_MAP(ENROLL_LED_ITEM)
 };
 
+/* 当前板子的 USART 注册表。 */
+static const API_USART_Config_t s_usartTable[] =
+{
+	HW_USART_MAP(ENROLL_USART_ITEM)
+};
+
 #undef ENROLL_LED_ITEM
+#undef ENROLL_USART_ITEM
 
 /*
  * Enroll_LED_Init：
@@ -36,4 +47,10 @@ void Enroll_LED_Init(LED_Level_t initLevel)
 void Enroll_LED_Control(LED_Id_t id, LED_Level_t level)
 {
 	LED_Control(id, level);
+}
+
+/* Enroll_USART_Register：把当前板子的 USART 引脚映射注册给 API 层。 */
+void Enroll_USART_Register(void)
+{
+	API_USART_Register(s_usartTable, HW_USART_COUNT);
 }

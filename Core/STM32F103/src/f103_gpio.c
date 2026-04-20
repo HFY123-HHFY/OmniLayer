@@ -93,6 +93,43 @@ void F103_GPIO_InitOutput(void *port, uint16_t pin)
 	}
 }
 
+/* GPIO 输入初始化：配置为浮空输入。 */
+void F103_GPIO_InitInput(void *port, uint16_t pin)
+{
+	/* gpioPort: GPIO 寄存器映射地址。 */
+	F103_GPIO_Regs_t *gpioPort;
+	/* pinIndex: 引脚编号 0~15。 */
+	uint32_t pinIndex;
+	/* shift: 当前引脚在 CRL/CRH 的 4bit 偏移。 */
+	uint32_t shift;
+
+	if ((port == 0) || (pin == 0U))
+	{
+		return;
+	}
+
+	gpioPort = (F103_GPIO_Regs_t *)port;
+	pinIndex = F103_GPIO_PinIndex(pin);
+	if (pinIndex > 15U)
+	{
+		return;
+	}
+
+	F103_GPIO_EnableClock(gpioPort);
+	shift = (pinIndex & 0x7U) * 4U;
+
+	if (pinIndex < 8U)
+	{
+		gpioPort->CRL &= ~(0xFUL << shift);
+		gpioPort->CRL |= (0x4UL << shift);
+	}
+	else
+	{
+		gpioPort->CRH &= ~(0xFUL << shift);
+		gpioPort->CRH |= (0x4UL << shift);
+	}
+}
+
 /* GPIO 写电平接口：内部使用 BSRR/BRR 原子置位和复位。 */
 void F103_GPIO_Write(void *port, uint16_t pin, uint8_t level)
 {

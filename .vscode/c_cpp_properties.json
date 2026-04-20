@@ -9,9 +9,6 @@
                 "${workspaceFolder}/Drivers/Drivers_STM32F1/Start",
                 "${workspaceFolder}/Drivers/Drivers_STM32F4/Start"
             ],
-            "defines": [
-                "ENROLL_MCU_TARGET=ENROLL_MCU_F407"
-            ],
             "compilerPath": "C:/Program Files (x86)/Arm GNU Toolchain arm-none-eabi/13.2 Rel1/bin/arm-none-eabi-gcc.exe",
             "compileCommands": "${workspaceFolder}/build/Debug/compile_commands.json",
             "cStandard": "c11",

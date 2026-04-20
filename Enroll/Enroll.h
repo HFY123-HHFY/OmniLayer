@@ -1,43 +1,41 @@
 #ifndef __ENROLL_H
 #define __ENROLL_H
 
-#include "LED.h"
+#include <stdint.h>
 
-/* MCU 目标选择宏：0=F103, 1=F407, 3=其他 MCU 预留。 */
+/* MCU 目标常量：放在注册层头文件，便于统一查看与管理。 */
+#ifndef ENROLL_MCU_F103
 #define ENROLL_MCU_F103   0U
-#define ENROLL_MCU_F407   1U
-#define ENROLL_MCU_OTHER  3U
+#endif
 
-/*
- * 用户可在工程全局宏中重定义 ENROLL_MCU_TARGET。
- * 默认F103。
- */
-#ifndef ENROLL_MCU_TARGET
-#define ENROLL_MCU_TARGET  ENROLL_MCU_F407
+#ifndef ENROLL_MCU_F407
+#define ENROLL_MCU_F407   1U
 #endif
 
 /*
- * 条件编译选择不同 MCU 的 hw_config 和 gpio 驱动。
+ * 全局宏重定义 ENROLL_MCU_TARGET。
+ */
+#ifndef ENROLL_MCU_TARGET
+#define ENROLL_MCU_TARGET  ENROLL_MCU_F103
+#endif
+
+#include "LED.h"
+#include "gpio.h"
+#include "usart.h"
+
+/*
+ * 条件编译选择不同 MCU 的 hw_config。
  */
 #if (ENROLL_MCU_TARGET == ENROLL_MCU_F103)
 #include "103_hw_config.h"
-#include "f103_gpio.h"
-#define ENROLL_GPIO_INIT_FN   F103_GPIO_InitOutput
-#define ENROLL_GPIO_WRITE_FN  F103_GPIO_Write
 #elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
 #include "407_hw_config.h"
-#include "f407_gpio.h"
-#define ENROLL_GPIO_INIT_FN   F407_GPIO_InitOutput
-#define ENROLL_GPIO_WRITE_FN  F407_GPIO_Write
-#elif (ENROLL_MCU_TARGET == ENROLL_MCU_OTHER)
-/* 这里给其他 MCU 预留：例如 include "xxx_hw_config.h" 和 "xxx_gpio.h" */
-#include "other_hw_config.h"
-#include "other_gpio.h"
-#define ENROLL_GPIO_INIT_FN   OTHER_GPIO_InitOutput
-#define ENROLL_GPIO_WRITE_FN  OTHER_GPIO_Write
 #else
-#error "Unsupported ENROLL_MCU_TARGET. Use 0(F103), 1(F407), or 3(OTHER)."
+#error "Unsupported ENROLL_MCU_TARGET. Use 0(F103) or 1(F407)."
 #endif
+
+#define ENROLL_GPIO_INIT_FN   API_GPIO_InitOutput
+#define ENROLL_GPIO_WRITE_FN  API_GPIO_Write
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,6 +49,9 @@ void Enroll_LED_Init(LED_Level_t initLevel);
 
 /* 把 app/main 的 LED 控制请求转发给 BSP。 */
 void Enroll_LED_Control(LED_Id_t id, LED_Level_t level);
+
+/* 注册当前板子的 USART 资源表。 */
+void Enroll_USART_Register(void);
 
 #ifdef __cplusplus
 }

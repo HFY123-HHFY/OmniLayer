@@ -2,6 +2,7 @@
 #define __407_HW_CONFIG_H
 
 #include "LED.h"
+#include "usart.h"
 
 /*
  * 407_hw_config.h 板级硬件映射宏
@@ -21,7 +22,13 @@ LED1 绿 LED2 红 LED3 蓝
 	X(LED2, GPIOE, GPIO_Pin_3) \
 	X(LED3, GPIOE, GPIO_Pin_4)
 
+/* USART 板级映射：当前板子注册 1 路串口*/
+#define HW_USART_MAP(X) \
+	X(API_USART1, GPIOA, GPIO_Pin_9, GPIOA, GPIO_Pin_10)
+
 /* 当前板子上注册了 3 个 LED。 */
 #define HW_LED_COUNT  3U
+/* 当前板子上注册了 1 路 USART。 */
+#define HW_USART_COUNT  1U
 
 #endif /* __407_HW_CONFIG_H */

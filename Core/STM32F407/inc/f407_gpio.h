@@ -110,6 +110,8 @@ typedef struct
 
 /* GPIO 输出初始化：当前实现为推挽输出低速模式。 */
 void F407_GPIO_InitOutput(void *port, uint16_t pin);
+/* GPIO 输入初始化：当前实现为无上下拉输入。 */
+void F407_GPIO_InitInput(void *port, uint16_t pin);
 /* GPIO 写电平：level 非 0 写高，0 写低。 */
 void F407_GPIO_Write(void *port, uint16_t pin, uint8_t level);
 /* GPIO 读输入电平：返回 1 表示高电平，0 表示低电平。 */

@@ -36,6 +36,14 @@ endif()
 
 message(STATUS "Resolved MCU target: ${RESOLVED_MCU_TARGET}")
 
+if(RESOLVED_MCU_TARGET STREQUAL "F103")
+    set(ENROLL_MCU_TARGET_VALUE 0)
+elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
+    set(ENROLL_MCU_TARGET_VALUE 1)
+else()
+    message(FATAL_ERROR "Unsupported resolved MCU target: ${RESOLVED_MCU_TARGET}")
+endif()
+
 # ============================== 维护说明 ==============================
 #
 # 1) 新增/删除 .c 文件：
@@ -59,6 +67,15 @@ message(STATUS "Resolved MCU target: ${RESOLVED_MCU_TARGET}")
 # 应用层（app）：业务入口与任务调度。
 set(APP_LAYER_SOURCES
     ${CMAKE_SOURCE_DIR}/app/main.c
+    ${CMAKE_SOURCE_DIR}/app/My_Usart/My_Usart.c
+    ${CMAKE_SOURCE_DIR}/app/Control_Task/Control_Task.c
+)
+
+# API 层：对上提供统一外设接口，对下分发到 MCU Core 实现。
+set(API_LAYER_SOURCES
+    ${CMAKE_SOURCE_DIR}/API/src/gpio.c
+    ${CMAKE_SOURCE_DIR}/API/src/tim.c
+    ${CMAKE_SOURCE_DIR}/API/src/usart.c
 )
 
 # 注册层（Enroll）：把 BSP 资源和具体 MCU 驱动绑定。
@@ -84,6 +101,10 @@ if(RESOLVED_MCU_TARGET STREQUAL "F103")
     set(MCU_INCLUDE_DIRS
         # 头文件搜索路径：新增目录在这里加，删除目录在这里移除。
         ${CMAKE_SOURCE_DIR}/app
+        ${CMAKE_SOURCE_DIR}/app/Control_Task
+        ${CMAKE_SOURCE_DIR}/app/My_Usart
+        ${CMAKE_SOURCE_DIR}/API
+        ${CMAKE_SOURCE_DIR}/API/inc
         ${CMAKE_SOURCE_DIR}/Enroll
         ${CMAKE_SOURCE_DIR}/BSP/LED
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/inc
@@ -94,6 +115,8 @@ if(RESOLVED_MCU_TARGET STREQUAL "F103")
         # F103 专属源码：新增/删除 .c 文件在这里改。
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/f103_delay.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_gpio.c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_tim.c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_usart.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F1/Start/system_stm32f10x.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F1/Start/stm32f10x_it.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F1/Start/startup_stm32f103c8tx_gcc.c
@@ -111,6 +134,10 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
     set(MCU_INCLUDE_DIRS
         # 头文件搜索路径：新增目录在这里加，删除目录在这里移除。
         ${CMAKE_SOURCE_DIR}/app
+        ${CMAKE_SOURCE_DIR}/app/Control_Task
+        ${CMAKE_SOURCE_DIR}/app/My_Usart
+        ${CMAKE_SOURCE_DIR}/API
+        ${CMAKE_SOURCE_DIR}/API/inc
         ${CMAKE_SOURCE_DIR}/Enroll
         ${CMAKE_SOURCE_DIR}/BSP/LED
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/inc
@@ -121,6 +148,8 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
         # F407 专属源码：新增/删除 .c 文件在这里改。
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/f407_delay.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_gpio.c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_tim.c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_usart.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start/system_stm32f4xx.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start/stm32f4xx_it.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start/startup_stm32f407vetx_gcc.c
@@ -131,6 +160,7 @@ endif()
 
 set(TARGET_SOURCES
     ${APP_LAYER_SOURCES}
+    ${API_LAYER_SOURCES}
     ${ENROLL_LAYER_SOURCES}
     ${BSP_LAYER_SOURCES}
     ${MCU_SOURCES}
@@ -143,6 +173,9 @@ target_include_directories(${TARGET_NAME} PRIVATE
 )
 
 target_compile_definitions(${TARGET_NAME} PRIVATE
+    ENROLL_MCU_F103=0
+    ENROLL_MCU_F407=1
+    ENROLL_MCU_TARGET=${ENROLL_MCU_TARGET_VALUE}
     ${MCU_DEFINITIONS}
 )
 

@@ -111,6 +111,35 @@ void F407_GPIO_InitOutput(void *port, uint16_t pin)
 	gpioPort->PUPDR &= ~(0x3UL << shift);
 }
 
+/* GPIO 输入初始化：配置为无上下拉输入。 */
+void F407_GPIO_InitInput(void *port, uint16_t pin)
+{
+	/* gpioPort: GPIO 寄存器映射地址。 */
+	F407_GPIO_Regs_t *gpioPort;
+	/* pinIndex: 引脚编号 0~15。 */
+	uint32_t pinIndex;
+	/* shift: 当前引脚在 2bit 字段中的偏移。 */
+	uint32_t shift;
+
+	if ((port == 0) || (pin == 0U))
+	{
+		return;
+	}
+
+	gpioPort = (F407_GPIO_Regs_t *)port;
+	pinIndex = F407_GPIO_PinIndex(pin);
+	if (pinIndex > 15U)
+	{
+		return;
+	}
+
+	F407_GPIO_EnableClock(gpioPort);
+	shift = pinIndex * 2U;
+
+	gpioPort->MODER &= ~(0x3UL << shift);
+	gpioPort->PUPDR &= ~(0x3UL << shift);
+}
+
 /* GPIO 写电平接口：内部使用 BSRR 原子置位和复位。 */
 void F407_GPIO_Write(void *port, uint16_t pin, uint8_t level)
 {

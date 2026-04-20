@@ -1,12 +1,14 @@
----构建嵌入式软件开发架构---
+----构建嵌入式软件开发架构---
 
 app 应用层 控制任务 业务代码 main.c pid Control_Task...（软件）
+
+API MCU片内 外设注册层 如gpio.h...MCU资源抽象
 
 BSP: 板级支持包 MCU和板载外设通信 mpu6050 LED KEY ...(硬件抽象层)
 
 Enroll 注册层 把BSP层的硬件抽象在对应的MCU上完成注册并给出接口在app层调用,链接对应MCU和BSP层
 
-Core: MCU驱动程序 MCU上的外设 gpio...
+Core: MCU驱动程序 MCU上的外设 gpio.c...
 
 MDK_ARM: 保留keil5开发习惯
 
