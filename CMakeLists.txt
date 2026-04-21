@@ -87,6 +87,12 @@ set(ENROLL_LAYER_SOURCES
 # 板级支持层（BSP）：对传感器/执行器做硬件抽象。
 set(BSP_LAYER_SOURCES
     ${CMAKE_SOURCE_DIR}/BSP/LED/LED.c
+    ${CMAKE_SOURCE_DIR}/BSP/KEY/KEY.c
+    ${CMAKE_SOURCE_DIR}/BSP/OLED/OLED.c
+    ${CMAKE_SOURCE_DIR}/BSP/OLED/OLED_Data.c
+    ${CMAKE_SOURCE_DIR}/BSP/MPU6050/MPU6050.c
+    ${CMAKE_SOURCE_DIR}/BSP/MPU6050/eMPL/inv_mpu.c
+    ${CMAKE_SOURCE_DIR}/BSP/MPU6050/eMPL/inv_mpu_dmp_motion_driver.c
 )
 
 if(RESOLVED_MCU_TARGET STREQUAL "F103")
@@ -109,6 +115,10 @@ if(RESOLVED_MCU_TARGET STREQUAL "F103")
         ${CMAKE_SOURCE_DIR}/API/inc
         ${CMAKE_SOURCE_DIR}/Enroll
         ${CMAKE_SOURCE_DIR}/BSP/LED
+        ${CMAKE_SOURCE_DIR}/BSP/KEY
+        ${CMAKE_SOURCE_DIR}/BSP/OLED
+        ${CMAKE_SOURCE_DIR}/BSP/MPU6050
+        ${CMAKE_SOURCE_DIR}/BSP/MPU6050/eMPL
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/inc
         ${CMAKE_SOURCE_DIR}/SYSTEM
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F1/Start
@@ -143,6 +153,10 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
         ${CMAKE_SOURCE_DIR}/API/inc
         ${CMAKE_SOURCE_DIR}/Enroll
         ${CMAKE_SOURCE_DIR}/BSP/LED
+        ${CMAKE_SOURCE_DIR}/BSP/KEY
+        ${CMAKE_SOURCE_DIR}/BSP/OLED
+        ${CMAKE_SOURCE_DIR}/BSP/MPU6050
+        ${CMAKE_SOURCE_DIR}/BSP/MPU6050/eMPL
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/inc
         ${CMAKE_SOURCE_DIR}/SYSTEM
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start
@@ -195,6 +209,8 @@ target_link_options(${TARGET_NAME} PRIVATE
     -T${LINKER_SCRIPT}
     --specs=nosys.specs
     --specs=nano.specs
+    -u
+    _printf_float
     -Wl,--gc-sections
     -Wl,-Map=${TARGET_NAME}.map
     -Wl,--print-memory-usage

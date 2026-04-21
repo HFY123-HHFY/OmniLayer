@@ -22,6 +22,10 @@
 #define ENROLL_I2C_ITEM(port, sclPin, sdaPin) \
 	{ port, sclPin, sdaPin },
 
+/* ENROLL_KEY_ITEM 负责把按键映射展开成 KEY_Config_t 结构体项。 */
+#define ENROLL_KEY_ITEM(id, port, pin) \
+	{ id, port, pin, ENROLL_GPIO_INPUT_FN, ENROLL_GPIO_READ_FN },
+
 /* 当前板子的 LED 注册表。 */
 static const LED_Config_t s_ledTable[] =
 {
@@ -40,9 +44,16 @@ static const MyI2C_Config_t s_i2cTable[] =
 	HW_I2C_MAP(ENROLL_I2C_ITEM)
 };
 
+/* 当前板子的 KEY 注册表。 */
+static const KEY_Config_t s_keyTable[] =
+{
+	HW_KEY_MAP(ENROLL_KEY_ITEM)
+};
+
 #undef ENROLL_LED_ITEM
 #undef ENROLL_USART_ITEM
 #undef ENROLL_I2C_ITEM
+#undef ENROLL_KEY_ITEM
 
 /*
  * Enroll_LED_Init：
@@ -70,4 +81,11 @@ void Enroll_USART_Register(void)
 void Enroll_I2C_Register(void)
 {
 	MyI2C_Register(s_i2cTable, HW_I2C_COUNT);
+}
+
+/* Enroll_KEY_Init：把当前板子的按键映射注册给 BSP 并完成初始化。 */
+void Enroll_KEY_Init(void)
+{
+	KEY_Register(s_keyTable, HW_KEY_COUNT);
+	KEY_Init();
 }

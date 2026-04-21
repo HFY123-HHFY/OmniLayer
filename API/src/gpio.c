@@ -32,6 +32,18 @@ void API_GPIO_InitInput(void *port, uint16_t pin)
 #endif
 }
 
+void API_GPIO_InitInputPullUp(void *port, uint16_t pin)
+{
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_F103)
+	F103_GPIO_InitInputPullUp(port, pin);
+#elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
+	F407_GPIO_InitInputPullUp(port, pin);
+#else
+	(void)port;
+	(void)pin;
+#endif
+}
+
 void API_GPIO_Write(void *port, uint16_t pin, uint8_t level)
 {
 #if (ENROLL_MCU_TARGET == ENROLL_MCU_F103)

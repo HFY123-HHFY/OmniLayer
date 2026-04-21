@@ -3,6 +3,7 @@
 #include "tim.h"
 #include "usart.h"
 #include "My_Usart/My_Usart.h"
+#include "KEY.h"
 
 uint32_t Timer_Bsp_t = 0; // 程序运行的时间戳（s）
 volatile uint8_t print_task_flag = 0; // printf节拍-50ms
@@ -26,6 +27,7 @@ void TIM3_IRQHandler(void)
 	/* 先清除更新中断标志，避免重复进中断。 */
 	TIM3->SR &= ~TIM_SR_UIF;
 
+    Key_Tick();
 	printf_50ms++;
 	time_t++;
 

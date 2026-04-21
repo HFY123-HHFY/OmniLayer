@@ -19,6 +19,8 @@ extern "C" {
 void API_GPIO_InitOutput(void *port, uint16_t pin);
 /* 配置 GPIO 为输入模式。 */
 void API_GPIO_InitInput(void *port, uint16_t pin);
+/* 配置 GPIO 为上拉输入模式。 */
+void API_GPIO_InitInputPullUp(void *port, uint16_t pin);
 /* GPIO 输出电平控制。 */
 void API_GPIO_Write(void *port, uint16_t pin, uint8_t level);
 /* GPIO 输入电平读取。 */

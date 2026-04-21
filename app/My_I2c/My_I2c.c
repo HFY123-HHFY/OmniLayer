@@ -1,7 +1,7 @@
 #include "My_I2c.h"
 
 #include "Delay.h"
-#include "usart.h"
+#include "My_Usart/My_Usart.h"
 /*
  * 软件 I2C 的板级资源注册表：
  * 目前按单路总线使用，只取第 1 个配置项。
@@ -312,3 +312,4 @@ void App_I2C_ScanOnce(void)
 	}
 	usart_printf(USART1, "[I2C] scan done, count=%u\r\n", foundCount);
 }
+

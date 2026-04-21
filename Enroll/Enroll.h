@@ -16,10 +16,11 @@
  * 全局宏重定义 ENROLL_MCU_TARGET。
  */
 #ifndef ENROLL_MCU_TARGET
-#define ENROLL_MCU_TARGET  ENROLL_MCU_F103
+#define ENROLL_MCU_TARGET  ENROLL_MCU_F407     
 #endif
 
 #include "LED.h"
+#include "KEY.h"
 #include "My_I2c.h"
 #include "gpio.h"
 #include "usart.h"
@@ -36,7 +37,9 @@
 #endif
 
 #define ENROLL_GPIO_INIT_FN   API_GPIO_InitOutput
+#define ENROLL_GPIO_INPUT_FN   API_GPIO_InitInputPullUp
 #define ENROLL_GPIO_WRITE_FN  API_GPIO_Write
+#define ENROLL_GPIO_READ_FN   API_GPIO_Read
 
 #ifdef __cplusplus
 extern "C" {
@@ -50,6 +53,9 @@ void Enroll_LED_Init(LED_Level_t initLevel);
 
 /* 把 app/main 的 LED 控制请求转发给 BSP。 */
 void Enroll_LED_Control(LED_Id_t id, LED_Level_t level);
+
+/* 先注册再初始化当前板子的 KEY 资源。 */
+void Enroll_KEY_Init(void);
 
 /* 注册当前板子的 USART 资源表。 */
 void Enroll_USART_Register(void);

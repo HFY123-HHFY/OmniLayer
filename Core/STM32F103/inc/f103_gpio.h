@@ -84,6 +84,8 @@ typedef struct
 void F103_GPIO_InitOutput(void *port, uint16_t pin);
 /* GPIO 输入初始化：当前实现为浮空输入。 */
 void F103_GPIO_InitInput(void *port, uint16_t pin);
+/* GPIO 上拉输入初始化：用于按键等低电平触发输入。 */
+void F103_GPIO_InitInputPullUp(void *port, uint16_t pin);
 /* GPIO 写电平：level 非 0 写高，0 写低。 */
 void F103_GPIO_Write(void *port, uint16_t pin, uint8_t level);
 /* GPIO 读输入电平：返回 1 表示高电平，0 表示低电平。 */

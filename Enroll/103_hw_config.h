@@ -2,6 +2,7 @@
 #define __103_HW_CONFIG_H
 
 #include "LED.h"
+#include "KEY.h"
 #include "My_I2c.h"
 #include "usart.h"
 
@@ -23,7 +24,11 @@
 
 /* I2C 板级映射：当前板子只注册 1 路软件 I2C。 */
 #define HW_I2C_MAP(X) \
-	X(GPIOB, GPIO_Pin_8, GPIO_Pin_9)
+	X(GPIOB, GPIO_Pin_6, GPIO_Pin_7)
+
+/* KEY 板级映射：当前板子只注册 1 个按键。 */
+#define HW_KEY_MAP(X) \
+	X(KEY1, GPIOB, GPIO_Pin_12)
 
 /* 当前板子上注册了 1 个 LED。 */
 #define HW_LED_COUNT  1U
@@ -31,5 +36,7 @@
 #define HW_USART_COUNT  1U
 /* 当前板子上注册了 1 路软件 I2C。 */
 #define HW_I2C_COUNT  1U
+/* 当前板子上注册了 1 个按键。 */
+#define HW_KEY_COUNT  1U
 
 #endif /* __103_HW_CONFIG_H */
