@@ -18,6 +18,7 @@
 #include "OLED.h"
 #include "MPU6050.h"
 #include "MPU6050_Int.h"
+#include "QMC5883P.h"
 
 int main(void)	
 {
@@ -37,6 +38,7 @@ int main(void)
 /*BSP硬件抽象层初始化*/
   	MPU_Init();			/* 初始化MPU6050 */
 	mpu_dmp_init(); 	/* 初始化MPU6050 DMP */
+	QMC_Init();			/* 初始化QMC5883P */
 	// OLED_Init();		/* OLED 初始化 */
 	
 	while(1)
@@ -44,16 +46,15 @@ int main(void)
 		// OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
 		// OLED_Update();
 
-		mpu_angle();
+		// mpu_angle();
+		Angle_XY = QMC_Data();
+
 
 		if (print_task_flag)
 		{
 			print_task_flag = 0;
-			// printf("Pitch:%.1f, Roll:%.1f, Yaw:%.1f,\r\n",Pitch,Roll,Yaw);
-			usart_printf(USART1,"Pitch:%.1f, Roll:%.1f, Yaw:%.1f,\r\n",Pitch,Roll,Yaw);
-			// printf("Gyrox:%hd, Gyroy:%hd, Gyroz:%hd,\r\n",gyrox,gyroy,gyroz);
-			// usart_printf(USART1, "USART_1_RX: %c\r\n", USART_1_RX);
-			// printf("Time: %d\r\n", Timer_Bsp_t);
+			// usart_printf(USART1,"Pitch:%.1f, Roll:%.1f, Yaw:%.1f,\r\n",Pitch,Roll,Yaw);
+			printf("Angle_XY: %.1f,\r\n", Angle_XY);
 		}
 	}
 }

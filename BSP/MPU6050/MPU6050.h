@@ -3,9 +3,6 @@
 
 #include <stdint.h>
 
-#include "My_I2c.h"
-#include "Delay.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

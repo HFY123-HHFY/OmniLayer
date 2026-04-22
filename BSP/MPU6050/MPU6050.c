@@ -1,5 +1,8 @@
 #include "MPU6050.h"
 
+#include "My_I2c.h"
+#include "Delay.h"
+
 /*
  * MPU6050 驱动代码
  */
