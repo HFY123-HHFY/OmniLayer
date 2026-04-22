@@ -36,6 +36,10 @@ LED1 绿 LED2 红 LED3 蓝
 #define HW_KEY_MAP(X) \
 	X(KEY1, GPIOA, GPIO_Pin_0)
 
+/* MPU6050 INT 板级映射：仅维护引脚资源，优先级策略由 sys.c 统一管理。 */
+#define HW_MPU6050_INT_PORT             GPIOE
+#define HW_MPU6050_INT_PIN              GPIO_Pin_7
+
 /* 当前板子上注册了 3 个 LED。 */
 #define HW_LED_COUNT  3U
 /* 当前板子上注册了 1 路 USART。 */

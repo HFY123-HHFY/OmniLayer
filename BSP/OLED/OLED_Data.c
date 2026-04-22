@@ -1,5 +1,10 @@
 #include "OLED_Data.h"
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-braces"
+#endif
+
 /**
   * 数据存储格式：
   * 纵向8点，高位在下，先从左到右，再从上到下
@@ -388,3 +393,7 @@ const uint8_t Diode[] = {
 
 /*****************江协科技|版权所有****************/
 /*****************jiangxiekeji.com*****************/
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif

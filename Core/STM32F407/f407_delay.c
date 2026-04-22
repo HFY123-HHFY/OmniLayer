@@ -1,5 +1,4 @@
 #include "delay.h"
-
 #include "stm32f4xx.h"
 
 /* 由 CMSIS 系统文件维护：表示当前 HCLK 频率（单位 Hz）。 */

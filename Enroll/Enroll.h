@@ -16,7 +16,7 @@
  * 全局宏重定义 ENROLL_MCU_TARGET。
  */
 #ifndef ENROLL_MCU_TARGET
-#define ENROLL_MCU_TARGET  ENROLL_MCU_F407     
+#define ENROLL_MCU_TARGET  ENROLL_MCU_F407
 #endif
 
 #include "LED.h"
@@ -62,6 +62,9 @@ void Enroll_USART_Register(void);
 
 /* 注册当前板子的 I2C 资源表。 */
 void Enroll_I2C_Register(void);
+
+/* 根据板级映射注册 MPU6050 外部中断。 */
+void Enroll_MPU6050_EXTI_Register(void);
 
 #ifdef __cplusplus
 }

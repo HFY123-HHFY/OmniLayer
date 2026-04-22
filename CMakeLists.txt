@@ -72,6 +72,11 @@ set(APP_LAYER_SOURCES
     ${CMAKE_SOURCE_DIR}/app/Control_Task/Control_Task.c
 )
 
+# 系统层（SYSTEM）：中断管理与板级系统封装。
+set(SYS_LAYER_SOURCES
+    ${CMAKE_SOURCE_DIR}/SYSTEM/sys.c
+)
+
 # API 层：对上提供统一外设接口，对下分发到 MCU Core 实现。
 set(API_LAYER_SOURCES
     ${CMAKE_SOURCE_DIR}/API/src/gpio.c
@@ -91,6 +96,7 @@ set(BSP_LAYER_SOURCES
     ${CMAKE_SOURCE_DIR}/BSP/OLED/OLED.c
     ${CMAKE_SOURCE_DIR}/BSP/OLED/OLED_Data.c
     ${CMAKE_SOURCE_DIR}/BSP/MPU6050/MPU6050.c
+    ${CMAKE_SOURCE_DIR}/BSP/MPU6050/MPU6050_Int.c
     ${CMAKE_SOURCE_DIR}/BSP/MPU6050/eMPL/inv_mpu.c
     ${CMAKE_SOURCE_DIR}/BSP/MPU6050/eMPL/inv_mpu_dmp_motion_driver.c
 )
@@ -126,11 +132,11 @@ if(RESOLVED_MCU_TARGET STREQUAL "F103")
     set(MCU_SOURCES
         # F103 专属源码：新增/删除 .c 文件在这里改。
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/f103_delay.c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F103/f103_sys.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_gpio.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_tim.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_usart.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F1/Start/system_stm32f10x.c
-        ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F1/Start/stm32f10x_it.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F1/Start/startup_stm32f103c8tx_gcc.c
     )
 elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
@@ -164,11 +170,11 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
     set(MCU_SOURCES
         # F407 专属源码：新增/删除 .c 文件在这里改。
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/f407_delay.c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F407/f407_sys.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_gpio.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_tim.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_usart.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start/system_stm32f4xx.c
-        ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start/stm32f4xx_it.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start/startup_stm32f407vetx_gcc.c
     )
 else()
@@ -177,6 +183,7 @@ endif()
 
 set(TARGET_SOURCES
     ${APP_LAYER_SOURCES}
+    ${SYS_LAYER_SOURCES}
     ${API_LAYER_SOURCES}
     ${ENROLL_LAYER_SOURCES}
     ${BSP_LAYER_SOURCES}

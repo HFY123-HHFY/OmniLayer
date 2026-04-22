@@ -1,4 +1,5 @@
 #include "Enroll.h"
+#include "MPU6050_Int.h"
 
 /*
  * Enroll 注册层：
@@ -81,6 +82,13 @@ void Enroll_USART_Register(void)
 void Enroll_I2C_Register(void)
 {
 	MyI2C_Register(s_i2cTable, HW_I2C_COUNT);
+}
+
+/* Enroll_MPU6050_EXTI_Register：按板级配置注册 MPU6050 INT 外部中断。 */
+void Enroll_MPU6050_EXTI_Register(void)
+{
+	/* 板级配置仅提供引脚映射，默认触发沿/优先级由 MPU6050_Int.c 定义。 */
+	MPU6050_EXTI_InitBoard((void *)HW_MPU6050_INT_PORT, HW_MPU6050_INT_PIN);
 }
 
 /* Enroll_KEY_Init：把当前板子的按键映射注册给 BSP 并完成初始化。 */

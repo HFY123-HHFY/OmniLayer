@@ -1,5 +1,7 @@
 #include "My_Usart.h"
 
+#include <sys/stat.h>
+
 /*
  * 发送环形队列结构：
  * - head: 生产者写入位置（主循环或任务上下文）
@@ -236,6 +238,57 @@ int _write(int file, char *ptr, int len)
 	}
 
 	return len;
+}
+
+/* newlib-nano 最小 syscalls 桩，避免链接阶段未实现告警。 */
+int _close(int file)
+{
+	(void)file;
+	return -1;
+}
+
+int _fstat(int file, struct stat *st)
+{
+	(void)file;
+	if (st != 0)
+	{
+		st->st_mode = S_IFCHR;
+	}
+	return 0;
+}
+
+int _getpid(void)
+{
+	return 1;
+}
+
+int _isatty(int file)
+{
+	(void)file;
+	return 1;
+}
+
+int _kill(int pid, int sig)
+{
+	(void)pid;
+	(void)sig;
+	return -1;
+}
+
+int _lseek(int file, int ptr, int dir)
+{
+	(void)file;
+	(void)ptr;
+	(void)dir;
+	return 0;
+}
+
+int _read(int file, char *ptr, int len)
+{
+	(void)file;
+	(void)ptr;
+	(void)len;
+	return 0;
 }
 
 /* 格式化输出：先格式化到本地缓冲，再统一发送。 */

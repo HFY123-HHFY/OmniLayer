@@ -30,6 +30,10 @@
 #define HW_KEY_MAP(X) \
 	X(KEY1, GPIOB, GPIO_Pin_12)
 
+/* MPU6050 INT 板级映射：仅维护引脚资源，优先级策略由 sys.c 统一管理。 */
+#define HW_MPU6050_INT_PORT             GPIOB
+#define HW_MPU6050_INT_PIN              GPIO_Pin_5
+
 /* 当前板子上注册了 1 个 LED。 */
 #define HW_LED_COUNT  1U
 /* 当前板子上注册了 1 路 USART。 */

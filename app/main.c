@@ -1,49 +1,50 @@
-#include "Enroll.h" // 注册层头文件，负责把板级资源注册到 BSP
+/*Enroll注册层，负责把板级资源注册到 BSP*/
+#include "Enroll.h"
 
+/*系统sys层*/
 #include "Delay.h"
+#include "sys.h"
+
+/*API层 MCU片内外设*/
 #include "tim.h"
 #include "usart.h"
 
-#include "OLED.h"
-#include "MPU6050.h"
-#include "My_Usart/My_Usart.h"
+/*app应用层*/
 #include "My_I2c/My_I2c.h"
+#include "My_Usart/My_Usart.h"
 #include "Control_Task/Control_Task.h"
 
-float Pitch, Roll, Yaw;	        // Pitch：俯仰角，Roll：横滚角，Yaw：偏航角
-short gyrox, gyroy, gyroz;        // 角速度,x轴、y轴、z轴
-uint8_t dmp_init_res;             // DMP 初始化返回码
-uint8_t dmp_get_res;              // DMP 取数返回码
+/*BSP硬件抽象层*/
+#include "OLED.h"
+#include "MPU6050.h"
+#include "MPU6050_Int.h"
 
 int main(void)	
 {
-	Enroll_LED_Init(LED_LOW); 				/*LED 资源注册*/
-	Enroll_KEY_Init();					/* KEY 资源注册 */
-	Enroll_USART_Register(); 				/* USART 资源注册 */
-	Enroll_I2C_Register();					/* I2C 资源注册 */
+	Enroll_LED_Init(LED_LOW); 				/*  LED 资源注册   */
+	Enroll_KEY_Init();						/*  KEY 资源注册   */
+	Enroll_USART_Register(); 				/*  USART 资源注册 */
+	Enroll_I2C_Register();					/*  I2C 资源注册   */
+	SYS_Init();								/* 系统层初始化 */
+	Enroll_MPU6050_EXTI_Register();		/* 注册 MPU6050 外部中断：PE7/EXTI7/上升沿 */
 
-	API_USART_Init(API_USART1, 115200); 	/* 串口初始化：API_USART1，波特率 115200。 */
-	MyI2C_Init();						/* 软件 I2C 初始化 */
-	App_I2C_ScanOnce();					/* 开机执行一次 I2C 扫描 */
-  	MPU_Init(); // 初始化MPU6050
-	dmp_init_res = mpu_dmp_init(); // 初始化MPU6050 DMP
-	OLED_Init();						/* OLED 初始化 */
+/*API层 MCU片内外设初始化*/	
 	API_TIM_Init(API_TIM3, 1U); 			/* 定时器初始化：API_TIM3，每 1ms 触发一次更新中断。 */
+	API_USART_Init(API_USART1, 115200); 	/* 串口初始化：API_USART1，波特率 115200 */
+	MyI2C_Init();							/* 软件 I2C 初始化 */
+	App_I2C_ScanOnce();						/* 开机执行一次 I2C 扫描 */
+
+/*BSP硬件抽象层初始化*/
+  	MPU_Init();			/* 初始化MPU6050 */
+	mpu_dmp_init(); 	/* 初始化MPU6050 DMP */
+	// OLED_Init();		/* OLED 初始化 */
 	
 	while(1)
 	{
-
-		// Enroll_LED_Control(LED1, LED_HIGH);
-		// Delay_ms(500);
-		// Enroll_LED_Control(LED1, LED_LOW);
-		// Delay_ms(500);
-
-		// OLED_Clear();
 		// OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
 		// OLED_Update();
 
-		dmp_get_res = mpu_dmp_get_data(&Pitch,&Roll,&Yaw);	    // 读取角度
-		// MPU_Get_Gyroscope(&gyrox,&gyroy,&gyroz);  // 读取角速度
+		mpu_angle();
 
 		if (print_task_flag)
 		{
