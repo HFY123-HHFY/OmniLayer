@@ -1,5 +1,6 @@
 #include "Enroll.h"
 #include "MPU6050_Int.h"
+#include "pwm.h"
 
 /*
  * Enroll 注册层：
@@ -27,6 +28,10 @@
 #define ENROLL_KEY_ITEM(id, port, pin) \
 	{ id, port, pin, ENROLL_GPIO_INPUT_FN, ENROLL_GPIO_READ_FN },
 
+/* ENROLL_PWM_ITEM 负责把 PWM 映射展开成 API_PWM_Config_t 结构体项。 */
+#define ENROLL_PWM_ITEM(timId, channel, port, pin) \
+	{ timId, channel, port, pin },
+
 /* 当前板子的 LED 注册表。 */
 static const LED_Config_t s_ledTable[] =
 {
@@ -51,10 +56,17 @@ static const KEY_Config_t s_keyTable[] =
 	HW_KEY_MAP(ENROLL_KEY_ITEM)
 };
 
+/* 当前板子的 PWM 注册表。 */
+static const API_PWM_Config_t s_pwmTable[] =
+{
+	HW_PWM_MAP(ENROLL_PWM_ITEM)
+};
+
 #undef ENROLL_LED_ITEM
 #undef ENROLL_USART_ITEM
 #undef ENROLL_I2C_ITEM
 #undef ENROLL_KEY_ITEM
+#undef ENROLL_PWM_ITEM
 
 /*
  * Enroll_LED_Init：
@@ -82,6 +94,12 @@ void Enroll_USART_Register(void)
 void Enroll_I2C_Register(void)
 {
 	MyI2C_Register(s_i2cTable, HW_I2C_COUNT);
+}
+
+/* Enroll_PWM_Register：把当前板子的 PWM 引脚映射注册给 API 层。 */
+void Enroll_PWM_Register(void)
+{
+	API_PWM_Register(s_pwmTable, HW_PWM_COUNT);
 }
 
 /* Enroll_MPU6050_EXTI_Register：按板级配置注册 MPU6050 INT 外部中断。 */

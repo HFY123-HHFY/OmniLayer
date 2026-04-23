@@ -8,6 +8,7 @@
 /*API层 MCU片内外设*/
 #include "tim.h"
 #include "usart.h"
+#include "pwm.h"
 
 /*app应用层*/
 #include "My_I2c/My_I2c.h"
@@ -19,6 +20,7 @@
 #include "MPU6050.h"
 #include "MPU6050_Int.h"
 #include "QMC5883P.h"
+#include "BMP280.h"
 
 int main(void)	
 {
@@ -26,12 +28,17 @@ int main(void)
 	Enroll_KEY_Init();						/*  KEY 资源注册   */
 	Enroll_USART_Register(); 				/*  USART 资源注册 */
 	Enroll_I2C_Register();					/*  I2C 资源注册   */
+	Enroll_PWM_Register();					/*  PWM 资源注册   */
 	SYS_Init();								/* 系统层初始化 */
 	Enroll_MPU6050_EXTI_Register();		/* 注册 MPU6050 外部中断：PE7/EXTI7/上升沿 */
 
 /*API层 MCU片内外设初始化*/	
 	API_TIM_Init(API_TIM3, 1U); 			/* 定时器初始化：API_TIM3，每 1ms 触发一次更新中断。 */
 	API_USART_Init(API_USART1, 115200); 	/* 串口初始化：API_USART1，波特率 115200 */
+
+	// API_PWM_Init(2, 100-1, 720-1);			/* 103_PWM初始化 */
+	API_PWM_Init(1, 4000-1, 840-1);			/* 407_PWM初始化 */
+
 	MyI2C_Init();							/* 软件 I2C 初始化 */
 	App_I2C_ScanOnce();						/* 开机执行一次 I2C 扫描 */
 
@@ -39,6 +46,7 @@ int main(void)
   	MPU_Init();			/* 初始化MPU6050 */
 	mpu_dmp_init(); 	/* 初始化MPU6050 DMP */
 	QMC_Init();			/* 初始化QMC5883P */
+	BMP280Init();			/* 初始化BMP280 */
 	// OLED_Init();		/* OLED 初始化 */
 	
 	while(1)
@@ -47,14 +55,22 @@ int main(void)
 		// OLED_Update();
 
 		// mpu_angle();
-		Angle_XY = QMC_Data();
+		// Angle_XY = QMC_Data();
+		// alt = BMP_Data();
+
+		API_PWM_Setcom(1, 1, 1000);
+		API_PWM_Setcom(1, 2, 2000);
+		API_PWM_Setcom(1, 3, 3000);
+		API_PWM_Setcom(1, 4, 3500);
+
 
 
 		if (print_task_flag)
 		{
 			print_task_flag = 0;
 			// usart_printf(USART1,"Pitch:%.1f, Roll:%.1f, Yaw:%.1f,\r\n",Pitch,Roll,Yaw);
-			printf("Angle_XY: %.1f,\r\n", Angle_XY);
+			// printf("Angle_XY: %.1f,\r\n", Angle_XY);
+			// printf("alt: %.1f \r\n", alt);
 		}
 	}
 }

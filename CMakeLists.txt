@@ -82,6 +82,7 @@ set(API_LAYER_SOURCES
     ${CMAKE_SOURCE_DIR}/API/src/gpio.c
     ${CMAKE_SOURCE_DIR}/API/src/tim.c
     ${CMAKE_SOURCE_DIR}/API/src/usart.c
+    ${CMAKE_SOURCE_DIR}/API/src/pwm.c
 )
 
 # 注册层（Enroll）：把 BSP 资源和具体 MCU 驱动绑定。
@@ -93,6 +94,7 @@ set(ENROLL_LAYER_SOURCES
 set(BSP_LAYER_SOURCES
     ${CMAKE_SOURCE_DIR}/BSP/LED/LED.c
     ${CMAKE_SOURCE_DIR}/BSP/KEY/KEY.c
+    ${CMAKE_SOURCE_DIR}/BSP/BMP280/BMP280.c
     ${CMAKE_SOURCE_DIR}/BSP/OLED/OLED.c
     ${CMAKE_SOURCE_DIR}/BSP/OLED/OLED_Data.c
     ${CMAKE_SOURCE_DIR}/BSP/QMC5883P/QMC5883P.c
@@ -123,6 +125,7 @@ if(RESOLVED_MCU_TARGET STREQUAL "F103")
         ${CMAKE_SOURCE_DIR}/Enroll
         ${CMAKE_SOURCE_DIR}/BSP/LED
         ${CMAKE_SOURCE_DIR}/BSP/KEY
+        ${CMAKE_SOURCE_DIR}/BSP/BMP280
         ${CMAKE_SOURCE_DIR}/BSP/OLED
         ${CMAKE_SOURCE_DIR}/BSP/QMC5883P
         ${CMAKE_SOURCE_DIR}/BSP/MPU6050
@@ -138,6 +141,7 @@ if(RESOLVED_MCU_TARGET STREQUAL "F103")
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_gpio.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_tim.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_usart.c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_pwm.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F1/Start/system_stm32f10x.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F1/Start/startup_stm32f103c8tx_gcc.c
     )
@@ -162,6 +166,7 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
         ${CMAKE_SOURCE_DIR}/Enroll
         ${CMAKE_SOURCE_DIR}/BSP/LED
         ${CMAKE_SOURCE_DIR}/BSP/KEY
+        ${CMAKE_SOURCE_DIR}/BSP/BMP280
         ${CMAKE_SOURCE_DIR}/BSP/OLED
         ${CMAKE_SOURCE_DIR}/BSP/QMC5883P
         ${CMAKE_SOURCE_DIR}/BSP/MPU6050
@@ -177,6 +182,7 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_gpio.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_tim.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_usart.c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_pwm.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start/system_stm32f4xx.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start/startup_stm32f407vetx_gcc.c
     )
