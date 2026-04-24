@@ -25,6 +25,10 @@
 #define ENROLL_I2C_ITEM(id, port, sclPin, sdaPin) \
 	{ (uint8_t)(id), port, sclPin, sdaPin },
 
+/* ENROLL_SPI_ITEM 负责把 SPI 映射展开成 MySPI_Config_t 结构体项。 */
+#define ENROLL_SPI_ITEM(port, csPin, sckPin, mosiPin, misoPin) \
+	{ port, csPin, sckPin, mosiPin, misoPin },
+
 /* ENROLL_KEY_ITEM 负责把按键映射展开成 KEY_Config_t 结构体项。 */
 #define ENROLL_KEY_ITEM(id, port, pin) \
 	{ id, port, pin, ENROLL_GPIO_INPUT_FN, ENROLL_GPIO_READ_FN },
@@ -55,6 +59,12 @@ static const MyI2C_Config_t s_i2cTable[] =
 	HW_I2C_MAP(ENROLL_I2C_ITEM)
 };
 
+/* 当前板子的 SPI 注册表。 */
+static const MySPI_Config_t s_spiTable[] =
+{
+	HW_SPI_MAP(ENROLL_SPI_ITEM)
+};
+
 /* 当前板子的 KEY 注册表。 */
 static const KEY_Config_t s_keyTable[] =
 {
@@ -76,6 +86,7 @@ static const API_ADC_Config_t s_adcTable[] =
 #undef ENROLL_LED_ITEM
 #undef ENROLL_USART_ITEM
 #undef ENROLL_I2C_ITEM
+#undef ENROLL_SPI_ITEM
 #undef ENROLL_KEY_ITEM
 #undef ENROLL_PWM_ITEM
 #undef ENROLL_ADC_ITEM
@@ -106,6 +117,12 @@ void Enroll_USART_Register(void)
 void Enroll_I2C_Register(void)
 {
 	MyI2C_Register(s_i2cTable, HW_I2C_COUNT);
+}
+
+/* Enroll_SPI_Register：把当前板子的 SPI 引脚映射注册给应用层。 */
+void Enroll_SPI_Register(void)
+{
+	MySPI_Register(s_spiTable, HW_SPI_COUNT);
 }
 
 /* Enroll_PWM_Register：把当前板子的 PWM 引脚映射注册给 API 层。 */

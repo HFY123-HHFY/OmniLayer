@@ -22,6 +22,7 @@
 #include "LED.h"
 #include "KEY.h"
 #include "My_I2c.h"
+#include "My_SPI.h"
 #include "gpio.h"
 #include "usart.h"
 #include "adc.h"
@@ -63,6 +64,9 @@ void Enroll_USART_Register(void);
 
 /* 注册当前板子的 I2C 资源表。 */
 void Enroll_I2C_Register(void);
+
+/* 注册当前板子的 SPI 资源表。 */
+void Enroll_SPI_Register(void);
 
 /* 注册当前板子的 PWM 引脚映射表。 */
 void Enroll_PWM_Register(void);

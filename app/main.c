@@ -13,6 +13,7 @@
 
 /*app应用层*/
 #include "My_I2c/My_I2c.h"
+#include "My_SPI/My_SPI.h"
 #include "My_Usart/My_Usart.h"
 #include "Control_Task/Control_Task.h"
 
@@ -29,13 +30,14 @@ int main(void)
 	Enroll_KEY_Init();						/*  KEY 资源注册   */
 	Enroll_USART_Register(); 				/*  USART 资源注册 */
 	Enroll_I2C_Register();					/*  I2C 资源注册   */
+	Enroll_SPI_Register();					/*  SPI 资源注册   */
 	Enroll_PWM_Register();					/*  PWM 资源注册   */
 	Enroll_ADC_Register();					/*  ADC 资源注册   */
 	SYS_Init();								/* 系统层初始化 */
 	Enroll_MPU6050_EXTI_Register();		    /* 注册 MPU6050 外部中断：PE7/EXTI7/上升沿 */
 
 /*API层 MCU片内外设初始化*/	
-	API_TIM_Init(API_TIM3, 1U); 			/* 定时器初始化：API_TIM3，每 1ms 触发一次更新中断。 */
+	API_TIM_Init(API_TIM3, 1U); 			/* 定时器初始化：API_TIM3，每 1ms 触发一次更新中断 */
 	API_USART_Init(API_USART1, 115200); 	/* 串口初始化：API_USART1，波特率 115200 */
 
 	// API_PWM_Init(API_PWM_TIM2, 100-1, 720-1);	/* 103_PWM初始化 */
@@ -43,31 +45,33 @@ int main(void)
 	API_ADC_Init(API_ADC1);					/* ADC1 初始化*/
 
 	MyI2C_Init();							/* 软件 I2C 初始化 */
-	App_I2C_ScanOnce();						/* 开机执行一次 I2C 扫描 */
+	// App_I2C_ScanOnce();						/* 开机执行一次 I2C 扫描 */
+	MySPI_Init();							/* 软件 SPI 初始化 */
+	App_SPI_TestOnce();						/* 开机执行一次 SPI 测试 */
 
 /*BSP硬件抽象层初始化*/
-  	MPU_Init();			/* 初始化MPU6050 */
-	// mpu_dmp_init(); 	/* 初始化MPU6050 DMP */
-	QMC_Init();			/* 初始化QMC5883P */
-	BMP280Init();			/* 初始化BMP280 */
-	OLED_Init();		/* OLED 初始化 */
+  	MPU_Init();			/* 初始化 MPU6050 */
+	// mpu_dmp_init(); 	/* 初始化 MPU6050 DMP */
+	QMC_Init();			/* 初始化 QMC5883P */
+	BMP280Init();		/* 初始化 BMP280 */
+	// OLED_Init();		/* 初始化 OLED */
 	
 	while(1)
 	{
 
 /*I2C测试-9轴*/
 		// mpu_angle();
-		Angle_XY = QMC_Data();
-		alt = BMP_Data();
+		// Angle_XY = QMC_Data();
+		// alt = BMP_Data();
 
 /*OLED测试*/
 		// OLED_Clear();
-		OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
+		// OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
 		// OLED_Printf(48, 0, OLED_8X16, "P:%.1f",Pitch);
 		// OLED_Printf(0, 16, OLED_8X16, "R:%.1f,  Y:%.1f",Roll,Yaw);
-		OLED_Printf(0, 32, OLED_8X16, "A:%.1f", Angle_XY);
-		OLED_Printf(0, 48, OLED_8X16, "alt: %.1f", alt);
-		OLED_Update();
+		// OLED_Printf(0, 32, OLED_8X16, "A:%.1f", Angle_XY);
+		// OLED_Printf(0, 48, OLED_8X16, "alt: %.1f", alt);
+		// OLED_Update();
 
 /*ADC测试*/
 		// AD2 = API_ADC_GetValue(API_ADC1, API_ADC_CH2);
