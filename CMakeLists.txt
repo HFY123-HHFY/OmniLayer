@@ -79,6 +79,7 @@ set(SYS_LAYER_SOURCES
 
 # API 层：对上提供统一外设接口，对下分发到 MCU Core 实现。
 set(API_LAYER_SOURCES
+    ${CMAKE_SOURCE_DIR}/API/src/adc.c
     ${CMAKE_SOURCE_DIR}/API/src/gpio.c
     ${CMAKE_SOURCE_DIR}/API/src/tim.c
     ${CMAKE_SOURCE_DIR}/API/src/usart.c
@@ -138,6 +139,7 @@ if(RESOLVED_MCU_TARGET STREQUAL "F103")
         # F103 专属源码：新增/删除 .c 文件在这里改。
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/f103_delay.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/f103_sys.c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_adc.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_gpio.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_tim.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_usart.c
@@ -179,6 +181,7 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
         # F407 专属源码：新增/删除 .c 文件在这里改。
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/f407_delay.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/f407_sys.c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_adc.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_gpio.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_tim.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_usart.c

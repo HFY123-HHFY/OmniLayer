@@ -1,41 +1,50 @@
 #include "f407_gpio.h"
 
 /* 根据端口地址打开对应 AHB1 GPIO 时钟。 */
-static void F407_GPIO_EnableClock(F407_GPIO_Regs_t *port)
+void F407_GPIO_EnablePortClock(void *port)
 {
-	if (port == GPIOA)
+	F407_GPIO_Regs_t *gpioPort;
+
+	if (port == 0)
+	{
+		return;
+	}
+
+	gpioPort = (F407_GPIO_Regs_t *)port;
+
+	if (gpioPort == GPIOA)
 	{
 		F407_RCC->AHB1ENR |= (1UL << 0);
 	}
-	else if (port == GPIOB)
+	else if (gpioPort == GPIOB)
 	{
 		F407_RCC->AHB1ENR |= (1UL << 1);
 	}
-	else if (port == GPIOC)
+	else if (gpioPort == GPIOC)
 	{
 		F407_RCC->AHB1ENR |= (1UL << 2);
 	}
-	else if (port == GPIOD)
+	else if (gpioPort == GPIOD)
 	{
 		F407_RCC->AHB1ENR |= (1UL << 3);
 	}
-	else if (port == GPIOE)
+	else if (gpioPort == GPIOE)
 	{
 		F407_RCC->AHB1ENR |= (1UL << 4);
 	}
-	else if (port == GPIOF)
+	else if (gpioPort == GPIOF)
 	{
 		F407_RCC->AHB1ENR |= (1UL << 5);
 	}
-	else if (port == GPIOG)
+	else if (gpioPort == GPIOG)
 	{
 		F407_RCC->AHB1ENR |= (1UL << 6);
 	}
-	else if (port == GPIOH)
+	else if (gpioPort == GPIOH)
 	{
 		F407_RCC->AHB1ENR |= (1UL << 7);
 	}
-	else if (port == GPIOI)
+	else if (gpioPort == GPIOI)
 	{
 		F407_RCC->AHB1ENR |= (1UL << 8);
 	}
@@ -49,7 +58,7 @@ static void F407_GPIO_EnableClock(F407_GPIO_Regs_t *port)
  * 把单 bit 引脚掩码转换为引脚编号（0~15）。
  * 例如 GPIO_Pin_13 -> 13。
  */
-static uint32_t F407_GPIO_PinIndex(uint16_t pin)
+uint32_t F407_GPIO_PinIndex(uint16_t pin)
 {
 	/* index: 遍历引脚编号。 */
 	uint32_t index;
@@ -94,7 +103,7 @@ void F407_GPIO_InitOutput(void *port, uint16_t pin)
 		return;
 	}
 
-	F407_GPIO_EnableClock(gpioPort);
+	F407_GPIO_EnablePortClock(gpioPort);
 	shift = pinIndex * 2U;
 
 	/* MODER: 01 = 通用输出。 */
@@ -133,7 +142,7 @@ void F407_GPIO_InitInput(void *port, uint16_t pin)
 		return;
 	}
 
-	F407_GPIO_EnableClock(gpioPort);
+	F407_GPIO_EnablePortClock(gpioPort);
 	shift = pinIndex * 2U;
 
 	gpioPort->MODER &= ~(0x3UL << shift);
@@ -162,7 +171,7 @@ void F407_GPIO_InitInputPullUp(void *port, uint16_t pin)
 		return;
 	}
 
-	F407_GPIO_EnableClock(gpioPort);
+	F407_GPIO_EnablePortClock(gpioPort);
 	shift = pinIndex * 2U;
 
 	gpioPort->MODER &= ~(0x3UL << shift);

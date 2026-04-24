@@ -9,6 +9,7 @@
 #include "tim.h"
 #include "usart.h"
 #include "pwm.h"
+#include "adc.h"
 
 /*app应用层*/
 #include "My_I2c/My_I2c.h"
@@ -29,15 +30,17 @@ int main(void)
 	Enroll_USART_Register(); 				/*  USART 资源注册 */
 	Enroll_I2C_Register();					/*  I2C 资源注册   */
 	Enroll_PWM_Register();					/*  PWM 资源注册   */
+	Enroll_ADC_Register();					/*  ADC 资源注册   */
 	SYS_Init();								/* 系统层初始化 */
-	Enroll_MPU6050_EXTI_Register();		/* 注册 MPU6050 外部中断：PE7/EXTI7/上升沿 */
+	Enroll_MPU6050_EXTI_Register();		    /* 注册 MPU6050 外部中断：PE7/EXTI7/上升沿 */
 
 /*API层 MCU片内外设初始化*/	
 	API_TIM_Init(API_TIM3, 1U); 			/* 定时器初始化：API_TIM3，每 1ms 触发一次更新中断。 */
 	API_USART_Init(API_USART1, 115200); 	/* 串口初始化：API_USART1，波特率 115200 */
 
-	// API_PWM_Init(2, 100-1, 720-1);			/* 103_PWM初始化 */
-	API_PWM_Init(1, 4000-1, 840-1);			/* 407_PWM初始化 */
+	// API_PWM_Init(API_PWM_TIM2, 100-1, 720-1);	/* 103_PWM初始化 */
+	API_PWM_Init(API_PWM_TIM1, 4000-1, 840-1);	/* 407_PWM初始化 */
+	API_ADC_Init(API_ADC1);					/* ADC1 初始化*/
 
 	MyI2C_Init();							/* 软件 I2C 初始化 */
 	App_I2C_ScanOnce();						/* 开机执行一次 I2C 扫描 */
@@ -51,23 +54,28 @@ int main(void)
 	
 	while(1)
 	{
+/*OLED测试*/
 		// OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
 		// OLED_Update();
 
+/*I2C测试-9轴*/
 		// mpu_angle();
 		// Angle_XY = QMC_Data();
 		// alt = BMP_Data();
 
-		API_PWM_Setcom(1, 1, 1000);
-		API_PWM_Setcom(1, 2, 2000);
-		API_PWM_Setcom(1, 3, 3000);
-		API_PWM_Setcom(1, 4, 3500);
+/*ADC测试*/
+		// AD2 = API_ADC_GetValue(API_ADC1, API_ADC_CH2);
+		// AD3 = API_ADC_GetValue(API_ADC1, API_ADC_CH3);
 
+/*PWM测试*/
+		// API_PWM_Setcom(API_PWM_TIM1, API_PWM_CH1, 1000U); 
+		// API_PWM_Setcom(API_PWM_TIM1, API_PWM_CH2, 2000U);
 
-
+/*printf测试*/
 		if (print_task_flag)
 		{
 			print_task_flag = 0;
+			// usart_printf(USART1,"AD2: %d, AD3: %d\r\n", AD2, AD3);
 			// usart_printf(USART1,"Pitch:%.1f, Roll:%.1f, Yaw:%.1f,\r\n",Pitch,Roll,Yaw);
 			// printf("Angle_XY: %.1f,\r\n", Angle_XY);
 			// printf("alt: %.1f \r\n", alt);

@@ -108,6 +108,11 @@ typedef struct
 #define GPIO_Pin_14  ((uint16_t)0x4000U)
 #define GPIO_Pin_15  ((uint16_t)0x8000U)
 
+/* 根据端口地址打开对应 AHB1 GPIO 时钟。 */
+void F407_GPIO_EnablePortClock(void *port);
+/* 把单 bit 引脚掩码转换为引脚编号（0~15）。 */
+uint32_t F407_GPIO_PinIndex(uint16_t pin);
+
 /* GPIO 输出初始化：当前实现为推挽输出低速模式。 */
 void F407_GPIO_InitOutput(void *port, uint16_t pin);
 /* GPIO 输入初始化：当前实现为无上下拉输入。 */

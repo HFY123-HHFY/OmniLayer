@@ -5,6 +5,8 @@
 #include "KEY.h"
 #include "My_I2c.h"
 #include "usart.h"
+#include "pwm.h"
+#include "adc.h"
 
 /*
  * 407_hw_config.h 板级硬件映射宏
@@ -38,10 +40,15 @@ LED1 绿 LED2 红 LED3 蓝
 
 /* PWM 板级映射：PE9 -> TIM1_CH1，PE11 -> TIM1_CH2，PE13 -> TIM1_CH3，PE14 -> TIM1_CH4 */
 #define HW_PWM_MAP(X) \
-	X(1U, 1U, GPIOE, GPIO_Pin_9) \
-	X(1U, 2U, GPIOE, GPIO_Pin_11) \
-	X(1U, 3U, GPIOE, GPIO_Pin_13) \
-	X(1U, 4U, GPIOE, GPIO_Pin_14)
+	X(API_PWM_TIM1, API_PWM_CH1, GPIOE, GPIO_Pin_9) \
+	X(API_PWM_TIM1, API_PWM_CH2, GPIOE, GPIO_Pin_11) \
+	X(API_PWM_TIM1, API_PWM_CH3, GPIOE, GPIO_Pin_13) \
+	X(API_PWM_TIM1, API_PWM_CH4, GPIOE, GPIO_Pin_14)
+
+/* ADC 板级映射 */
+#define HW_ADC_MAP(X) \
+	X(API_ADC1, API_ADC_CH2, GPIOA, GPIO_Pin_2) \
+	X(API_ADC1, API_ADC_CH3, GPIOA, GPIO_Pin_3)
 
 /* MPU6050 INT 板级映射：仅维护引脚资源，优先级策略由 sys.c 统一管理。 */
 #define HW_MPU6050_INT_PORT             GPIOE
@@ -57,5 +64,7 @@ LED1 绿 LED2 红 LED3 蓝
 #define HW_KEY_COUNT  1U
 /* 当前板子上注册了 4 路 PWM 通道。 */
 #define HW_PWM_COUNT  4U
+/* 当前板子上注册了 2 路 ADC 通道。 */
+#define HW_ADC_COUNT  2U
 
 #endif /* __407_HW_CONFIG_H */

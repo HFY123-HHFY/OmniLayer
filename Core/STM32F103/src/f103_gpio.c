@@ -1,26 +1,35 @@
 #include "f103_gpio.h"
 
 /* 根据端口地址打开对应 APB2 GPIO 时钟。 */
-static void F103_GPIO_EnableClock(F103_GPIO_Regs_t *port)
+void F103_GPIO_EnablePortClock(void *port)
 {
+	F103_GPIO_Regs_t *gpioPort;
+
+	if (port == 0)
+	{
+		return;
+	}
+
+	gpioPort = (F103_GPIO_Regs_t *)port;
+
 	/* F1 的 GPIO 时钟挂在 APB2，上电后必须先打开对应端口时钟。 */
-	if (port == GPIOA)
+	if (gpioPort == GPIOA)
 	{
 		F103_RCC->APB2ENR |= (1UL << 2);
 	}
-	else if (port == GPIOB)
+	else if (gpioPort == GPIOB)
 	{
 		F103_RCC->APB2ENR |= (1UL << 3);
 	}
-	else if (port == GPIOC)
+	else if (gpioPort == GPIOC)
 	{
 		F103_RCC->APB2ENR |= (1UL << 4);
 	}
-	else if (port == GPIOD)
+	else if (gpioPort == GPIOD)
 	{
 		F103_RCC->APB2ENR |= (1UL << 5);
 	}
-	else if (port == GPIOE)
+	else if (gpioPort == GPIOE)
 	{
 		F103_RCC->APB2ENR |= (1UL << 6);
 	}
@@ -34,7 +43,7 @@ static void F103_GPIO_EnableClock(F103_GPIO_Regs_t *port)
  * 把单 bit 引脚掩码转换为引脚编号（0~15）。
  * 例如 GPIO_Pin_13 -> 13。
  */
-static uint32_t F103_GPIO_PinIndex(uint16_t pin)
+uint32_t F103_GPIO_PinIndex(uint16_t pin)
 {
 	/* index: 遍历引脚编号。 */
 	uint32_t index;
@@ -78,7 +87,7 @@ void F103_GPIO_InitOutput(void *port, uint16_t pin)
 	}
 
 	/* GPIOx_CRL 配 0~7 号脚，GPIOx_CRH 配 8~15 号脚，每个脚占 4bit。 */
-	F103_GPIO_EnableClock(gpioPort);
+	F103_GPIO_EnablePortClock(gpioPort);
 	shift = (pinIndex & 0x7U) * 4U;
 
 	if (pinIndex < 8U)
@@ -115,7 +124,7 @@ void F103_GPIO_InitInput(void *port, uint16_t pin)
 		return;
 	}
 
-	F103_GPIO_EnableClock(gpioPort);
+	F103_GPIO_EnablePortClock(gpioPort);
 	shift = (pinIndex & 0x7U) * 4U;
 
 	if (pinIndex < 8U)
@@ -152,7 +161,7 @@ void F103_GPIO_InitInputPullUp(void *port, uint16_t pin)
 		return;
 	}
 
-	F103_GPIO_EnableClock(gpioPort);
+	F103_GPIO_EnablePortClock(gpioPort);
 	shift = (pinIndex & 0x7U) * 4U;
 
 	if (pinIndex < 8U)

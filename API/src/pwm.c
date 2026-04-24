@@ -54,7 +54,7 @@ static uint8_t API_PWM_HasChannel(uint8_t timId, uint8_t channel)
 	return 0U;
 }
 
-void API_PWM_Init(uint8_t timId, uint16_t arr, uint16_t psc)
+void API_PWM_Init(API_PWM_Tim_t timId, uint16_t arr, uint16_t psc)
 {
 	uint8_t i;
 
@@ -90,7 +90,7 @@ void API_PWM_Init(uint8_t timId, uint16_t arr, uint16_t psc)
 #endif
 }
 
-void API_PWM_Setcom(uint8_t timId, uint8_t channel, uint16_t ccr)
+void API_PWM_Setcom(API_PWM_Tim_t timId, API_PWM_Channel_t channel, uint16_t ccr)
 {
 	if (API_PWM_HasChannel(timId, channel) == 0U)
 	{
@@ -98,9 +98,9 @@ void API_PWM_Setcom(uint8_t timId, uint8_t channel, uint16_t ccr)
 	}
 
 #if (ENROLL_MCU_TARGET == ENROLL_MCU_F103)
-	F103_PWM_SetCCR(timId, channel, ccr);
+	F103_PWM_SetCCR((uint8_t)timId, (uint8_t)channel, ccr);
 #elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
-	F407_PWM_SetCCR(timId, channel, ccr);
+	F407_PWM_SetCCR((uint8_t)timId, (uint8_t)channel, ccr);
 #else
 	(void)timId;
 	(void)channel;

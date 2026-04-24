@@ -73,45 +73,6 @@ typedef struct
 
 #define F103_PWM_RCC         ((F103_PWM_RCC_Regs_t *)F103_PWM_RCC_BASE)
 
-static uint32_t F103_PWM_GetPinIndex(uint16_t pin)
-{
-	uint32_t index;
-
-	for (index = 0U; index < 16U; ++index)
-	{
-		if (pin == (uint16_t)(1U << index))
-		{
-			return index;
-		}
-	}
-
-	return 0xFFFFFFFFUL;
-}
-
-static void F103_PWM_EnableGpioClock(void *port)
-{
-	if (port == GPIOA)
-	{
-		F103_PWM_RCC->APB2ENR |= (1UL << 2);
-	}
-	else if (port == GPIOB)
-	{
-		F103_PWM_RCC->APB2ENR |= (1UL << 3);
-	}
-	else if (port == GPIOC)
-	{
-		F103_PWM_RCC->APB2ENR |= (1UL << 4);
-	}
-	else if (port == GPIOD)
-	{
-		F103_PWM_RCC->APB2ENR |= (1UL << 5);
-	}
-	else if (port == GPIOE)
-	{
-		F103_PWM_RCC->APB2ENR |= (1UL << 6);
-	}
-}
-
 static F103_PWM_Map_t F103_PWM_GetMap(uint8_t timId)
 {
 	F103_PWM_Map_t map;
@@ -312,13 +273,13 @@ void F103_PWM_ConfigPin(void *port, uint16_t pin)
 	}
 
 	gpioPort = (F103_GPIO_Regs_t *)port;
-	pinIndex = F103_PWM_GetPinIndex(pin);
+	pinIndex = F103_GPIO_PinIndex(pin);
 	if (pinIndex > 15U)
 	{
 		return;
 	}
 
-	F103_PWM_EnableGpioClock(port);
+	F103_GPIO_EnablePortClock(port);
 	shift = (pinIndex & 0x7U) * 4U;
 
 	/* F1 PWM 输出使用复用推挽，50MHz 模式。 */

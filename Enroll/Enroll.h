@@ -24,6 +24,7 @@
 #include "My_I2c.h"
 #include "gpio.h"
 #include "usart.h"
+#include "adc.h"
 
 /*
  * 条件编译选择不同 MCU 的 hw_config。
@@ -65,6 +66,9 @@ void Enroll_I2C_Register(void);
 
 /* 注册当前板子的 PWM 引脚映射表。 */
 void Enroll_PWM_Register(void);
+
+/* 注册当前板子的 ADC 引脚映射表。 */
+void Enroll_ADC_Register(void);
 
 /* 根据板级映射注册 MPU6050 外部中断。 */
 void Enroll_MPU6050_EXTI_Register(void);

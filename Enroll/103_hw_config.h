@@ -5,6 +5,8 @@
 #include "KEY.h"
 #include "My_I2c.h"
 #include "usart.h"
+#include "pwm.h"
+#include "adc.h"
 
 /*
  * 103_hw_config.h 板级硬件映射宏
@@ -24,7 +26,7 @@
 
 /* I2C 板级映射：当前板子只注册 1 路软件 I2C。 */
 #define HW_I2C_MAP(X) \
-	X(GPIOB, GPIO_Pin_6, GPIO_Pin_7)
+	X(GPIOB, GPIO_Pin_8, GPIO_Pin_9)
 
 /* KEY 板级映射：当前板子只注册 1 个按键。 */
 #define HW_KEY_MAP(X) \
@@ -32,10 +34,13 @@
 
 /* PWM 板级映射 */
 #define HW_PWM_MAP(X) \
-	X(2U, 1U, GPIOA, GPIO_Pin_0) \
-	X(2U, 2U, GPIOA, GPIO_Pin_1) \
-	X(2U, 3U, GPIOA, GPIO_Pin_2) \
-	X(2U, 4U, GPIOA, GPIO_Pin_3)
+	X(API_PWM_TIM2, API_PWM_CH1, GPIOA, GPIO_Pin_0) \
+	X(API_PWM_TIM2, API_PWM_CH2, GPIOA, GPIO_Pin_1)
+
+/* ADC 板级映射 */
+#define HW_ADC_MAP(X) \
+	X(API_ADC1, API_ADC_CH2, GPIOA, GPIO_Pin_1) \
+	X(API_ADC1, API_ADC_CH3, GPIOA, GPIO_Pin_2)
 
 /* MPU6050 INT 板级映射：仅维护引脚资源，优先级策略由 sys.c 统一管理。 */
 #define HW_MPU6050_INT_PORT             GPIOB
@@ -49,7 +54,9 @@
 #define HW_I2C_COUNT  1U
 /* 当前板子上注册了 1 个按键。 */
 #define HW_KEY_COUNT  1U
-/* 当前板子上注册了 4 路 PWM 通道。 */
-#define HW_PWM_COUNT  4U
+/* 当前板子上注册了 2 路 PWM 通道。 */
+#define HW_PWM_COUNT  2U
+/* 当前板子上注册了 2 路 ADC 通道。 */
+#define HW_ADC_COUNT  2U
 
 #endif /* __103_HW_CONFIG_H */

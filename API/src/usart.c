@@ -5,47 +5,6 @@ static const API_USART_Config_t *s_usartTable;
 static uint8_t s_usartCount;
 
 #if (ENROLL_MCU_TARGET == ENROLL_MCU_F103)
-/* 打开 F103 GPIO 端口时钟，供 TX/RX 引脚复用配置使用。 */
-static void API_USART_EnableGpioClock(void *port)
-{
-	if (port == GPIOA)
-	{
-		F103_RCC->APB2ENR |= (1UL << 2);
-	}
-	else if (port == GPIOB)
-	{
-		F103_RCC->APB2ENR |= (1UL << 3);
-	}
-	else if (port == GPIOC)
-	{
-		F103_RCC->APB2ENR |= (1UL << 4);
-	}
-	else if (port == GPIOD)
-	{
-		F103_RCC->APB2ENR |= (1UL << 5);
-	}
-	else if (port == GPIOE)
-	{
-		F103_RCC->APB2ENR |= (1UL << 6);
-	}
-}
-
-/* 计算单 bit 引脚掩码对应的引脚编号。 */
-static uint32_t API_USART_GetPinIndex(uint16_t pin)
-{
-	uint32_t index;
-
-	for (index = 0U; index < 16U; ++index)
-	{
-		if (pin == (uint16_t)(1U << index))
-		{
-			return index;
-		}
-	}
-
-	return 0xFFFFFFFFUL;
-}
-
 /* 配置 F103 的 TX 引脚为复用推挽输出。 */
 static void API_USART_ConfigTxPin(void *port, uint16_t pin)
 {
@@ -59,8 +18,8 @@ static void API_USART_ConfigTxPin(void *port, uint16_t pin)
 	}
 
 	gpioPort = (F103_GPIO_Regs_t *)port;
-	API_USART_EnableGpioClock(port);
-	pinIndex = API_USART_GetPinIndex(pin);
+	F103_GPIO_EnablePortClock(port);
+	pinIndex = F103_GPIO_PinIndex(pin);
 	if (pinIndex > 15U)
 	{
 		return;
@@ -92,8 +51,8 @@ static void API_USART_ConfigRxPin(void *port, uint16_t pin)
 	}
 
 	gpioPort = (F103_GPIO_Regs_t *)port;
-	API_USART_EnableGpioClock(port);
-	pinIndex = API_USART_GetPinIndex(pin);
+	F103_GPIO_EnablePortClock(port);
+	pinIndex = F103_GPIO_PinIndex(pin);
 	if (pinIndex > 15U)
 	{
 		return;
@@ -113,63 +72,6 @@ static void API_USART_ConfigRxPin(void *port, uint16_t pin)
 }
 
 #elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
-/* 打开 F407 GPIO 端口时钟，供 TX/RX 引脚复用配置使用。 */
-static void API_USART_EnableGpioClock(void *port)
-{
-	if (port == GPIOA)
-	{
-		F407_RCC->AHB1ENR |= (1UL << 0);
-	}
-	else if (port == GPIOB)
-	{
-		F407_RCC->AHB1ENR |= (1UL << 1);
-	}
-	else if (port == GPIOC)
-	{
-		F407_RCC->AHB1ENR |= (1UL << 2);
-	}
-	else if (port == GPIOD)
-	{
-		F407_RCC->AHB1ENR |= (1UL << 3);
-	}
-	else if (port == GPIOE)
-	{
-		F407_RCC->AHB1ENR |= (1UL << 4);
-	}
-	else if (port == GPIOF)
-	{
-		F407_RCC->AHB1ENR |= (1UL << 5);
-	}
-	else if (port == GPIOG)
-	{
-		F407_RCC->AHB1ENR |= (1UL << 6);
-	}
-	else if (port == GPIOH)
-	{
-		F407_RCC->AHB1ENR |= (1UL << 7);
-	}
-	else if (port == GPIOI)
-	{
-		F407_RCC->AHB1ENR |= (1UL << 8);
-	}
-}
-
-/* 计算单 bit 引脚掩码对应的引脚编号。 */
-static uint32_t API_USART_GetPinIndex(uint16_t pin)
-{
-	uint32_t index;
-
-	for (index = 0U; index < 16U; ++index)
-	{
-		if (pin == (uint16_t)(1U << index))
-		{
-			return index;
-		}
-	}
-
-	return 0xFFFFFFFFUL;
-}
-
 /* USART1/2/3/4 对应的复用功能号。 */
 static uint8_t API_USART_GetAfNum(API_USART_Id_t id)
 {
@@ -189,8 +91,8 @@ static void API_USART_ConfigAfPin(void *port, uint16_t pin, uint8_t af)
 	}
 
 	gpioPort = (F407_GPIO_Regs_t *)port;
-	API_USART_EnableGpioClock(port);
-	pinIndex = API_USART_GetPinIndex(pin);
+	F407_GPIO_EnablePortClock(port);
+	pinIndex = F407_GPIO_PinIndex(pin);
 	if (pinIndex > 15U)
 	{
 		return;
@@ -219,17 +121,6 @@ static void API_USART_ConfigAfPin(void *port, uint16_t pin, uint8_t af)
 }
 
 #else
-static void API_USART_EnableGpioClock(void *port)
-{
-	(void)port;
-}
-
-static uint32_t API_USART_GetPinIndex(uint16_t pin)
-{
-	(void)pin;
-	return 0xFFFFFFFFUL;
-}
-
 static void API_USART_ConfigTxPin(void *port, uint16_t pin)
 {
 	(void)port;

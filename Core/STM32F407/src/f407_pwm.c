@@ -100,61 +100,6 @@ typedef struct
 #define F407_PWM_TIMx_CLOCK_HZ      (84000000UL)
 #define F407_PWM_TIM9_CLOCK_HZ      (168000000UL)
 
-static uint32_t F407_PWM_GetPinIndex(uint16_t pin)
-{
-	uint32_t index;
-
-	for (index = 0U; index < 16U; ++index)
-	{
-		if (pin == (uint16_t)(1U << index))
-		{
-			return index;
-		}
-	}
-
-	return 0xFFFFFFFFUL;
-}
-
-static void F407_PWM_EnableGpioClock(void *port)
-{
-	if (port == GPIOA)
-	{
-		F407_PWM_RCC->AHB1ENR |= (1UL << 0);
-	}
-	else if (port == GPIOB)
-	{
-		F407_PWM_RCC->AHB1ENR |= (1UL << 1);
-	}
-	else if (port == GPIOC)
-	{
-		F407_PWM_RCC->AHB1ENR |= (1UL << 2);
-	}
-	else if (port == GPIOD)
-	{
-		F407_PWM_RCC->AHB1ENR |= (1UL << 3);
-	}
-	else if (port == GPIOE)
-	{
-		F407_PWM_RCC->AHB1ENR |= (1UL << 4);
-	}
-	else if (port == GPIOF)
-	{
-		F407_PWM_RCC->AHB1ENR |= (1UL << 5);
-	}
-	else if (port == GPIOG)
-	{
-		F407_PWM_RCC->AHB1ENR |= (1UL << 6);
-	}
-	else if (port == GPIOH)
-	{
-		F407_PWM_RCC->AHB1ENR |= (1UL << 7);
-	}
-	else if (port == GPIOI)
-	{
-		F407_PWM_RCC->AHB1ENR |= (1UL << 8);
-	}
-}
-
 static F407_PWM_Map_t F407_PWM_GetMap(uint8_t timId)
 {
 	F407_PWM_Map_t map;
@@ -233,8 +178,8 @@ void F407_PWM_ConfigPin(void *port, uint16_t pin, uint8_t timId)
 
 	gpioPort = (F407_GPIO_Regs_t *)port;
 	af = F407_PWM_GetAfNum(timId);
-	F407_PWM_EnableGpioClock(port);
-	pinIndex = F407_PWM_GetPinIndex(pin);
+	F407_GPIO_EnablePortClock(port);
+	pinIndex = F407_GPIO_PinIndex(pin);
 	if (pinIndex > 15U)
 	{
 		return;
