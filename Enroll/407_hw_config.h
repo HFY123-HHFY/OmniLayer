@@ -30,9 +30,10 @@ LED1 绿 LED2 红 LED3 蓝
 #define HW_USART_MAP(X) \
 	X(API_USART1, GPIOA, GPIO_Pin_9, GPIOA, GPIO_Pin_10)
 
-/* I2C 板级映射：当前板子注册 1 路软件 I2C。 */
+/* I2C 板级映射：My_I2C1 供传感器，My_I2C2 供 OLED。 */
 #define HW_I2C_MAP(X) \
-	X(GPIOB, GPIO_Pin_8, GPIO_Pin_9)
+	X(My_I2C1, GPIOB, GPIO_Pin_8, GPIO_Pin_9) \
+	X(My_I2C2, GPIOD, GPIO_Pin_5, GPIO_Pin_6)
 
 /* KEY 板级映射：当前板子注册 1 个按键。 */
 #define HW_KEY_MAP(X) \
@@ -58,8 +59,8 @@ LED1 绿 LED2 红 LED3 蓝
 #define HW_LED_COUNT  3U
 /* 当前板子上注册了 1 路 USART。 */
 #define HW_USART_COUNT  1U
-/* 当前板子上注册了 1 路软件 I2C。 */
-#define HW_I2C_COUNT  1U
+/* 当前板子上注册了 2 路软件 I2C。 */
+#define HW_I2C_COUNT  2U
 /* 当前板子上注册了 1 个按键。 */
 #define HW_KEY_COUNT  1U
 /* 当前板子上注册了 4 路 PWM 通道。 */

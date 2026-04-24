@@ -50,3 +50,33 @@
 
 - `OpenOCD/F103_OpenOCD.cfg`
 - `OpenOCD/F407_OpenOCD.cfg`
+
+## 8. 软件 I2C 多总线架构（应用层）
+
+### 8.1 资源注册模型
+
+- 板级 `HW_I2C_MAP(X)` 由 `Enroll` 展开并注册到 `MyI2C_Config_t` 表。
+- `MyI2C_Config_t` 包含 `id/port/sclPin/sdaPin`，支持同一固件内多路软件 I2C。
+- `MyI2C_Register()` 只做配置表登记，不直接执行外设事务。
+
+### 8.2 运行时选择模型
+
+- `MyI2C_SelectBus(busId)`：切换当前活动总线。
+- `MyI2C_SetSpeed(speed)`：切换当前时序档位（100k/400k）。
+- 驱动应在每次事务前显式设置总线与速率，避免跨模块状态污染。
+
+### 8.3 当前板级约定
+
+- F103：默认单路 `My_I2C1`（PB8/PB9）。
+- F407：
+	- `My_I2C1` -> PB8/PB9（MPU6050/QMC5883P/BMP280）
+	- `My_I2C2` -> PD5/PD6（OLED）
+
+### 8.4 调试与验线
+
+- `App_I2C_ScanOnce()` 会遍历已注册总线，逐路扫描 7-bit 地址空间并打印总线号。
+- 典型输出：`[I2C][My_I2C2] found: 0x3C`。
+
+### 8.5 枚举上界说明
+
+- `My_I2C_MAX` 是 `MyI2C_BusId_t` 的上界/哨兵值，用于边界判断，不代表真实总线实例。

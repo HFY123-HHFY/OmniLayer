@@ -4,24 +4,68 @@
 #include "My_Usart/My_Usart.h"
 /*
  * 软件 I2C 的板级资源注册表：
- * 目前按单路总线使用，只取第 1 个配置项。
- * 如果后续扩展多路 I2C，可在这里增加按索引选择配置的接口。
+ * - s_i2cTable/s_i2cCount 保存注册层下发的所有总线映射。
+ * - s_activeBusId 表示当前协议收发所使用的总线。
+ * - s_i2cSpeed 是全局速率档位，驱动在事务前可按需切换。
  */
 static const MyI2C_Config_t *s_i2cTable;
 static uint8_t s_i2cCount;
+static volatile MyI2C_BusId_t s_activeBusId = My_I2C1;
+static volatile I2C_SpeedTypeDef s_i2cSpeed = I2C_SPEED_100K;
+
+/*
+ * 按当前速率档位，把“100k 档基准延时”换算成实际延时。
+ * 例如：baseUs=5 时，100k 档约为 5us，400k 档约为 1us。
+ */
+static void MyI2C_DelayByBaseUs(uint8_t baseUs)
+{
+	uint16_t delayUs;
+
+	if (s_i2cSpeed == I2C_SPEED_400K)
+	{
+		delayUs = (uint16_t)(((uint16_t)baseUs * I2C_DELAY_400K + I2C_DELAY_100K - 1U) / I2C_DELAY_100K);
+	}
+	else
+	{
+		delayUs = baseUs;
+	}
+
+	if (delayUs == 0U)
+	{
+		delayUs = 1U;
+	}
+
+	Delay_us(delayUs);
+}
 
 /*
  * 获取当前软件 I2C 使用的板级配置。
  * 返回 0 表示还未调用 MyI2C_Register 注册映射。
  */
-static const MyI2C_Config_t *MyI2C_GetConfig(void)
+static const MyI2C_Config_t *MyI2C_GetConfigById(MyI2C_BusId_t busId)
 {
+	uint8_t i;
+
 	if ((s_i2cTable == 0) || (s_i2cCount == 0U))
 	{
 		return 0;
 	}
 
-	return &s_i2cTable[0];
+	for (i = 0U; i < s_i2cCount; i++)
+	{
+		if (s_i2cTable[i].id == (uint8_t)busId)
+		{
+			return &s_i2cTable[i];
+		}
+	}
+
+	return 0;
+}
+
+/* 获取当前选中总线的软件 I2C 配置。 */
+static const MyI2C_Config_t *MyI2C_GetConfig(void)
+{
+	return MyI2C_GetConfigById(s_activeBusId);
 }
 
 /*
@@ -32,6 +76,43 @@ void MyI2C_Register(const MyI2C_Config_t *configTable, uint8_t count)
 {
 	s_i2cTable = configTable;
 	s_i2cCount = count;
+
+	if ((configTable != 0) && (count > 0U))
+	{
+		s_activeBusId = (MyI2C_BusId_t)configTable[0].id;
+	}
+	else
+	{
+		s_activeBusId = My_I2C1;
+	}
+}
+
+/** 函    数：选择I2C总线 */
+void MyI2C_SelectBus(MyI2C_BusId_t busId)
+{
+	if (MyI2C_GetConfigById(busId) != 0)
+	{
+		s_activeBusId = busId;
+	}
+}
+
+/** 函    数：设置I2C速率 */
+void MyI2C_SetSpeed(I2C_SpeedTypeDef speed)
+{
+	if (speed == I2C_SPEED_400K)
+	{
+		s_i2cSpeed = I2C_SPEED_400K;
+	}
+	else
+	{
+		s_i2cSpeed = I2C_SPEED_100K;
+	}
+}
+
+/* 获取当前软件 I2C 速率档位*/
+I2C_SpeedTypeDef MyI2C_GetSpeed(void)
+{
+	return s_i2cSpeed;
 }
 
 /*
@@ -42,17 +123,21 @@ void MyI2C_Register(const MyI2C_Config_t *configTable, uint8_t count)
 void MyI2C_Init(void)
 {
 	const MyI2C_Config_t *config;
+	uint8_t i;
 
-	config = MyI2C_GetConfig();
-	if (config == 0)
+	if ((s_i2cTable == 0) || (s_i2cCount == 0U))
 	{
 		return;
 	}
 
-	API_GPIO_InitOutput(config->port, config->sclPin);
-	API_GPIO_InitOutput(config->port, config->sdaPin);
-	API_GPIO_Write(config->port, config->sclPin, 1U);
-	API_GPIO_Write(config->port, config->sdaPin, 1U);
+	for (i = 0U; i < s_i2cCount; i++)
+	{
+		config = &s_i2cTable[i];
+		API_GPIO_InitOutput(config->port, config->sclPin);
+		API_GPIO_InitOutput(config->port, config->sdaPin);
+		API_GPIO_Write(config->port, config->sclPin, 1U);
+		API_GPIO_Write(config->port, config->sdaPin, 1U);
+	}
 }
 
 /*
@@ -70,7 +155,7 @@ void MyI2C_W_SCL(uint8_t BitValue) // 写SCL
 	}
 
 	API_GPIO_Write(config->port, config->sclPin, BitValue);
-	Delay_us(5);
+	MyI2C_DelayByBaseUs(5U);
 }
 
 /*
@@ -88,7 +173,7 @@ void MyI2C_W_SDA(uint8_t BitValue) // 写SDA
 	}
 
 	API_GPIO_Write(config->port, config->sdaPin, BitValue);
-	Delay_us(5);
+	MyI2C_DelayByBaseUs(5U);
 }
 
 /*
@@ -105,7 +190,7 @@ uint8_t MyI2C_R_SDA(void) // 读SDA
 		return 1U;
 	}
 
-	Delay_us(5);
+	MyI2C_DelayByBaseUs(5U);
 	return API_GPIO_Read(config->port, config->sdaPin);
 }
 
@@ -152,9 +237,9 @@ void MyI2C_Start(void) // I2C起始
 	MyI2C_Set_SDA_Output();
 	MyI2C_W_SDA(1);
 	MyI2C_W_SCL(1);
-	Delay_us(4);
+	MyI2C_DelayByBaseUs(4U);
 	MyI2C_W_SDA(0);
-	Delay_us(4);
+	MyI2C_DelayByBaseUs(4U);
 	MyI2C_W_SCL(0);//钳住I2C总线，准备发送或接收数据 
 }
 
@@ -167,10 +252,10 @@ void MyI2C_Stop(void) // I2C停止
     MyI2C_Set_SDA_Output();
     MyI2C_W_SCL(0);
     MyI2C_W_SDA(0);// STOP: 当SCL为高时，SDA从低变高
-    Delay_us(4);
+	MyI2C_DelayByBaseUs(4U);
     MyI2C_W_SCL(1);
     MyI2C_W_SDA(1);
-    Delay_us(4);
+	MyI2C_DelayByBaseUs(4U);
 }
 
 /*
@@ -183,9 +268,9 @@ uint8_t MyI2C_Wait_Ack(void) // 等待应答信号到来
 	uint8_t ErrTime = 0;
 	MyI2C_Set_SDA_Input();
 	MyI2C_W_SDA(1);
-	Delay_us(1);
+	MyI2C_DelayByBaseUs(1U);
 	MyI2C_W_SCL(1);
-	Delay_us(1);
+	MyI2C_DelayByBaseUs(1U);
 	while (MyI2C_R_SDA())
 	{
 		ErrTime++;
@@ -208,9 +293,9 @@ void MyI2C_Ack(void) // 发送ACK应答
 	MyI2C_W_SCL(0);
 	MyI2C_Set_SDA_Output();
 	MyI2C_W_SDA(0);
-	Delay_us(2);
+	MyI2C_DelayByBaseUs(2U);
 	MyI2C_W_SCL(1);
-	Delay_us(2);
+	MyI2C_DelayByBaseUs(2U);
 	MyI2C_W_SCL(0);
 }
 
@@ -223,9 +308,9 @@ void MyI2C_NAck(void) // 发送NACK应答
 	MyI2C_W_SCL(0);
 	MyI2C_Set_SDA_Output();
 	MyI2C_W_SDA(1);
-	Delay_us(2);
+	MyI2C_DelayByBaseUs(2U);
 	MyI2C_W_SCL(1);
-	Delay_us(2);
+	MyI2C_DelayByBaseUs(2U);
 	MyI2C_W_SCL(0);
 }
 
@@ -240,11 +325,11 @@ void MyI2C_SendByte(uint8_t Byte) // I2C发送一个字节
 	{
 		MyI2C_W_SDA((Byte & 0x80) >> 7);
 		Byte <<= 1;
-		Delay_us(2);
+		MyI2C_DelayByBaseUs(2U);
 		MyI2C_W_SCL(1);
-		Delay_us(2);
+		MyI2C_DelayByBaseUs(2U);
 		MyI2C_W_SCL(0);
-		Delay_us(2);
+		MyI2C_DelayByBaseUs(2U);
 	}
 }
 
@@ -265,14 +350,14 @@ uint8_t MyI2C_ReceiveByte(unsigned char Ack) // I2C接收一个字节
 	for (i = 0; i < 8; i++)
 	{
 		MyI2C_W_SCL(0);
-		Delay_us(2);
+		MyI2C_DelayByBaseUs(2U);
 		MyI2C_W_SCL(1);
 		Byte <<= 1;
 		if (MyI2C_R_SDA())
 		{
 			Byte++;
 		}
-		Delay_us(1);
+		MyI2C_DelayByBaseUs(1U);
 	}
 	if (Ack)
 	{
@@ -285,18 +370,29 @@ uint8_t MyI2C_ReceiveByte(unsigned char Ack) // I2C接收一个字节
 	return Byte;
 }
 
-/*
- * 最小 I2C 测试例程：
- * - 扫描 7-bit 地址空间，发送写地址并检测 ACK。
- * - 发现设备后通过 USART1 打印地址，便于上板快速验证线路和时序。
- */
-void App_I2C_ScanOnce(void)
+/* 扫描指定总线并输出在线设备地址。 */
+static void App_I2C_ScanBus(MyI2C_BusId_t busId)
 {
 	uint8_t addr;
 	uint8_t foundCount;
+	const MyI2C_Config_t *config;
+	MyI2C_BusId_t prevBusId;
+	I2C_SpeedTypeDef prevSpeed;
+
+	config = MyI2C_GetConfigById(busId);
+	if (config == 0)
+	{
+		return;
+	}
+
+	prevBusId = s_activeBusId;
+	prevSpeed = s_i2cSpeed;
+
+	MyI2C_SelectBus(busId);
+	MyI2C_SetSpeed(I2C_SPEED_100K);
 
 	foundCount = 0U;
-	usart_printf(USART1, "\r\n[I2C] scan start\r\n");
+	usart_printf(USART1, "\r\n[I2C][My_I2C%u] scan start\r\n", (unsigned int)((uint8_t)busId + 1U));
 
 	for (addr = 1U; addr < 0x7FU; addr++)
 	{
@@ -305,11 +401,35 @@ void App_I2C_ScanOnce(void)
 		if (MyI2C_Wait_Ack() == 0U)
 		{
 			foundCount++;
-			usart_printf(USART1, "[I2C] found: 0x%02X\r\n", addr);
+			usart_printf(USART1, "[I2C][My_I2C%u] found: 0x%02X\r\n", (unsigned int)((uint8_t)busId + 1U), addr);
 		}
 		MyI2C_Stop();
 		Delay_ms(1U);
 	}
-	usart_printf(USART1, "[I2C] scan done, count=%u\r\n", foundCount);
+
+	usart_printf(USART1, "[I2C][My_I2C%u] scan done, count=%u\r\n", (unsigned int)((uint8_t)busId + 1U), foundCount);
+
+	MyI2C_SelectBus(prevBusId);
+	MyI2C_SetSpeed(prevSpeed);
 }
 
+/*
+ * 最小 I2C 测试例程：
+ * - 遍历已注册的总线，逐路扫描 7-bit 地址空间。
+ * - 发现设备后打印总线号与地址，便于快速确认每路连线。
+ */
+void App_I2C_ScanOnce(void)
+{
+	uint8_t i;
+
+	if ((s_i2cTable == 0) || (s_i2cCount == 0U))
+	{
+		usart_printf(USART1, "\r\n[I2C] scan skipped: no bus registered\r\n");
+		return;
+	}
+
+	for (i = 0U; i < s_i2cCount; i++)
+	{
+		App_I2C_ScanBus((MyI2C_BusId_t)s_i2cTable[i].id);
+	}
+}

@@ -9,6 +9,13 @@
 
 /* 坐标系修正: 与 DMP 的 gyro_orientation 保持一致（背面安装，绕 X 轴翻转180度） */
 
+/* 选择I2C1 设置MPU6050 I2C速率为400kHZ */
+static void MPU_SelectI2CSpeed(void)
+{
+	MyI2C_SelectBus(My_I2C1);
+	MyI2C_SetSpeed(I2C_SPEED_400K);
+}
+
 /*
 正面默认是这样的：
 {
@@ -163,6 +170,8 @@ uint8_t MPU_Write_Len(uint8_t addr, uint8_t reg, uint8_t len, uint8_t *buf)
 {
 	uint8_t i;
 
+	MPU_SelectI2CSpeed();
+
 	MyI2C_Start();
 	MyI2C_SendByte((uint8_t)((addr << 1) | 0U));
 	if (MyI2C_Wait_Ack())
@@ -191,6 +200,8 @@ uint8_t MPU_Write_Len(uint8_t addr, uint8_t reg, uint8_t len, uint8_t *buf)
 /* I2C 连续读 */
 uint8_t MPU_Read_Len(uint8_t addr, uint8_t reg, uint8_t len, uint8_t *buf)
 {
+	MPU_SelectI2CSpeed();
+
 	MyI2C_Start();
 	MyI2C_SendByte((uint8_t)((addr << 1) | 0U));
 	if (MyI2C_Wait_Ack())
@@ -227,6 +238,8 @@ uint8_t MPU_Read_Len(uint8_t addr, uint8_t reg, uint8_t len, uint8_t *buf)
 /* I2C 写一个字节 */
 uint8_t MPU_Write_Byte(uint8_t reg, uint8_t data)
 {
+	MPU_SelectI2CSpeed();
+
 	MyI2C_Start();
 	MyI2C_SendByte((uint8_t)((MPU_ADDR << 1) | 0U));
 	if (MyI2C_Wait_Ack())
@@ -253,6 +266,8 @@ uint8_t MPU_Write_Byte(uint8_t reg, uint8_t data)
 uint8_t MPU_Read_Byte(uint8_t reg)
 {
 	uint8_t res;
+
+	MPU_SelectI2CSpeed();
 
 	MyI2C_Start();
 	MyI2C_SendByte((uint8_t)((MPU_ADDR << 1) | 0U));

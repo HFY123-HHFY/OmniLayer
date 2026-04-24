@@ -47,21 +47,27 @@ int main(void)
 
 /*BSP硬件抽象层初始化*/
   	MPU_Init();			/* 初始化MPU6050 */
-	mpu_dmp_init(); 	/* 初始化MPU6050 DMP */
+	// mpu_dmp_init(); 	/* 初始化MPU6050 DMP */
 	QMC_Init();			/* 初始化QMC5883P */
 	BMP280Init();			/* 初始化BMP280 */
-	// OLED_Init();		/* OLED 初始化 */
+	OLED_Init();		/* OLED 初始化 */
 	
 	while(1)
 	{
-/*OLED测试*/
-		// OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
-		// OLED_Update();
 
 /*I2C测试-9轴*/
 		// mpu_angle();
-		// Angle_XY = QMC_Data();
-		// alt = BMP_Data();
+		Angle_XY = QMC_Data();
+		alt = BMP_Data();
+
+/*OLED测试*/
+		// OLED_Clear();
+		OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
+		// OLED_Printf(48, 0, OLED_8X16, "P:%.1f",Pitch);
+		// OLED_Printf(0, 16, OLED_8X16, "R:%.1f,  Y:%.1f",Roll,Yaw);
+		OLED_Printf(0, 32, OLED_8X16, "A:%.1f", Angle_XY);
+		OLED_Printf(0, 48, OLED_8X16, "alt: %.1f", alt);
+		OLED_Update();
 
 /*ADC测试*/
 		// AD2 = API_ADC_GetValue(API_ADC1, API_ADC_CH2);
@@ -75,6 +81,7 @@ int main(void)
 		if (print_task_flag)
 		{
 			print_task_flag = 0;
+
 			// usart_printf(USART1,"AD2: %d, AD3: %d\r\n", AD2, AD3);
 			// usart_printf(USART1,"Pitch:%.1f, Roll:%.1f, Yaw:%.1f,\r\n",Pitch,Roll,Yaw);
 			// printf("Angle_XY: %.1f,\r\n", Angle_XY);

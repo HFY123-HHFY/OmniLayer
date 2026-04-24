@@ -55,6 +55,14 @@ static int32_t bmp280CompensateT(int32_t adcT);
 /* 气压补偿（输出单位：Q24.8 Pa）。 */
 static uint32_t bmp280CompensateP(int32_t adcP);
 
+
+/*  选择I2C1 设置BMP280 I2C速率为400kHZ */
+static void BMP280_SelectI2CSpeed(void)
+{
+	MyI2C_SelectBus(My_I2C1);
+	MyI2C_SetSpeed(I2C_SPEED_400K);
+}
+
 /*
  * 读取单个寄存器。
  * devaddr: 8-bit I2C 地址（写地址）
@@ -64,6 +72,8 @@ static uint32_t bmp280CompensateP(int32_t adcP);
 uint8_t iicDevReadByte(uint8_t devaddr, uint8_t addr)
 {
 	uint8_t temp;
+
+	BMP280_SelectI2CSpeed();
 
 	MyI2C_Start();
 	MyI2C_SendByte(devaddr);
@@ -90,6 +100,8 @@ uint8_t iicDevReadByte(uint8_t devaddr, uint8_t addr)
 void iicDevRead(uint8_t devaddr, uint8_t addr, uint8_t len, uint8_t *rbuf)
 {
 	uint8_t i;
+
+	BMP280_SelectI2CSpeed();
 
 	MyI2C_Start();
 	MyI2C_SendByte(devaddr);
@@ -124,6 +136,8 @@ void iicDevRead(uint8_t devaddr, uint8_t addr, uint8_t len, uint8_t *rbuf)
  */
 void iicDevWriteByte(uint8_t devaddr, uint8_t addr, uint8_t data)
 {
+	BMP280_SelectI2CSpeed();
+
 	MyI2C_Start();
 	MyI2C_SendByte(devaddr);
 	MyI2C_Wait_Ack();
@@ -144,6 +158,8 @@ void iicDevWriteByte(uint8_t devaddr, uint8_t addr, uint8_t data)
 void iicDevWrite(uint8_t devaddr, uint8_t addr, uint8_t len, uint8_t *wbuf)
 {
 	uint8_t i;
+
+	BMP280_SelectI2CSpeed();
 
 	MyI2C_Start();
 	MyI2C_SendByte(devaddr);

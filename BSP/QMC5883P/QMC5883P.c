@@ -6,9 +6,17 @@
 /* 最近一次角度结果（单位：度，0~360）。 */
 float Angle_XY = 0.0f;
 
+/*  选择I2C1 设置QMC5883P I2C速率为100kHZ */
+static void QMC_SelectI2CSpeed(void)
+{
+	MyI2C_SelectBus(My_I2C1);
+	MyI2C_SetSpeed(I2C_SPEED_100K);
+}
+
 /* 向指定寄存器写 1 字节。 */
 static void QMC_WriteReg(uint8_t regAddress, uint8_t data)
 {
+	QMC_SelectI2CSpeed();
 	MyI2C_Start();
 	MyI2C_SendByte(QMC5883P_I2C_ADDR_W);
 	MyI2C_Wait_Ack();
@@ -23,6 +31,8 @@ static void QMC_WriteReg(uint8_t regAddress, uint8_t data)
 static uint8_t QMC_ReadReg(uint8_t regAddress)
 {
 	uint8_t data;
+
+	QMC_SelectI2CSpeed();
 
 	MyI2C_Start();
 	MyI2C_SendByte(QMC5883P_I2C_ADDR_W);

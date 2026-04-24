@@ -26,7 +26,7 @@
 
 /* I2C 板级映射：当前板子只注册 1 路软件 I2C。 */
 #define HW_I2C_MAP(X) \
-	X(GPIOB, GPIO_Pin_8, GPIO_Pin_9)
+	X(My_I2C1, GPIOB, GPIO_Pin_8, GPIO_Pin_9)
 
 /* KEY 板级映射：当前板子只注册 1 个按键。 */
 #define HW_KEY_MAP(X) \

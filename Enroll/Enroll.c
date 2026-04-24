@@ -22,8 +22,8 @@
 	{ id, txPort, txPin, rxPort, rxPin },
 
 /* ENROLL_I2C_ITEM 负责把 I2C 映射展开成 MyI2C_Config_t 结构体项。 */
-#define ENROLL_I2C_ITEM(port, sclPin, sdaPin) \
-	{ port, sclPin, sdaPin },
+#define ENROLL_I2C_ITEM(id, port, sclPin, sdaPin) \
+	{ (uint8_t)(id), port, sclPin, sdaPin },
 
 /* ENROLL_KEY_ITEM 负责把按键映射展开成 KEY_Config_t 结构体项。 */
 #define ENROLL_KEY_ITEM(id, port, pin) \

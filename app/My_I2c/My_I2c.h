@@ -16,15 +16,45 @@
 
 typedef struct
 {
+	uint8_t id;
 	void *port;
 	uint16_t sclPin;
 	uint16_t sdaPin;
 } MyI2C_Config_t;
 
+typedef enum
+{
+	My_I2C1 = 0,
+	My_I2C2,
+	/* 总线数量上界/非法值哨兵，不作为真实总线使用。 */
+	My_I2C_MAX
+} MyI2C_BusId_t;
+
+/*
+ * 软件 I2C 基准延时定义（单位：us）。
+ * 说明：
+ * - 100k 档作为原始标定档。
+ * - 400k 档用于按比例缩短延时，实际速率受 GPIO 翻转和函数开销影响。
+ */
+#define I2C_DELAY_100K (5U)
+#define I2C_DELAY_400K (1U)
+
+typedef enum
+{
+	I2C_SPEED_100K = 0,
+	I2C_SPEED_400K
+} I2C_SpeedTypeDef;
+
 /* 注册板级 I2C 配置表。 */
 void MyI2C_Register(const MyI2C_Config_t *configTable, uint8_t count);
+/* 选择当前操作的软件 I2C 总线。 */
+void MyI2C_SelectBus(MyI2C_BusId_t busId);
 /* 初始化软件 I2C 并释放总线到空闲态（SCL=1, SDA=1）。 */
 void MyI2C_Init(void);
+/* 设置软件 I2C 速率档位。 */
+void MyI2C_SetSpeed(I2C_SpeedTypeDef speed);
+/* 获取当前软件 I2C 速率档位。 */
+I2C_SpeedTypeDef MyI2C_GetSpeed(void);
 
 /* 写 SCL 电平（0/1）。 */
 void MyI2C_W_SCL(uint8_t BitValue);
@@ -53,7 +83,7 @@ void MyI2C_NAck(void);
 /* 等待从机 ACK：返回 0=收到 ACK，1=超时失败。 */
 uint8_t MyI2C_Wait_Ack(void);
 
-/* 最小 I2C 测试例程：扫描 7-bit 地址空间，发送写地址并检测 ACK */
+/* 最小 I2C 测试例程：遍历已注册总线并逐路扫描 7-bit 地址空间 */
 void App_I2C_ScanOnce(void);
 
 #endif /* __MY_I2C_H */

@@ -63,6 +63,13 @@
 uint8_t OLED_DisplayBuf[8][128];
 /* ********************全局变量*/
 
+/*  选择I2C2 设置OLED I2C速率为400kHZ */
+static void OLED_SelectI2CSpeed(void)
+{
+	MyI2C_SelectBus(My_I2C2);
+	MyI2C_SetSpeed(I2C_SPEED_400K);
+}
+
 /**
 	* 函    数：OLED引脚初始化
 	* 说    明：按当前仓库GPIO抽象初始化输出并释放总线
@@ -70,6 +77,8 @@ uint8_t OLED_DisplayBuf[8][128];
 void OLED_GPIO_Init(void)
 {
 	uint32_t i = 0, j = 0;
+
+	OLED_SelectI2CSpeed();
 
     /*在初始化前，加入适量延时，待OLED供电稳定*/
 	for (i = 0U; i < 1000U; i++)
@@ -102,6 +111,7 @@ void OLED_I2C_SendByte(uint8_t Byte)
 /** 函    数：OLED写命令 */
 void OLED_WriteCommand(uint8_t Command)
 {
+	OLED_SelectI2CSpeed();
 	MyI2C_Start();
 	OLED_I2C_SendByte(0x78U);
 	OLED_I2C_SendByte(0x00U);
@@ -113,6 +123,8 @@ void OLED_WriteCommand(uint8_t Command)
 void OLED_WriteData(uint8_t *Data, uint8_t Count)
 {
 	uint8_t i;
+
+	OLED_SelectI2CSpeed();
 
 	MyI2C_Start();
 	OLED_I2C_SendByte(0x78U);
