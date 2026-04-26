@@ -31,6 +31,7 @@ int main(void)
 	Enroll_USART_Register(); 				/*  USART 资源注册 */
 	Enroll_I2C_Register();					/*  I2C 资源注册   */
 	Enroll_SPI_Register();					/*  SPI 资源注册   */
+	Enroll_OLED_Register();				/*  OLED SPI控制引脚资源注册 */
 	Enroll_PWM_Register();					/*  PWM 资源注册   */
 	Enroll_ADC_Register();					/*  ADC 资源注册   */
 	SYS_Init();								/* 系统层初始化 */
@@ -45,33 +46,34 @@ int main(void)
 	API_ADC_Init(API_ADC1);					/* ADC1 初始化*/
 
 	MyI2C_Init();							/* 软件 I2C 初始化 */
-	// App_I2C_ScanOnce();						/* 开机执行一次 I2C 扫描 */
+	App_I2C_ScanOnce();						/* 开机执行一次 I2C 扫描 */
 	MySPI_Init();							/* 软件 SPI 初始化 */
 	App_SPI_TestOnce();						/* 开机执行一次 SPI 测试 */
 
 /*BSP硬件抽象层初始化*/
   	MPU_Init();			/* 初始化 MPU6050 */
-	// mpu_dmp_init(); 	/* 初始化 MPU6050 DMP */
+	mpu_dmp_init(); 	/* 初始化 MPU6050 DMP */
 	QMC_Init();			/* 初始化 QMC5883P */
 	BMP280Init();		/* 初始化 BMP280 */
-	// OLED_Init();		/* 初始化 OLED */
+	OLED_Init(OLED_IF_SPI);		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
 	
 	while(1)
 	{
 
 /*I2C测试-9轴*/
-		// mpu_angle();
+		mpu_angle();
 		// Angle_XY = QMC_Data();
 		// alt = BMP_Data();
 
 /*OLED测试*/
-		// OLED_Clear();
-		// OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
-		// OLED_Printf(48, 0, OLED_8X16, "P:%.1f",Pitch);
-		// OLED_Printf(0, 16, OLED_8X16, "R:%.1f,  Y:%.1f",Roll,Yaw);
+		OLED_Clear();
+		OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
+		OLED_Printf(0, 16, OLED_8X16, "P:%.1f",Pitch);
+		OLED_Printf(0, 32, OLED_8X16, "R:%.1f",Roll);
+		OLED_Printf(0, 48, OLED_8X16, "Y:%.1f",Yaw);
 		// OLED_Printf(0, 32, OLED_8X16, "A:%.1f", Angle_XY);
 		// OLED_Printf(0, 48, OLED_8X16, "alt: %.1f", alt);
-		// OLED_Update();
+		OLED_Update();
 
 /*ADC测试*/
 		// AD2 = API_ADC_GetValue(API_ADC1, API_ADC_CH2);

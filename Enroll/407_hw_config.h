@@ -55,18 +55,34 @@ LED1 绿 LED2 红 LED3 蓝
 	X(My_I2C2, HW_I2C2_SCL_PORT, HW_I2C2_SCL_PIN, HW_I2C2_SDA_PIN)
 
 /* 软件 SPI 引脚定义：CS=PA4，SCK=PA5，MOSI=PA7，MISO=PA6 */
-#define HW_SPI1_CS_PORT   GPIOA
-#define HW_SPI1_CS_PIN    GPIO_Pin_4
 #define HW_SPI1_SCK_PORT  GPIOA
 #define HW_SPI1_SCK_PIN   GPIO_Pin_5
+
 #define HW_SPI1_MOSI_PORT GPIOA
 #define HW_SPI1_MOSI_PIN  GPIO_Pin_7
+
 #define HW_SPI1_MISO_PORT GPIOA
 #define HW_SPI1_MISO_PIN  GPIO_Pin_6
 
+#define HW_SPI1_CS_PORT   GPIOA
+#define HW_SPI1_CS_PIN    GPIO_Pin_4
+
 /* SPI 板级映射：注册 1 路软件 SPI */
 #define HW_SPI_MAP(X) \
-	X(HW_SPI1_CS_PORT, HW_SPI1_CS_PIN, HW_SPI1_SCK_PIN, HW_SPI1_MOSI_PIN, HW_SPI1_MISO_PIN)
+	X(HW_SPI1_CS_PORT, HW_SPI1_CS_PIN, \
+	  HW_SPI1_SCK_PORT, HW_SPI1_SCK_PIN, \
+	  HW_SPI1_MOSI_PORT, HW_SPI1_MOSI_PIN, \
+	  HW_SPI1_MISO_PORT, HW_SPI1_MISO_PIN)
+
+/* OLED SPI 控制引脚定义：DC=PB15，RES=PB14（7针OLED专用）。 */
+#define HW_OLED_DC_PORT GPIOB
+#define HW_OLED_DC_PIN  GPIO_Pin_15
+#define HW_OLED_RES_PORT GPIOB
+#define HW_OLED_RES_PIN  GPIO_Pin_14
+
+/* OLED SPI 控制引脚映射：注册 1 组独立 DC/RES。 */
+#define HW_OLED_SPI_CTRL_MAP(X) \
+	X(HW_OLED_DC_PORT, HW_OLED_DC_PIN, HW_OLED_RES_PORT, HW_OLED_RES_PIN)
 
 /* KEY 板级映射：当前板子注册 1 个按键 */
 #define HW_KEY_MAP(X) \
@@ -96,6 +112,8 @@ LED1 绿 LED2 红 LED3 蓝
 #define HW_I2C_COUNT  2U
 /* 当前板子上注册了 1 路软件 SPI */
 #define HW_SPI_COUNT  1U
+/* 当前板子上注册了 1 组 OLED SPI 控制引脚 */
+#define HW_OLED_SPI_CTRL_COUNT  1U
 /* 当前板子上注册了 1 个按键 */
 #define HW_KEY_COUNT  1U
 /* 当前板子上注册了 4 路 PWM 通道 */

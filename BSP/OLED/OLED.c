@@ -1,6 +1,9 @@
 #include "OLED.h"
 
 #include "My_I2c.h"
+#include "My_SPI.h"
+#include "gpio.h"
+#include "Delay.h"
 
 #include <string.h>
 #include <math.h>
@@ -61,13 +64,72 @@
 /*全局变量*********************/
 /** OLED显存数组（8页x128列） */
 uint8_t OLED_DisplayBuf[8][128];
+
+/* OLED 当前接口类型，默认使用 I2C。 */
+static OLED_Interface_t s_oledInterface = OLED_IF_I2C;
+
+/* OLED SPI 控制引脚注册表（DC/RES）。 */
+static const OLED_SpiCtrlConfig_t *s_oledSpiCtrlTable;
+static uint8_t s_oledSpiCtrlCount;
 /* ********************全局变量*/
+
+/* 获取 OLED SPI 控制引脚配置。 */
+static const OLED_SpiCtrlConfig_t *OLED_GetSpiCtrlConfig(void)
+{
+	if ((s_oledSpiCtrlTable == 0) || (s_oledSpiCtrlCount == 0U))
+	{
+		return 0;
+	}
+
+	return &s_oledSpiCtrlTable[0];
+}
+
+/* 注册 OLED SPI 控制引脚（DC/RES）。 */
+void OLED_RegisterSpiCtrl(const OLED_SpiCtrlConfig_t *configTable, uint8_t count)
+{
+	s_oledSpiCtrlTable = configTable;
+	s_oledSpiCtrlCount = count;
+}
+
+/* 写 OLED DC 控制脚电平。 */
+static void OLED_W_DC(uint8_t bitValue)
+{
+	const OLED_SpiCtrlConfig_t *config;
+
+	config = OLED_GetSpiCtrlConfig();
+	if (config == 0)
+	{
+		return;
+	}
+
+	API_GPIO_Write(config->dcPort, config->dcPin, bitValue);
+}
+
+/* 写 OLED RES 控制脚电平。 */
+static void OLED_W_RES(uint8_t bitValue)
+{
+	const OLED_SpiCtrlConfig_t *config;
+
+	config = OLED_GetSpiCtrlConfig();
+	if (config == 0)
+	{
+		return;
+	}
+
+	API_GPIO_Write(config->resPort, config->resPin, bitValue);
+}
 
 /*  选择I2C2 设置OLED I2C速率为400kHZ */
 static void OLED_SelectI2CSpeed(void)
 {
 	MyI2C_SelectBus(My_I2C2);
 	MyI2C_SetSpeed(I2C_SPEED_400K);
+}
+
+/* SPI 发送 1 字节（通过软件 SPI 协议层交换接口实现）。 */
+static void OLED_SPI_SendByte(uint8_t byteValue)
+{
+	(void)MySPI_SwapByte(byteValue);
 }
 
 /**
@@ -77,8 +139,7 @@ static void OLED_SelectI2CSpeed(void)
 void OLED_GPIO_Init(void)
 {
 	uint32_t i = 0, j = 0;
-
-	OLED_SelectI2CSpeed();
+	const OLED_SpiCtrlConfig_t *spiCtrl;
 
     /*在初始化前，加入适量延时，待OLED供电稳定*/
 	for (i = 0U; i < 1000U; i++)
@@ -86,9 +147,34 @@ void OLED_GPIO_Init(void)
 		for (j = 0U; j < 1000U; j++);
 	}
 
-    /*释放SCL和SDA*/
-	MyI2C_W_SCL(1U);
-	MyI2C_W_SDA(1U);
+	if (s_oledInterface == OLED_IF_SPI)
+	{
+		MySPI_Init();
+
+		spiCtrl = OLED_GetSpiCtrlConfig();
+		if (spiCtrl != 0)
+		{
+			API_GPIO_InitOutput(spiCtrl->dcPort, spiCtrl->dcPin);
+			API_GPIO_InitOutput(spiCtrl->resPort, spiCtrl->resPin);
+
+			/* 默认电平：DC=1（数据态），RES=1（非复位态）。 */
+			OLED_W_DC(1U);
+			OLED_W_RES(1U);
+
+			/* 按 SSD1306 常见时序执行硬复位脉冲。 */
+			OLED_W_RES(0U);
+			Delay_ms(10U);
+			OLED_W_RES(1U);
+			Delay_ms(10U);
+		}
+	}
+	else
+	{
+		OLED_SelectI2CSpeed();
+		/* 释放SCL和SDA */
+		MyI2C_W_SCL(1U);
+		MyI2C_W_SDA(1U);
+	}
 }
 
 
@@ -111,12 +197,22 @@ void OLED_I2C_SendByte(uint8_t Byte)
 /** 函    数：OLED写命令 */
 void OLED_WriteCommand(uint8_t Command)
 {
-	OLED_SelectI2CSpeed();
-	MyI2C_Start();
-	OLED_I2C_SendByte(0x78U);
-	OLED_I2C_SendByte(0x00U);
-	OLED_I2C_SendByte(Command);
-	MyI2C_Stop();
+	if (s_oledInterface == OLED_IF_SPI)
+	{
+		MySPI_Start();
+		OLED_W_DC(0U);
+		OLED_SPI_SendByte(Command);
+		MySPI_Stop();
+	}
+	else
+	{
+		OLED_SelectI2CSpeed();
+		MyI2C_Start();
+		OLED_I2C_SendByte(0x78U);
+		OLED_I2C_SendByte(0x00U);
+		OLED_I2C_SendByte(Command);
+		MyI2C_Stop();
+	}
 }
 
 /** 函    数：OLED写数据 */
@@ -124,16 +220,29 @@ void OLED_WriteData(uint8_t *Data, uint8_t Count)
 {
 	uint8_t i;
 
-	OLED_SelectI2CSpeed();
-
-	MyI2C_Start();
-	OLED_I2C_SendByte(0x78U);
-	OLED_I2C_SendByte(0x40U);
-	for (i = 0U; i < Count; i++)
+	if (s_oledInterface == OLED_IF_SPI)
 	{
-		OLED_I2C_SendByte(Data[i]);
+		MySPI_Start();
+		OLED_W_DC(1U);
+		for (i = 0U; i < Count; i++)
+		{
+			OLED_SPI_SendByte(Data[i]);
+		}
+		MySPI_Stop();
 	}
-	MyI2C_Stop();
+	else
+	{
+		OLED_SelectI2CSpeed();
+
+		MyI2C_Start();
+		OLED_I2C_SendByte(0x78U);
+		OLED_I2C_SendByte(0x40U);
+		for (i = 0U; i < Count; i++)
+		{
+			OLED_I2C_SendByte(Data[i]);
+		}
+		MyI2C_Stop();
+	}
 }
 
 /** 函    数：设置页地址和列地址 */
@@ -200,8 +309,9 @@ uint8_t OLED_IsInAngle(int16_t X, int16_t Y, int16_t StartAngle, int16_t EndAngl
   * 函    数：OLED初始化
   * 说    明：按SSD1306常用初始化序列配置
   */
-void OLED_Init(void)
+void OLED_Init(OLED_Interface_t interfaceType)
 {
+	s_oledInterface = interfaceType;
 	OLED_GPIO_Init();
 
 	OLED_WriteCommand(0xAE);

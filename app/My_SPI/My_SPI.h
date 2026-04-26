@@ -5,12 +5,29 @@
 
 #include "gpio.h"
 
+/*
+ * My_SPI 说明：
+ * - 引脚映射由 Enroll 注册层提供。
+ * - 协议时序采用软件模拟（bit-bang，SPI模式0）。
+ * - 推荐调用顺序：
+ *   1) Enroll_SPI_Register()
+ *   2) MySPI_Init()
+ *   3) MySPI_Start()/MySPI_SwapByte()/MySPI_Stop()
+ */
+
 typedef struct
 {
-	void *port;
+	/* CS 片选端口/引脚。 */
+	void *csPort;
 	uint16_t csPin;
+	/* SCK 时钟端口/引脚。 */
+	void *sckPort;
 	uint16_t sckPin;
+	/* MOSI 主发从收端口/引脚。 */
+	void *mosiPort;
 	uint16_t mosiPin;
+	/* MISO 主收从发端口/引脚。 */
+	void *misoPort;
 	uint16_t misoPin;
 } MySPI_Config_t;
 
@@ -37,9 +54,5 @@ uint8_t MySPI_SwapByte(uint8_t byteSend);
  * - 若未挂从机，可临时短接 MOSI-MISO 做回环验证。
  */
 void App_SPI_TestOnce(void);
-
-#endif /* __MY_SPI_H */
-#ifndef __MY_SPI_H
-#define __MY_SPI_H
 
 #endif /* __MY_SPI_H */

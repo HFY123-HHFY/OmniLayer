@@ -26,8 +26,12 @@
 	{ (uint8_t)(id), port, sclPin, sdaPin },
 
 /* ENROLL_SPI_ITEM 负责把 SPI 映射展开成 MySPI_Config_t 结构体项。 */
-#define ENROLL_SPI_ITEM(port, csPin, sckPin, mosiPin, misoPin) \
-	{ port, csPin, sckPin, mosiPin, misoPin },
+#define ENROLL_SPI_ITEM(csPort, csPin, sckPort, sckPin, mosiPort, mosiPin, misoPort, misoPin) \
+	{ csPort, csPin, sckPort, sckPin, mosiPort, mosiPin, misoPort, misoPin },
+
+/* ENROLL_OLED_SPI_CTRL_ITEM 负责把 OLED SPI 控制引脚展开成配置项。 */
+#define ENROLL_OLED_SPI_CTRL_ITEM(dcPort, dcPin, resPort, resPin) \
+	{ dcPort, dcPin, resPort, resPin },
 
 /* ENROLL_KEY_ITEM 负责把按键映射展开成 KEY_Config_t 结构体项。 */
 #define ENROLL_KEY_ITEM(id, port, pin) \
@@ -65,6 +69,12 @@ static const MySPI_Config_t s_spiTable[] =
 	HW_SPI_MAP(ENROLL_SPI_ITEM)
 };
 
+/* 当前板子的 OLED SPI 控制引脚注册表（DC/RES）。 */
+static const OLED_SpiCtrlConfig_t s_oledSpiCtrlTable[] =
+{
+	HW_OLED_SPI_CTRL_MAP(ENROLL_OLED_SPI_CTRL_ITEM)
+};
+
 /* 当前板子的 KEY 注册表。 */
 static const KEY_Config_t s_keyTable[] =
 {
@@ -87,6 +97,7 @@ static const API_ADC_Config_t s_adcTable[] =
 #undef ENROLL_USART_ITEM
 #undef ENROLL_I2C_ITEM
 #undef ENROLL_SPI_ITEM
+#undef ENROLL_OLED_SPI_CTRL_ITEM
 #undef ENROLL_KEY_ITEM
 #undef ENROLL_PWM_ITEM
 #undef ENROLL_ADC_ITEM
@@ -123,6 +134,12 @@ void Enroll_I2C_Register(void)
 void Enroll_SPI_Register(void)
 {
 	MySPI_Register(s_spiTable, HW_SPI_COUNT);
+}
+
+/* Enroll_OLED_Register：把 OLED SPI 控制引脚映射注册给 OLED 驱动层。 */
+void Enroll_OLED_Register(void)
+{
+	OLED_RegisterSpiCtrl(s_oledSpiCtrlTable, HW_OLED_SPI_CTRL_COUNT);
 }
 
 /* Enroll_PWM_Register：把当前板子的 PWM 引脚映射注册给 API 层。 */

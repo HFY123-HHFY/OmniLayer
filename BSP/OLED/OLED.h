@@ -14,13 +14,32 @@
 #define OLED_FILLED             1
 /* ********************参数宏定义*/
 
+/* OLED 接口类型：支持 4 针 I2C 与 7 针 SPI。 */
+typedef enum
+{
+	OLED_IF_I2C = 0,
+	OLED_IF_SPI
+} OLED_Interface_t;
+
+/* OLED 在 SPI 模式下额外使用的控制引脚（不放入通用 SPI 抽象层）。 */
+typedef struct
+{
+	void *dcPort;
+	uint16_t dcPin;
+	void *resPort;
+	uint16_t resPin;
+} OLED_SpiCtrlConfig_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /*函数声明*********************/
-/* 初始化函数 */
-void OLED_Init(void);
+/* 注册 OLED SPI 模式下的 DC/RES 板级映射。 */
+void OLED_RegisterSpiCtrl(const OLED_SpiCtrlConfig_t *configTable, uint8_t count);
+
+/* 初始化函数：按接口类型选择 I2C 或 SPI 驱动路径。 */
+void OLED_Init(OLED_Interface_t interfaceType);
 
 /* 更新函数 */
 void OLED_Update(void);

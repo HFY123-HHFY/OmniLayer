@@ -23,6 +23,7 @@
 #include "KEY.h"
 #include "My_I2c.h"
 #include "My_SPI.h"
+#include "OLED.h"
 #include "gpio.h"
 #include "usart.h"
 #include "adc.h"
@@ -67,6 +68,9 @@ void Enroll_I2C_Register(void);
 
 /* 注册当前板子的 SPI 资源表。 */
 void Enroll_SPI_Register(void);
+
+/* 注册当前板子的 OLED SPI 控制引脚（DC/RES）。 */
+void Enroll_OLED_Register(void);
 
 /* 注册当前板子的 PWM 引脚映射表。 */
 void Enroll_PWM_Register(void);
