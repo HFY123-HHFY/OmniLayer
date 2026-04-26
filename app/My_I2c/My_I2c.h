@@ -36,12 +36,16 @@ typedef enum
  * - 100k 档作为原始标定档。
  * - 400k 档用于按比例缩短延时，实际速率受 GPIO 翻转和函数开销影响。
  */
+#define I2C_DELAY_50K  (10U)
 #define I2C_DELAY_100K (5U)
+#define I2C_DELAY_200K (3U)
 #define I2C_DELAY_400K (1U)
 
 typedef enum
 {
-	I2C_SPEED_100K = 0,
+	I2C_SPEED_50K = 0,
+	I2C_SPEED_100K,
+	I2C_SPEED_200K,
 	I2C_SPEED_400K
 } I2C_SpeedTypeDef;
 

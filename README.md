@@ -29,35 +29,33 @@ Drivers：芯片启动文件、寄存器定义、标准库/HAL/CMSIS 等 SDK 资
 
 ---
 
-应用层软件 I2C 使用说明（多总线）
-
-1) 注册与初始化顺序
-- 在 `main` 初始化阶段先调用 `Enroll_I2C_Register()`，再调用 `MyI2C_Init()`。
-- `Enroll` 会把板级 `HW_I2C_MAP(X)` 展开为 `MyI2C_Config_t` 配置表并注册。
-
-2) 板级映射写法
-- 单路示例：`X(My_I2C1, GPIOB, GPIO_Pin_8, GPIO_Pin_9)`
-- 多路示例：
-	- `X(My_I2C1, GPIOB, GPIO_Pin_8, GPIO_Pin_9)`
-	- `X(My_I2C2, GPIOD, GPIO_Pin_5, GPIO_Pin_6)`
-
-3) 驱动层访问约定
-- 每个外设驱动在发起事务前都应明确选择总线和速率：
-	- `MyI2C_SelectBus(...)`
-	- `MyI2C_SetSpeed(...)`
-- 推荐做法：在驱动内部封装 `xxx_SelectI2CSpeed()`，统一设置总线与速率。
-
-4) 当前项目约定（F407）
-- `My_I2C1`：MPU6050 / QMC5883P / BMP280（PB8/PB9）
-- `My_I2C2`：OLED（PD5/PD6）
-
-5) 扫描与联调
-- 调用 `App_I2C_ScanOnce()` 会遍历所有已注册总线，并按总线号打印在线地址。
-- 串口输出示例：`[I2C][My_I2C1] found: 0x68`
-
-6) `My_I2C_MAX` 说明
-- `My_I2C_MAX` 是总线枚举上界（哨兵值），用于边界判断和遍历上限，不代表可用硬件总线。
-
 调试日志：
 4.26日：
 针对不同MCU主频不同，软件模拟的I2C和SPI速率也不同，所以给出的设备速率不仅需要结合设备自身，还需结合MCU主频能力，2者一起考虑来提供一个可靠速率来驱动设备，这样才能高效稳定工作。
+
+当前实现（速率画像集中管理）：
+- 统一配置文件：`app/BusRate.h`
+- 各设备驱动通过 `*_SPEED_PROFILE` 取默认速率，不在驱动里分散写死。
+
+当前软件总线速率挡位：
+- I2C：`50K / 100K / 200K / 400K`
+- SPI：`250K / 500K / 1M / 2M / 5M`
+
+推荐默认速率（按 MCU）：
+- F103
+	- OLED(I2C)：`100K`
+	- MPU6050(I2C)：`200K`
+	- QMC5883P(I2C)：`100K`
+	- BMP280(I2C)：`200K`
+	- OLED(SPI)：`500K`
+	- NRF24L01(SPI)：`1M`
+- F407
+	- OLED(I2C)：`100K`
+	- MPU6050(I2C)：`400K`
+	- QMC5883P(I2C)：`100K`
+	- BMP280(I2C)：`400K`
+	- OLED(SPI)：`1M`
+	- NRF24L01(SPI)：`5M`
+
+说明：
+- 该策略优先稳定性，再追求吞吐；如需提速，只改 `app/BusRate.h` 一处即可。

@@ -22,13 +22,21 @@ static void MySPI_DelayBySpeed(void)
 	{
 		/* 5M 档不额外插入软件延时，由 GPIO 翻转与函数开销决定极限速率。 */
 	}
+	else if (s_spiSpeed == SPI_SPEED_2M)
+	{
+		/* 2M 档同样不插入显式 us 延时，依赖指令开销形成自然节拍。 */
+	}
 	else if (s_spiSpeed == SPI_SPEED_1M)
 	{
 		Delay_us(1U);
 	}
-	else
+	else if (s_spiSpeed == SPI_SPEED_500K)
 	{
 		Delay_us(2U);
+	}
+	else
+	{
+		Delay_us(4U);
 	}
 }
 
@@ -95,9 +103,17 @@ void MySPI_SetSpeed(SPI_SpeedTypeDef speed)
 	{
 		s_spiSpeed = SPI_SPEED_5M;
 	}
+	else if (speed == SPI_SPEED_2M)
+	{
+		s_spiSpeed = SPI_SPEED_2M;
+	}
 	else if (speed == SPI_SPEED_1M)
 	{
 		s_spiSpeed = SPI_SPEED_1M;
+	}
+	else if (speed == SPI_SPEED_250K)
+	{
+		s_spiSpeed = SPI_SPEED_250K;
 	}
 	else
 	{

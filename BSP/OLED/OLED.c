@@ -262,17 +262,12 @@ void OLED_WriteData(uint8_t *Data, uint8_t Count)
 /** 函    数：设置页地址和列地址 */
 void OLED_SetCursor(uint8_t Page, uint8_t X)
 {
-	uint8_t column;
-
-	column = (uint8_t)(X + OLED_COLUMN_OFFSET);
-	if (column > 131U)
-	{
-		column = 131U;
-	}
+	/* SH1106 为 132 列，常见 1.3 寸屏幕起始列接在第 2 列。 */
+	// X = (uint8_t)(X + 2U);
 
 	OLED_WriteCommand((uint8_t)(0xB0U | Page));
-	OLED_WriteCommand((uint8_t)(0x10U | ((column & 0xF0U) >> 4)));
-	OLED_WriteCommand((uint8_t)(0x00U | (column & 0x0FU)));
+	OLED_WriteCommand((uint8_t)(0x10U | ((X & 0xF0U) >> 4)));
+	OLED_WriteCommand((uint8_t)(0x00U | (X & 0x0FU)));
 }
 
 /** 工具函数：整数次幂 */
@@ -711,7 +706,7 @@ void OLED_Printf(int16_t X, int16_t Y, uint8_t FontSize, char *format, ...)
 	char String[256];
 	va_list arg;
 	va_start(arg, format);
-	vsprintf(String, format, arg);
+	vsnprintf(String, sizeof(String), format, arg);
 	va_end(arg);
 	OLED_ShowString(X, Y, String, FontSize);
 }

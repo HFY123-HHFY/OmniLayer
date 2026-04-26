@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "My_SPI.h"
+#include "BusRate.h"
 #include "NRF24L01_Define.h"
 
 /*
@@ -30,7 +31,7 @@ typedef struct
  * 默认使用 My_SPI2 + 1MHz
  */
 #define NRF24L01_SPI_BUS   My_SPI2
-#define NRF24L01_SPI_SPEED SPI_SPEED_1M
+#define NRF24L01_SPI_SPEED NRF24L01_SPI_SPEED_PROFILE
 
 /* 发送地址与发送数据包。 */
 extern uint8_t NRF24L01_TxAddress[NRF24L01_ADDR_WIDTH];

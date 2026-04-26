@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "My_I2c.h"
+#include "BusRate.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -16,7 +17,7 @@ extern "C" {
 
 /* BMP280 绑定的软件 I2C 总线与速率。 */
 #define BMP280_I2C_BUS   My_I2C1
-#define BMP280_I2C_SPEED I2C_SPEED_400K
+#define BMP280_I2C_SPEED BMP280_I2C_SPEED_PROFILE
 
 #define BMP280_CHIP_ID                          (0xD0U)
 #define BMP280_RST_REG                          (0xE0U)

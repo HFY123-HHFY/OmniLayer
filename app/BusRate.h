@@ -1,0 +1,40 @@
+#ifndef __BUS_RATE_H
+#define __BUS_RATE_H
+
+#include "My_I2c/My_I2c.h"
+#include "My_SPI/My_SPI.h"
+
+/*
+ * 设备总线速率画像（按 MCU 目标区分）：
+ * - 目标：稳定优先，并保留可调余量。
+ * - 原则：设备能力上限 + 软件模拟总线能力 + 主频余量。
+ */
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_F103)
+
+/* 软件 I2C F103 */
+#define OLED_I2C_SPEED_PROFILE     I2C_SPEED_100K
+#define MPU6050_I2C_SPEED_PROFILE  I2C_SPEED_200K
+#define QMC5883P_I2C_SPEED_PROFILE I2C_SPEED_100K
+#define BMP280_I2C_SPEED_PROFILE   I2C_SPEED_200K
+
+/* 软件 SPI F103 */
+#define OLED_SPI_SPEED_PROFILE     SPI_SPEED_500K
+#define NRF24L01_SPI_SPEED_PROFILE SPI_SPEED_1M
+
+#elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
+
+/* 软件 I2C F407 */
+#define OLED_I2C_SPEED_PROFILE     I2C_SPEED_100K
+#define MPU6050_I2C_SPEED_PROFILE  I2C_SPEED_400K
+#define QMC5883P_I2C_SPEED_PROFILE I2C_SPEED_100K
+#define BMP280_I2C_SPEED_PROFILE   I2C_SPEED_400K
+
+/* 软件 SPI F407 */
+#define OLED_SPI_SPEED_PROFILE     SPI_SPEED_1M
+#define NRF24L01_SPI_SPEED_PROFILE SPI_SPEED_5M
+
+#else
+#error "Unsupported ENROLL_MCU_TARGET for bus rate profile."
+#endif
+
+#endif /* __BUS_RATE_H */

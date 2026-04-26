@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "OLED_Data.h"
+#include "BusRate.h"
 
 /*参数宏定义*********************/
 /* FontSize参数取值（同时作为字符横向偏移宽度） */
@@ -35,21 +36,14 @@ typedef struct
  * 默认使用 My_I2C2 + 400KHz
  */
 #define OLED_I2C_BUS   My_I2C2
-#define OLED_I2C_SPEED I2C_SPEED_100K
+#define OLED_I2C_SPEED OLED_I2C_SPEED_PROFILE
 
 /*
  * OLED 绑定的软件 SPI 总线与速率
  * 默认使用 My_SPI1 + 500KHz
  */
 #define OLED_SPI_BUS   My_SPI1
-#define OLED_SPI_SPEED SPI_SPEED_500K
-
-/*
- * OLED 列起始偏移：
- * - SSD1306(常见0.96寸) 设为 0
- * - SH1106(常见1.3寸)   设为 2
- */
-#define OLED_COLUMN_OFFSET 0U
+#define OLED_SPI_SPEED OLED_SPI_SPEED_PROFILE
 
 #ifdef __cplusplus
 extern "C" {

@@ -14,6 +14,24 @@ static volatile MyI2C_BusId_t s_activeBusId = My_I2C1;
 static volatile I2C_SpeedTypeDef s_i2cSpeed = I2C_SPEED_100K;
 
 /*
+ * I2C 开漏等效驱动：
+ * - 输出 0：配置为输出并拉低
+ * - 输出 1：配置为上拉输入，释放总线
+ */
+static void MyI2C_DriveLine(void *port, uint16_t pin, uint8_t level)
+{
+	if (level != 0U)
+	{
+		API_GPIO_InitInputPullUp(port, pin);
+	}
+	else
+	{
+		API_GPIO_InitOutput(port, pin);
+		API_GPIO_Write(port, pin, 0U);
+	}
+}
+
+/*
  * 按当前速率档位，把“100k 档基准延时”换算成实际延时。
  * 例如：baseUs=5 时，100k 档约为 5us，400k 档约为 1us。
  */
@@ -24,6 +42,14 @@ static void MyI2C_DelayByBaseUs(uint8_t baseUs)
 	if (s_i2cSpeed == I2C_SPEED_400K)
 	{
 		delayUs = (uint16_t)(((uint16_t)baseUs * I2C_DELAY_400K + I2C_DELAY_100K - 1U) / I2C_DELAY_100K);
+	}
+	else if (s_i2cSpeed == I2C_SPEED_200K)
+	{
+		delayUs = (uint16_t)(((uint16_t)baseUs * I2C_DELAY_200K + I2C_DELAY_100K - 1U) / I2C_DELAY_100K);
+	}
+	else if (s_i2cSpeed == I2C_SPEED_50K)
+	{
+		delayUs = (uint16_t)(((uint16_t)baseUs * I2C_DELAY_50K + I2C_DELAY_100K - 1U) / I2C_DELAY_100K);
 	}
 	else
 	{
@@ -103,6 +129,14 @@ void MyI2C_SetSpeed(I2C_SpeedTypeDef speed)
 	{
 		s_i2cSpeed = I2C_SPEED_400K;
 	}
+	else if (speed == I2C_SPEED_200K)
+	{
+		s_i2cSpeed = I2C_SPEED_200K;
+	}
+	else if (speed == I2C_SPEED_50K)
+	{
+		s_i2cSpeed = I2C_SPEED_50K;
+	}
 	else
 	{
 		s_i2cSpeed = I2C_SPEED_100K;
@@ -133,10 +167,9 @@ void MyI2C_Init(void)
 	for (i = 0U; i < s_i2cCount; i++)
 	{
 		config = &s_i2cTable[i];
-		API_GPIO_InitOutput(config->port, config->sclPin);
-		API_GPIO_InitOutput(config->port, config->sdaPin);
-		API_GPIO_Write(config->port, config->sclPin, 1U);
-		API_GPIO_Write(config->port, config->sdaPin, 1U);
+		/* I2C 空闲态：SCL=1，SDA=1（释放两条线） */
+		MyI2C_DriveLine(config->port, config->sclPin, 1U);
+		MyI2C_DriveLine(config->port, config->sdaPin, 1U);
 	}
 }
 
@@ -154,7 +187,7 @@ void MyI2C_W_SCL(uint8_t BitValue) // 写SCL
 		return;
 	}
 
-	API_GPIO_Write(config->port, config->sclPin, BitValue);
+	MyI2C_DriveLine(config->port, config->sclPin, BitValue);
 	MyI2C_DelayByBaseUs(5U);
 }
 
@@ -172,7 +205,7 @@ void MyI2C_W_SDA(uint8_t BitValue) // 写SDA
 		return;
 	}
 
-	API_GPIO_Write(config->port, config->sdaPin, BitValue);
+	MyI2C_DriveLine(config->port, config->sdaPin, BitValue);
 	MyI2C_DelayByBaseUs(5U);
 }
 
@@ -208,7 +241,7 @@ void MyI2C_Set_SDA_Input(void) // 设置SDA为输入模式
 		return;
 	}
 
-	API_GPIO_InitInput(config->port, config->sdaPin);
+	API_GPIO_InitInputPullUp(config->port, config->sdaPin);
 }
 
 /*

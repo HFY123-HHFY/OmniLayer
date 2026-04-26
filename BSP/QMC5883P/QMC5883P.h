@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include "My_I2c.h"
+#include "BusRate.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -13,7 +14,7 @@ extern "C" {
 
 /* QMC5883P 绑定的软件 I2C 总线与速率。 */
 #define QMC5883P_I2C_BUS   My_I2C1
-#define QMC5883P_I2C_SPEED I2C_SPEED_100K
+#define QMC5883P_I2C_SPEED QMC5883P_I2C_SPEED_PROFILE
 
 /* 寄存器定义 */
 #define QMC5883P_REG_CHIPID       0x00U

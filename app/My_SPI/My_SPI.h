@@ -54,8 +54,10 @@ void MySPI_Init(void);
  */
 typedef enum
 {
-	SPI_SPEED_500K = 0,
+	SPI_SPEED_250K = 0,
+	SPI_SPEED_500K,
 	SPI_SPEED_1M,
+	SPI_SPEED_2M,
 	SPI_SPEED_5M
 } SPI_SpeedTypeDef;
 
