@@ -4,6 +4,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "My_I2c.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -11,6 +13,10 @@ extern "C" {
 /* BMP280 I2C 8-bit 设备地址（写地址） */
 #define BMP280_ADDR                             (0xECU)
 #define BMP280_DEFAULT_CHIP_ID                  (0x58U)
+
+/* BMP280 绑定的软件 I2C 总线与速率。 */
+#define BMP280_I2C_BUS   My_I2C1
+#define BMP280_I2C_SPEED I2C_SPEED_400K
 
 #define BMP280_CHIP_ID                          (0xD0U)
 #define BMP280_RST_REG                          (0xE0U)

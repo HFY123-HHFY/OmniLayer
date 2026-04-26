@@ -9,8 +9,8 @@ float Angle_XY = 0.0f;
 /*  选择I2C1 设置QMC5883P I2C速率为100kHZ */
 static void QMC_SelectI2CSpeed(void)
 {
-	MyI2C_SelectBus(My_I2C1);
-	MyI2C_SetSpeed(I2C_SPEED_100K);
+	MyI2C_SelectBus(QMC5883P_I2C_BUS);
+	MyI2C_SetSpeed(QMC5883P_I2C_SPEED);
 }
 
 /* 向指定寄存器写 1 字节。 */

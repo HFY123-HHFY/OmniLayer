@@ -24,6 +24,7 @@
 #include "My_I2c.h"
 #include "My_SPI.h"
 #include "OLED.h"
+#include "NRF24L01.h"
 #include "gpio.h"
 #include "usart.h"
 #include "adc.h"
@@ -71,6 +72,9 @@ void Enroll_SPI_Register(void);
 
 /* 注册当前板子的 OLED SPI 控制引脚（DC/RES）。 */
 void Enroll_OLED_Register(void);
+
+/* 注册当前板子的 NRF24L01 控制引脚（CE）。 */
+void Enroll_NRF24L01_Register(void);
 
 /* 注册当前板子的 PWM 引脚映射表。 */
 void Enroll_PWM_Register(void);

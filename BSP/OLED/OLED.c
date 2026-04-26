@@ -10,6 +10,10 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+/*
+注:	移植来源-江协科技 OLED 驱动代码
+*/
+
 /**
 	* 数据存储格式：
 	* 纵向8点，高位在下，先从左到右，再从上到下；每个Bit对应一个像素点。
@@ -119,11 +123,18 @@ static void OLED_W_RES(uint8_t bitValue)
 	API_GPIO_Write(config->resPort, config->resPin, bitValue);
 }
 
-/*  选择I2C2 设置OLED I2C速率为400kHZ */
+/* 选择I2C2 设置OLED I2C速率档 */
 static void OLED_SelectI2CSpeed(void)
 {
-	MyI2C_SelectBus(My_I2C2);
-	MyI2C_SetSpeed(I2C_SPEED_400K);
+	MyI2C_SelectBus(OLED_I2C_BUS);
+	MyI2C_SetSpeed(OLED_I2C_SPEED);
+}
+
+/* 选择 OLED SPI 速率档位 */
+static void OLED_SelectSPISpeed(void)
+{
+	MySPI_SelectBus(OLED_SPI_BUS);
+	MySPI_SetSpeed(OLED_SPI_SPEED);
 }
 
 /* SPI 发送 1 字节（通过软件 SPI 协议层交换接口实现）。 */
@@ -149,6 +160,7 @@ void OLED_GPIO_Init(void)
 
 	if (s_oledInterface == OLED_IF_SPI)
 	{
+		OLED_SelectSPISpeed();
 		MySPI_Init();
 
 		spiCtrl = OLED_GetSpiCtrlConfig();
@@ -199,6 +211,7 @@ void OLED_WriteCommand(uint8_t Command)
 {
 	if (s_oledInterface == OLED_IF_SPI)
 	{
+		OLED_SelectSPISpeed();
 		MySPI_Start();
 		OLED_W_DC(0U);
 		OLED_SPI_SendByte(Command);
@@ -222,6 +235,7 @@ void OLED_WriteData(uint8_t *Data, uint8_t Count)
 
 	if (s_oledInterface == OLED_IF_SPI)
 	{
+		OLED_SelectSPISpeed();
 		MySPI_Start();
 		OLED_W_DC(1U);
 		for (i = 0U; i < Count; i++)
@@ -248,9 +262,17 @@ void OLED_WriteData(uint8_t *Data, uint8_t Count)
 /** 函    数：设置页地址和列地址 */
 void OLED_SetCursor(uint8_t Page, uint8_t X)
 {
+	uint8_t column;
+
+	column = (uint8_t)(X + OLED_COLUMN_OFFSET);
+	if (column > 131U)
+	{
+		column = 131U;
+	}
+
 	OLED_WriteCommand((uint8_t)(0xB0U | Page));
-	OLED_WriteCommand((uint8_t)(0x10U | ((X & 0xF0U) >> 4)));
-	OLED_WriteCommand((uint8_t)(0x00U | (X & 0x0FU)));
+	OLED_WriteCommand((uint8_t)(0x10U | ((column & 0xF0U) >> 4)));
+	OLED_WriteCommand((uint8_t)(0x00U | (column & 0x0FU)));
 }
 
 /** 工具函数：整数次幂 */

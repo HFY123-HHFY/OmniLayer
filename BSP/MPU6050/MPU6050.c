@@ -12,8 +12,8 @@
 /* 选择I2C1 设置MPU6050 I2C速率为400kHZ */
 static void MPU_SelectI2CSpeed(void)
 {
-	MyI2C_SelectBus(My_I2C1);
-	MyI2C_SetSpeed(I2C_SPEED_400K);
+	MyI2C_SelectBus(MPU6050_I2C_BUS);
+	MyI2C_SetSpeed(MPU6050_I2C_SPEED);
 }
 
 /*

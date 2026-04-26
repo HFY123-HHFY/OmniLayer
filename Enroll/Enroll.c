@@ -26,12 +26,16 @@
 	{ (uint8_t)(id), port, sclPin, sdaPin },
 
 /* ENROLL_SPI_ITEM 负责把 SPI 映射展开成 MySPI_Config_t 结构体项。 */
-#define ENROLL_SPI_ITEM(csPort, csPin, sckPort, sckPin, mosiPort, mosiPin, misoPort, misoPin) \
-	{ csPort, csPin, sckPort, sckPin, mosiPort, mosiPin, misoPort, misoPin },
+#define ENROLL_SPI_ITEM(id, csPort, csPin, sckPort, sckPin, mosiPort, mosiPin, misoPort, misoPin) \
+	{ (uint8_t)(id), csPort, csPin, sckPort, sckPin, mosiPort, mosiPin, misoPort, misoPin },
 
 /* ENROLL_OLED_SPI_CTRL_ITEM 负责把 OLED SPI 控制引脚展开成配置项。 */
 #define ENROLL_OLED_SPI_CTRL_ITEM(dcPort, dcPin, resPort, resPin) \
 	{ dcPort, dcPin, resPort, resPin },
+
+/* ENROLL_NRF24L01_CTRL_ITEM 负责把 NRF24L01 CE 控制引脚展开成配置项。 */
+#define ENROLL_NRF24L01_CTRL_ITEM(cePort, cePin) \
+	{ cePort, cePin },
 
 /* ENROLL_KEY_ITEM 负责把按键映射展开成 KEY_Config_t 结构体项。 */
 #define ENROLL_KEY_ITEM(id, port, pin) \
@@ -75,6 +79,12 @@ static const OLED_SpiCtrlConfig_t s_oledSpiCtrlTable[] =
 	HW_OLED_SPI_CTRL_MAP(ENROLL_OLED_SPI_CTRL_ITEM)
 };
 
+/* 当前板子的 NRF24L01 控制引脚注册表（CE）。 */
+static const NRF24L01_CtrlConfig_t s_nrf24l01CtrlTable[] =
+{
+	HW_NRF24L01_CTRL_MAP(ENROLL_NRF24L01_CTRL_ITEM)
+};
+
 /* 当前板子的 KEY 注册表。 */
 static const KEY_Config_t s_keyTable[] =
 {
@@ -98,6 +108,7 @@ static const API_ADC_Config_t s_adcTable[] =
 #undef ENROLL_I2C_ITEM
 #undef ENROLL_SPI_ITEM
 #undef ENROLL_OLED_SPI_CTRL_ITEM
+#undef ENROLL_NRF24L01_CTRL_ITEM
 #undef ENROLL_KEY_ITEM
 #undef ENROLL_PWM_ITEM
 #undef ENROLL_ADC_ITEM
@@ -140,6 +151,12 @@ void Enroll_SPI_Register(void)
 void Enroll_OLED_Register(void)
 {
 	OLED_RegisterSpiCtrl(s_oledSpiCtrlTable, HW_OLED_SPI_CTRL_COUNT);
+}
+
+/* Enroll_NRF24L01_Register：把 NRF24L01 CE 控制引脚映射注册给驱动层。 */
+void Enroll_NRF24L01_Register(void)
+{
+	NRF24L01_RegisterCtrl(s_nrf24l01CtrlTable, HW_NRF24L01_CTRL_COUNT);
 }
 
 /* Enroll_PWM_Register：把当前板子的 PWM 引脚映射注册给 API 层。 */

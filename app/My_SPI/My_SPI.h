@@ -17,6 +17,8 @@
 
 typedef struct
 {
+	/* SPI 总线编号。 */
+	uint8_t id;
 	/* CS 片选端口/引脚。 */
 	void *csPort;
 	uint16_t csPin;
@@ -31,11 +33,36 @@ typedef struct
 	uint16_t misoPin;
 } MySPI_Config_t;
 
+typedef enum
+{
+	My_SPI1 = 0,
+	My_SPI2,
+	/* 总线数量上界/非法值哨兵，不作为真实总线使用。 */
+	My_SPI_MAX
+} MySPI_BusId_t;
+
 /* 注册板级 SPI 配置表。 */
 void MySPI_Register(const MySPI_Config_t *configTable, uint8_t count);
+/* 选择当前操作的软件 SPI 总线。 */
+void MySPI_SelectBus(MySPI_BusId_t busId);
 
 /* 软件 SPI 初始化（模式0默认空闲：CS=1, SCK=0）。 */
 void MySPI_Init(void);
+
+/*
+ * 软件 SPI 速率档位
+ */
+typedef enum
+{
+	SPI_SPEED_500K = 0,
+	SPI_SPEED_1M,
+	SPI_SPEED_5M
+} SPI_SpeedTypeDef;
+
+/* 设置软件 SPI 速率档位。 */
+void MySPI_SetSpeed(SPI_SpeedTypeDef speed);
+/* 获取当前软件 SPI 速率档位。 */
+SPI_SpeedTypeDef MySPI_GetSpeed(void);
 
 /* 引脚电平控制接口（协议层调用）。 */
 void MySPI_W_SS(uint8_t bitValue);

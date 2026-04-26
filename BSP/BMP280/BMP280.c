@@ -59,8 +59,8 @@ static uint32_t bmp280CompensateP(int32_t adcP);
 /*  选择I2C1 设置BMP280 I2C速率为400kHZ */
 static void BMP280_SelectI2CSpeed(void)
 {
-	MyI2C_SelectBus(My_I2C1);
-	MyI2C_SetSpeed(I2C_SPEED_400K);
+	MyI2C_SelectBus(BMP280_I2C_BUS);
+	MyI2C_SetSpeed(BMP280_I2C_SPEED);
 }
 
 /*

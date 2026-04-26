@@ -23,6 +23,7 @@
 #include "MPU6050_Int.h"
 #include "QMC5883P.h"
 #include "BMP280.h"
+#include "NRF24L01.h"
 
 int main(void)	
 {
@@ -32,6 +33,7 @@ int main(void)
 	Enroll_I2C_Register();					/*  I2C 资源注册   */
 	Enroll_SPI_Register();					/*  SPI 资源注册   */
 	Enroll_OLED_Register();				/*  OLED SPI控制引脚资源注册 */
+	Enroll_NRF24L01_Register();			/*  NRF24L01 CE 控制引脚资源注册 */
 	Enroll_PWM_Register();					/*  PWM 资源注册   */
 	Enroll_ADC_Register();					/*  ADC 资源注册   */
 	SYS_Init();								/* 系统层初始化 */
@@ -55,7 +57,9 @@ int main(void)
 	mpu_dmp_init(); 	/* 初始化 MPU6050 DMP */
 	QMC_Init();			/* 初始化 QMC5883P */
 	BMP280Init();		/* 初始化 BMP280 */
-	OLED_Init(OLED_IF_SPI);		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
+	NRF24L01_Init();	/* 初始化 NRF24L01 */
+	App_NRF24L01_TestOnce();	/* 开机执行一次 NRF24L01 通信测试 */
+	OLED_Init(OLED_IF_I2C);		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
 	
 	while(1)
 	{
@@ -66,7 +70,6 @@ int main(void)
 		// alt = BMP_Data();
 
 /*OLED测试*/
-		OLED_Clear();
 		OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
 		OLED_Printf(0, 16, OLED_8X16, "P:%.1f",Pitch);
 		OLED_Printf(0, 32, OLED_8X16, "R:%.1f",Roll);

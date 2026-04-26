@@ -2,6 +2,7 @@
 #define __QMC5883P_H
 
 #include <stdint.h>
+#include "My_I2c.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -9,6 +10,10 @@ extern "C" {
 
 /* QMC5883P I2C 8-bit 地址（写地址） */
 #define QMC5883P_I2C_ADDR_W      0x58U
+
+/* QMC5883P 绑定的软件 I2C 总线与速率。 */
+#define QMC5883P_I2C_BUS   My_I2C1
+#define QMC5883P_I2C_SPEED I2C_SPEED_100K
 
 /* 寄存器定义 */
 #define QMC5883P_REG_CHIPID       0x00U

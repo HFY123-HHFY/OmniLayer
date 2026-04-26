@@ -30,6 +30,27 @@ typedef struct
 	uint16_t resPin;
 } OLED_SpiCtrlConfig_t;
 
+/*
+ * OLED 绑定的软件 I2C 总线与速率
+ * 默认使用 My_I2C2 + 400KHz
+ */
+#define OLED_I2C_BUS   My_I2C2
+#define OLED_I2C_SPEED I2C_SPEED_100K
+
+/*
+ * OLED 绑定的软件 SPI 总线与速率
+ * 默认使用 My_SPI1 + 500KHz
+ */
+#define OLED_SPI_BUS   My_SPI1
+#define OLED_SPI_SPEED SPI_SPEED_500K
+
+/*
+ * OLED 列起始偏移：
+ * - SSD1306(常见0.96寸) 设为 0
+ * - SH1106(常见1.3寸)   设为 2
+ */
+#define OLED_COLUMN_OFFSET 0U
+
 #ifdef __cplusplus
 extern "C" {
 #endif
