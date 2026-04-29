@@ -41,7 +41,7 @@
 #endif
 
 #define ENROLL_GPIO_INIT_FN   API_GPIO_InitOutput
-#define ENROLL_GPIO_INPUT_FN   API_GPIO_InitInputPullUp
+#define ENROLL_GPIO_INPUT_FN  API_GPIO_InitInputPullUp
 #define ENROLL_GPIO_WRITE_FN  API_GPIO_Write
 #define ENROLL_GPIO_READ_FN   API_GPIO_Read
 

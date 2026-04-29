@@ -67,10 +67,13 @@ endif()
 # 应用层（app）：业务入口与任务调度。
 set(APP_LAYER_SOURCES
     ${CMAKE_SOURCE_DIR}/app/main.c
+    ${CMAKE_SOURCE_DIR}/app/Control/Control.c
     ${CMAKE_SOURCE_DIR}/app/My_Usart/My_Usart.c
     ${CMAKE_SOURCE_DIR}/app/My_I2c/My_I2c.c
     ${CMAKE_SOURCE_DIR}/app/My_SPI/My_SPI.c
     ${CMAKE_SOURCE_DIR}/app/Control_Task/Control_Task.c
+    ${CMAKE_SOURCE_DIR}/app/PID/PID.c
+    ${CMAKE_SOURCE_DIR}/app/Filter/Filter.c
 )
 
 # 系统层（SYSTEM）：中断管理与板级系统封装。
@@ -121,9 +124,12 @@ if(RESOLVED_MCU_TARGET STREQUAL "F103")
         # 头文件搜索路径：新增目录在这里加，删除目录在这里移除。
         ${CMAKE_SOURCE_DIR}/app
         ${CMAKE_SOURCE_DIR}/app/Control_Task
+        ${CMAKE_SOURCE_DIR}/app/Control
         ${CMAKE_SOURCE_DIR}/app/My_Usart
         ${CMAKE_SOURCE_DIR}/app/My_I2c
         ${CMAKE_SOURCE_DIR}/app/My_SPI
+        ${CMAKE_SOURCE_DIR}/app/PID
+        ${CMAKE_SOURCE_DIR}/app/Filter
         ${CMAKE_SOURCE_DIR}/API
         ${CMAKE_SOURCE_DIR}/API/inc
         ${CMAKE_SOURCE_DIR}/Enroll
@@ -165,9 +171,12 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
         # 头文件搜索路径：新增目录在这里加，删除目录在这里移除。
         ${CMAKE_SOURCE_DIR}/app
         ${CMAKE_SOURCE_DIR}/app/Control_Task
+        ${CMAKE_SOURCE_DIR}/app/Control
         ${CMAKE_SOURCE_DIR}/app/My_Usart
         ${CMAKE_SOURCE_DIR}/app/My_I2c
         ${CMAKE_SOURCE_DIR}/app/My_SPI
+        ${CMAKE_SOURCE_DIR}/app/PID
+        ${CMAKE_SOURCE_DIR}/app/Filter
         ${CMAKE_SOURCE_DIR}/API
         ${CMAKE_SOURCE_DIR}/API/inc
         ${CMAKE_SOURCE_DIR}/Enroll

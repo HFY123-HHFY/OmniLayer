@@ -3,6 +3,7 @@
 #include "tim.h"
 #include "usart.h"
 #include "My_Usart/My_Usart.h"
+#include "Control/Control.h"
 
 #include "MPU6050_Int.h"
 
@@ -25,6 +26,7 @@ void TIM3_IRQHandler(void)
 {
 	static uint16_t time_t = 0U; /* 程序运行时间计数 */
 	static uint8_t printf_50ms = 0U; /* 50ms printf 节拍计数 */
+	static uint8_t pid_2ms_tick = 0U; /* 2ms PID 节拍计数 */
 
 	if ((TIM3->SR & TIM_SR_UIF) == 0U)
 	{
@@ -37,6 +39,13 @@ void TIM3_IRQHandler(void)
 	Key_Tick();
 	printf_50ms++;
 	time_t++;
+	pid_2ms_tick++;
+
+	if (pid_2ms_tick >= 2U)
+	{
+		pid_2ms_tick = 0U;
+		pid_task_flag = 1U;
+	}
 
 	if (printf_50ms >= 50U)
 	{

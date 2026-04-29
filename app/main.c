@@ -16,8 +16,11 @@
 #include "My_SPI/My_SPI.h"
 #include "My_Usart/My_Usart.h"
 #include "Control_Task/Control_Task.h"
+#include "Control/Control.h"
 
 /*BSP硬件抽象层*/
+#include "LED.h"
+#include "KEY.h"
 #include "OLED.h"
 #include "MPU6050.h"
 #include "MPU6050_Int.h"
@@ -27,6 +30,7 @@
 
 int main(void)	
 {
+/* 板子注册层初始化 */
 	Enroll_LED_Init(LED_LOW); 				/*  LED 资源注册   */
 	Enroll_KEY_Init();						/*  KEY 资源注册   */
 	Enroll_USART_Register(); 				/*  USART 资源注册 */
@@ -47,6 +51,7 @@ int main(void)
 	API_PWM_Init(API_PWM_TIM1, 4000-1, 840-1);	/* 407_PWM初始化 */
 	API_ADC_Init(API_ADC1);					/* ADC1 初始化*/
 
+/* 通信协议初始化 */
 	MyI2C_Init();							/* 软件 I2C 初始化 */
 	App_I2C_ScanOnce();						/* 开机执行一次 I2C 扫描 */
 	MySPI_Init();							/* 软件 SPI 初始化 */
@@ -59,15 +64,19 @@ int main(void)
 	BMP280Init();		/* 初始化 BMP280 */
 	NRF24L01_Init();	/* 初始化 NRF24L01 */
 	App_NRF24L01_TestOnce();	/* 开机执行一次 NRF24L01 通信测试 */
-	OLED_Init(OLED_IF_I2C);		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
+	OLED_Init(OLED_IF_SPI);		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
 	
+/* APP应用层初始化 */
+	PID_Contorl_Init();			/* 串级 PID 控制器初始化 */
+
 	while(1)
 	{
-
 /*I2C测试-9轴*/
 		mpu_angle();
 		// Angle_XY = QMC_Data();
 		// alt = BMP_Data();
+
+		PID_Pitch_Roll_Combined(Pitch, Roll);
 
 /*OLED测试*/
 		OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
