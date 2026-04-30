@@ -68,6 +68,7 @@ endif()
 set(APP_LAYER_SOURCES
     ${CMAKE_SOURCE_DIR}/app/main.c
     ${CMAKE_SOURCE_DIR}/app/Control/Control.c
+    ${CMAKE_SOURCE_DIR}/app/Control_Task/Control_Task_Rtos.c
     ${CMAKE_SOURCE_DIR}/app/My_Usart/My_Usart.c
     ${CMAKE_SOURCE_DIR}/app/My_I2c/My_I2c.c
     ${CMAKE_SOURCE_DIR}/app/My_SPI/My_SPI.c
@@ -157,6 +158,14 @@ if(RESOLVED_MCU_TARGET STREQUAL "F103")
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F1/Start/system_stm32f10x.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F1/Start/startup_stm32f103c8tx_gcc.c
     )
+
+    # FreeRTOS: F103 使用 Cortex-M3 移植层和独立配置。
+    set(FREERTOS_PORT_DIR
+        ${CMAKE_SOURCE_DIR}/Middlewares/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/portable/GCC/ARM_CM3
+    )
+    set(FREERTOS_CONFIG_DIR
+        ${CMAKE_SOURCE_DIR}/Middlewares/FreeRTOS-LTS/FreeRTOSConfig/F103
+    )
 elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
     set(TARGET_NAME OmniLayer_F407)
     set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/Core/STM32F407/cmake/STM32F407VE_FLASH.ld)
@@ -204,9 +213,32 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start/system_stm32f4xx.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start/startup_stm32f407vetx_gcc.c
     )
+
+    # FreeRTOS: F407 使用 Cortex-M4F(FPU) 移植层和独立配置。
+    set(FREERTOS_PORT_DIR
+        ${CMAKE_SOURCE_DIR}/Middlewares/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel/portable/GCC/ARM_CM4F
+    )
+    set(FREERTOS_CONFIG_DIR
+        ${CMAKE_SOURCE_DIR}/Middlewares/FreeRTOS-LTS/FreeRTOSConfig/F407
+    )
 else()
     message(FATAL_ERROR "Unsupported MCU target: ${RESOLVED_MCU_TARGET}")
 endif()
+
+set(FREERTOS_KERNEL_DIR
+    ${CMAKE_SOURCE_DIR}/Middlewares/FreeRTOS-LTS/FreeRTOS/FreeRTOS-Kernel
+)
+
+set(FREERTOS_SOURCES
+    ${FREERTOS_KERNEL_DIR}/list.c
+    ${FREERTOS_KERNEL_DIR}/queue.c
+    ${FREERTOS_KERNEL_DIR}/tasks.c
+    ${FREERTOS_KERNEL_DIR}/timers.c
+    ${FREERTOS_KERNEL_DIR}/event_groups.c
+    ${FREERTOS_KERNEL_DIR}/stream_buffer.c
+    ${FREERTOS_PORT_DIR}/port.c
+    ${FREERTOS_KERNEL_DIR}/portable/MemMang/heap_4.c
+)
 
 set(TARGET_SOURCES
     ${APP_LAYER_SOURCES}
@@ -215,12 +247,16 @@ set(TARGET_SOURCES
     ${ENROLL_LAYER_SOURCES}
     ${BSP_LAYER_SOURCES}
     ${MCU_SOURCES}
+    ${FREERTOS_SOURCES}
 )
 
 add_executable(${TARGET_NAME} ${TARGET_SOURCES})
 
 target_include_directories(${TARGET_NAME} PRIVATE
     ${MCU_INCLUDE_DIRS}
+    ${FREERTOS_KERNEL_DIR}/include
+    ${FREERTOS_PORT_DIR}
+    ${FREERTOS_CONFIG_DIR}
 )
 
 target_compile_definitions(${TARGET_NAME} PRIVATE
