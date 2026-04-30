@@ -6,9 +6,9 @@ extern "C" {
 #endif
 
 /*
- * 创建最小 FreeRTOS 验证任务：
- * 1) LED1: 1000ms 翻转
- * 2) LED2: 500ms 翻转
+ * RTOS 任务层入口：
+ * 1) 创建系统初始化任务（一次性执行后自删除）
+ * 2) 创建 LED1/LED2 周期闪烁任务
  */
 void ControlTask_RtosCreate(void);
 

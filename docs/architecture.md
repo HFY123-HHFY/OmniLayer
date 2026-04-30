@@ -80,3 +80,10 @@
 ### 8.5 枚举上界说明
 
 - `My_I2C_MAX` 是 `MyI2C_BusId_t` 的上界/哨兵值，用于边界判断，不代表真实总线实例。
+
+## 9. FreeRTOS 分支开发入口（新增）
+
+- 分层开发规范：`docs/freertos_dev_rules.md`
+- 中断归属与优先级规范：`docs/freertos_interrupt_rules.md`
+
+建议在 FreeRTOS 分支提交前，按上述两份文档做一次自检。

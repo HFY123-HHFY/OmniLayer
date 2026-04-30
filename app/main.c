@@ -14,8 +14,11 @@
 int main(void)
 {
 	/*
-	 * 最小 RTOS 验证仅保留 LED 资源初始化，
-	 * 其它外设初始化留待后续逐步迁移到任务模型。
+	 * main 在 RTOS 架构下只做两件事：
+	 * 1) 板级最小初始化（这里先保留 LED/SYS）
+	 * 2) 创建任务并启动调度器
+	 *
+	 * 业务循环不再写在 main 的 while(1)，而是写到各个任务函数里。
 	 */
 	Enroll_LED_Init(LED_LOW);
 	SYS_Init();
@@ -24,7 +27,10 @@ int main(void)
 	ControlTask_RtosCreate();
 	vTaskStartScheduler();
 
-	/* 理论上不会到这里，除非堆或任务创建失败。 */
+	/*
+	 * 理论上不会到这里，除非堆内存不足或任务创建失败。
+	 * 正常运行时 CPU 会在 FreeRTOS 调度器里切换 Task1/Task2。
+	 */
 	for (;;)
 	{
 	}
