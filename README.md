@@ -1,61 +1,141 @@
---- 构建嵌入式软件开发架构 ---
+# OmniLayer
 
-app：应用层，控制任务与业务逻辑（如 main.c、Control_Task 等）
+一个面向多 MCU 与多开发范式的嵌入式工程框架，使用 CMake + GCC + OpenOCD 统一构建、烧录和维护流程。
 
-API：MCU 片内外设统一接口层（如 gpio/tim/usart 抽象接口）
+当前支持/覆盖方向：STM32F103、STM32F407，及 TI MSPG3507（MSPM0G3507）维护线。
 
-BSP：板级支持层，封装板载外设（LED/KEY/OLED/MPU6050/QMC5883P 等）
+## 🚀 项目定位
 
-Enroll：硬件资源注册层，把 BSP 映射到当前 MCU 的具体引脚与外设实例
+OmniLayer 的核心目标是把应用逻辑和芯片实现解耦，让工程可迁移、可扩展、可长期维护。
 
-Core：MCU 核心驱动实现层，放各芯片族的 GPIO/TIM/USART 等底层代码
+- 同一套业务代码，按目标芯片切换底层实现。
+- 统一构建入口，减少多工程并行维护成本。
+- 保留 VS Code 与 Keil 双工作流，兼容不同团队习惯。
 
-MDK_ARM：保留 Keil5 工程与调试配置，兼容不同开发者开发习惯
+## 🌿 分支策略
 
-Middlewares：中间件层（如 FreeRTOS、USB 等）
+为了让协作者快速理解仓库方向，当前分支职责如下：
 
-SYSTEM：系统层，时钟、中断分发、系统级初始化相关代码
+| 分支 | 定位 | 状态 |
+|---|---|---|
+| `main` | 裸机开发主线（当前稳定主架构） | 持续维护 |
+| `FreeRTOS` | 操作系统开发主线（RTOS 方向） | 持续维护 |
+| `MSPG3507` | TI MSPG3507 / MSPM0G3507 适配与迁移线 | 维护中 |
 
-Drivers：芯片启动文件、寄存器定义、标准库/HAL/CMSIS 等 SDK 资源
+## ✨ 架构亮点
 
----
+- 🧭 多目标工程：同一仓库支持多 MCU 目标扩展。
+- 🧱 分层清晰：应用层、接口层、BSP、注册层、核心层职责明确。
+- ⚙️ 工具统一：CMakePresets 构建，OpenOCD 烧录，流程一致。
+- 🚌 软件总线：I2C/SPI 参数集中配置，调优成本低。
+- 🔁 双 IDE 兼容：VS Code + CMake 与 Keil 并行可用。
 
-入口：
+## 🧩 注册层（Enroll）特色
 
-1) 根目录 `CMakeLists.txt`（统一构建入口，默认按 `Enroll/Enroll.h` 中 `ENROLL_MCU_TARGET` 自动选择 F103/F407）。
-2) 根目录 `CMakePresets.json`（Debug/Release 预设）。
-3) `OpenOCD/F103_OpenOCD.cfg` 与 `OpenOCD/F407_OpenOCD.cfg`（F103/F407 下载配置）。
-4) 详细架构说明见 `docs/architecture.md`。
+`Enroll/` 是本项目最有辨识度的一层，作用可以理解为“硬件资源注册中心”：
 
----
+- 把板级外设资源映射到具体 MCU 引脚与外设实例。
+- 让上层 BSP / APP 不需要关心不同芯片的引脚差异。
+- 切换 MCU 时，主要改注册与底层映射，不重写整套业务逻辑。
 
-调试日志：
-4.26日：
-针对不同MCU主频不同，软件模拟的I2C和SPI速率也不同，所以给出的设备速率不仅需要结合设备自身，还需结合MCU主频能力，2者一起考虑来提供一个可靠速率来驱动设备，这样才能高效稳定工作。
+## 📁 项目结构
 
-当前实现（速率画像集中管理）：
-- 统一配置文件：`app/BusRate.h`
-- 各设备驱动通过 `*_SPEED_PROFILE` 取默认速率，不在驱动里分散写死。
+```text
+OmniLayer/
+├─ API/                        # MCU 片内外设抽象接口层（adc/gpio/pwm/tim/usart）
+│  ├─ inc/
+│  └─ src/
+├─ app/                        # 应用层：业务逻辑、控制算法、任务入口
+│  ├─ main.c
+│  ├─ BusRate.h                # 软件总线速率集中配置
+│  ├─ Control/
+│  ├─ Control_Task/
+│  ├─ Filter/
+│  ├─ PID/
+│  ├─ My_I2c/
+│  ├─ My_SPI/
+│  └─ My_Usart/
+├─ BSP/                        # 板级支持层：OLED/MPU6050/QMC5883P/NRF24L01 等
+│  ├─ BMP280/
+│  ├─ KEY/
+│  ├─ LED/
+│  ├─ MPU6050/
+│  ├─ NRF24L01/
+│  ├─ OLED/
+│  └─ QMC5883P/
+├─ Core/                       # 芯片相关底层实现（按 MCU 分目录）
+│  ├─ STM32F103/
+│  └─ STM32F407/
+├─ Drivers/                    # 启动文件、SDK/CMSIS/HAL 等底层资源
+│  ├─ Drivers_STM32F1/
+│  └─ Drivers_STM32F4/
+├─ Enroll/                     # 硬件资源注册与板级映射（103/407_hw_config）
+├─ Middlewares/                # 中间件（FreeRTOS、USB 等）
+├─ OpenOCD/                    # 下载配置（F103/F407）
+├─ SYSTEM/                     # 系统级初始化（时钟/中断/系统配置）
+├─ MDK_ARM/                    # Keil 工程（保留兼容开发习惯）
+├─ build/                      # 构建输出目录（Debug/F103/F407...）
+├─ CMakeLists.txt              # 统一构建入口
+├─ CMakePresets.json           # 构建预设
+└─ gcc-arm-none-eabi.cmake     # GCC ARM 交叉编译工具链
+```
 
-当前软件总线速率挡位：
-- I2C：`50K / 100K / 200K / 400K`
-- SPI：`250K / 500K / 1M / 2M / 5M`
+## 🏗️ 分层说明
 
-推荐默认速率（按 MCU）：
-- F103
-	- OLED(I2C)：`100K`
-	- MPU6050(I2C)：`200K`
-	- QMC5883P(I2C)：`100K`
-	- BMP280(I2C)：`200K`
-	- OLED(SPI)：`500K`
-	- NRF24L01(SPI)：`1M`
-- F407
-	- OLED(I2C)：`100K`
-	- MPU6050(I2C)：`400K`
-	- QMC5883P(I2C)：`100K`
-	- BMP280(I2C)：`400K`
-	- OLED(SPI)：`1M`
-	- NRF24L01(SPI)：`5M`
+| 层级 | 目录 | 职责 |
+|---|---|---|
+| 应用层 | `app/` | 控制任务、业务逻辑、算法组合 |
+| 接口层 | `API/` | 统一片内外设接口，屏蔽芯片差异 |
+| 板级层 | `BSP/` | 封装板载器件，向上提供稳定设备接口 |
+| 注册层 | `Enroll/` | 资源映射与注册，衔接板级与芯片层 |
+| 核心层 | `Core/` | GPIO/TIM/USART/中断等 MCU 相关实现 |
+| 系统层 | `SYSTEM/` | 时钟、系统初始化、中断分发 |
+| 驱动资源层 | `Drivers/` | 启动文件、CMSIS/HAL/标准库 |
+| 中间件层 | `Middlewares/` | FreeRTOS、USB 等可复用组件 |
 
-说明：
-- 该策略优先稳定性，再追求吞吐；如需提速，只改 `app/BusRate.h` 一处即可。
+## ⚙️ 构建与烧录
+
+### ⌨️ VS Code 快捷键
+
+- `F7`：编译（先配置再构建，对应 Build Debug）
+- `F8`：烧录（先编译再烧录，对应 Flash Debug）
+
+### 🔧 命令行方式
+
+```bash
+cmake --preset Debug
+cmake --build --preset Debug
+```
+
+### 🛰️ OpenOCD 配置
+
+- `OpenOCD/F103_OpenOCD.cfg`
+- `OpenOCD/F407_OpenOCD.cfg`
+
+## 🚌 软件总线（I2C / SPI）
+
+- 支持软件 I2C 与软件 SPI 的统一管理。
+- 总线速率和默认档位集中在 `app/BusRate.h` 配置。
+- 需要调速时，优先修改该配置文件，无需在各驱动分散改动。
+
+## 🧱 新增 MCU 快速接入
+
+1. 在 `Core/`、`SYSTEM/`、`Drivers/Start/` 补齐该芯片最小启动与系统文件。
+2. 在根 `CMakeLists.txt` 新增 MCU 分支。
+3. 在 `OpenOCD/` 新增对应下载配置（建议命名 `Fxxx_OpenOCD.cfg`）。
+4. 在 `Enroll/xxx_hw_config.h` 补齐板级映射。
+5. 复用现有构建/烧录流程，快速落地新目标。
+
+## 📌 维护原则
+
+- 业务逻辑尽量不直接操作寄存器。
+- 目标相关代码集中在 Core / SYSTEM / Drivers。
+- BSP 接口尽量稳定，切换芯片时优先替换映射与底层实现。
+
+## 📮 项目状态与联系
+
+项目持续维护中。
+
+如果你在使用过程中遇到问题，欢迎联系：
+
+- QQ 邮箱：634591772@qq.com

@@ -9,7 +9,7 @@
 
 /* 坐标系修正: 与 DMP 的 gyro_orientation 保持一致（背面安装，绕 X 轴翻转180度） */
 
-/* 选择I2C1 设置MPU6050 I2C速率为400kHZ */
+/* 选择I2C1 设置MPU6050 I2C速率 */
 static void MPU_SelectI2CSpeed(void)
 {
 	MyI2C_SelectBus(MPU6050_I2C_BUS);

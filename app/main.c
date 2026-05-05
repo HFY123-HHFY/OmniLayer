@@ -58,13 +58,13 @@ int main(void)
 	App_SPI_TestOnce();						/* 开机执行一次 SPI 测试 */
 
 /*BSP硬件抽象层初始化*/
-  	MPU_Init();			/* 初始化 MPU6050 */
+	MPU_Init();			/* 初始化 MPU6050 */
 	mpu_dmp_init(); 	/* 初始化 MPU6050 DMP */
 	QMC_Init();			/* 初始化 QMC5883P */
 	BMP280Init();		/* 初始化 BMP280 */
 	NRF24L01_Init();	/* 初始化 NRF24L01 */
 	App_NRF24L01_TestOnce();	/* 开机执行一次 NRF24L01 通信测试 */
-	OLED_Init(OLED_IF_SPI);		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
+	OLED_Init(OLED_IF_I2C);		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
 	
 /* APP应用层初始化 */
 	PID_Contorl_Init();			/* 串级 PID 控制器初始化 */
@@ -76,7 +76,7 @@ int main(void)
 		// Angle_XY = QMC_Data();
 		// alt = BMP_Data();
 
-		PID_Pitch_Roll_Combined(Pitch, Roll);
+		// PID_Pitch_Roll_Combined(Pitch, Roll);
 
 /*OLED测试*/
 		OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
@@ -99,9 +99,8 @@ int main(void)
 		if (print_task_flag)
 		{
 			print_task_flag = 0;
-
 			// usart_printf(USART1,"AD2: %d, AD3: %d\r\n", AD2, AD3);
-			// usart_printf(USART1,"Pitch:%.1f, Roll:%.1f, Yaw:%.1f,\r\n",Pitch,Roll,Yaw);
+			usart_printf(USART1,"Pitch:%.1f, Roll:%.1f, Yaw:%.1f,\r\n",Pitch,Roll,Yaw);
 			// printf("Angle_XY: %.1f,\r\n", Angle_XY);
 			// printf("alt: %.1f \r\n", alt);
 		}
