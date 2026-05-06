@@ -8,7 +8,7 @@ extern "C" {
 /*
  * RTOS 任务层入口：
  * 1) 创建系统初始化任务（一次性执行后自删除）
- * 2) 创建 LED1/LED2 周期闪烁任务
+ * 2) 创建 app 业务任务
  */
 void ControlTask_RtosCreate(void);
 

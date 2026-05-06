@@ -1,5 +1,10 @@
 #include "My_Usart.h"
 
+#include "FreeRTOS.h"
+#include "queue.h"
+#include "semphr.h"
+#include "task.h"
+
 #include <sys/stat.h>
 
 /*
@@ -23,6 +28,40 @@ static USART_TxAsyncQueue g_usart_tx_q3 = {USART3, 0U, 0U, {0}};
 
 /* 全局接收解析状态。 */
 USART_DataType USART_DataTypeStruct;
+
+/* ======================== RTOS 串口封装区 ======================== */
+#define MYUSART_RTOS_RX_BYTE_QUEUE_LEN   (64U)
+#define MYUSART_RTOS_TX_MSG_QUEUE_LEN    (16U)
+#define MYUSART_RTOS_RX_LINE_QUEUE_LEN   (8U)
+#define MYUSART_RTOS_TX_MSG_MAX_LEN      (96U)
+#define MYUSART_RTOS_RX_LINE_MAX_LEN     (64U)
+
+#define MYUSART_RTOS_TX_TASK_STACK_WORDS (256U)
+#define MYUSART_RTOS_RX_TASK_STACK_WORDS (256U)
+#define MYUSART_RTOS_TX_TASK_PRIORITY    (tskIDLE_PRIORITY + 2U)
+#define MYUSART_RTOS_RX_TASK_PRIORITY    (tskIDLE_PRIORITY + 2U)
+
+typedef struct
+{
+	char text[MYUSART_RTOS_TX_MSG_MAX_LEN];
+} MyUsartRtosTxMsg_t;
+
+typedef struct
+{
+	char line[MYUSART_RTOS_RX_LINE_MAX_LEN];
+} MyUsartRtosRxLine_t;
+
+static QueueHandle_t s_rtosRxByteQueue;  /* ISR -> RX任务 */
+static QueueHandle_t s_rtosTxMsgQueue;   /* App任务 -> TX任务 */
+static QueueHandle_t s_rtosRxLineQueue;  /* RX任务 -> App任务 */
+static SemaphoreHandle_t s_rtosRxSem;    /* ISR 到 RX任务通知 */
+static SemaphoreHandle_t s_rtosTxMutex;  /* 串口发送互斥保护 */
+static USART_TypeDef *s_rtosUsart;       /* RTOS封装绑定的串口实例 */
+static uint8_t s_rtosStarted;
+
+/* 前置声明：RTOS 串口后台任务。 */
+static void MyUsart_RtosTxTask(void *pvParameters);
+static void MyUsart_RtosRxTask(void *pvParameters);
 
 /* 根据 USART 实例返回对应发送队列。 */
 static USART_TxAsyncQueue *usart_get_tx_queue(USART_TypeDef *USARTx)
@@ -333,6 +372,229 @@ void usart_tx_irq_handler(USART_TypeDef *USARTx)
 	else
 	{
 		q->instance->CR1 &= ~USART_CR1_TXEIE;
+	}
+}
+
+/*
+ * RTOS 发送接口：把文本交给 TX 队列，由 TX 任务统一发送。
+ * 设计目的：避免多个业务任务同时直写串口，导致输出交叉。
+ */
+uint8_t MyUsart_RtosSendText(const char *text)
+{
+	MyUsartRtosTxMsg_t msg;
+
+	if ((text == 0) || (s_rtosStarted == 0U) || (s_rtosTxMsgQueue == 0))
+	{
+		return 0U;
+	}
+
+	(void)memset(&msg, 0, sizeof(msg));
+	(void)snprintf(msg.text, sizeof(msg.text), "%s", text);
+
+	if (xQueueSend(s_rtosTxMsgQueue, &msg, pdMS_TO_TICKS(20U)) != pdPASS)
+	{
+		return 0U;
+	}
+
+	return 1U;
+}
+
+/* RTOS 版 printf：格式化后进入 TX 队列。 */
+uint8_t MyUsart_RtosPrintf(const char *format, ...)
+{
+	char line[MYUSART_RTOS_TX_MSG_MAX_LEN];
+	va_list arg;
+	int len;
+
+	if (format == 0)
+	{
+		return 0U;
+	}
+
+	va_start(arg, format);
+	len = vsnprintf(line, sizeof(line), format, arg);
+	va_end(arg);
+
+	if (len <= 0)
+	{
+		return 0U;
+	}
+
+	return MyUsart_RtosSendText(line);
+}
+
+/*
+ * App 任务从 RX 行队列取一整行命令。
+ * timeoutMs 为等待超时时间（毫秒）。
+ */
+uint8_t MyUsart_RtosRecvLine(char *lineBuf, uint16_t bufSize, uint32_t timeoutMs)
+{
+	MyUsartRtosRxLine_t lineMsg;
+
+	if ((lineBuf == 0) || (bufSize == 0U) || (s_rtosStarted == 0U) || (s_rtosRxLineQueue == 0))
+	{
+		return 0U;
+	}
+
+	if (xQueueReceive(s_rtosRxLineQueue, &lineMsg, pdMS_TO_TICKS(timeoutMs)) != pdPASS)
+	{
+		return 0U;
+	}
+
+	(void)snprintf(lineBuf, bufSize, "%s", lineMsg.line);
+	return 1U;
+}
+
+/*
+ * USART RXNE 中断桥接：
+ * 1) 在 ISR 里读取 DR 清除 RXNE；
+ * 2) 字节入队；
+ * 3) 给 RX 任务信号量。
+ */
+void MyUsart_RtosRxIrqHandler(USART_TypeDef *USARTx)
+{
+	BaseType_t xHigherPriorityTaskWoken;
+	uint8_t data;
+
+	if (USARTx == 0)
+	{
+		return;
+	}
+
+	data = (uint8_t)USARTx->DR;
+
+	if ((s_rtosStarted == 0U) || (USARTx != s_rtosUsart) || (s_rtosRxByteQueue == 0) || (s_rtosRxSem == 0))
+	{
+		return;
+	}
+
+	xHigherPriorityTaskWoken = pdFALSE;
+	(void)xQueueSendFromISR(s_rtosRxByteQueue, &data, &xHigherPriorityTaskWoken);
+	(void)xSemaphoreGiveFromISR(s_rtosRxSem, &xHigherPriorityTaskWoken);
+	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+/*
+ * 启动 RTOS 串口封装：
+ * - 创建队列、信号量、互斥锁；
+ * - 创建 TX/RX 后台任务。
+ */
+uint8_t MyUsart_RtosStart(USART_TypeDef *USARTx)
+{
+	if (USARTx == 0)
+	{
+		return 0U;
+	}
+
+	if (s_rtosStarted != 0U)
+	{
+		return 1U;
+	}
+
+	s_rtosUsart = USARTx;
+	s_rtosRxByteQueue = xQueueCreate(MYUSART_RTOS_RX_BYTE_QUEUE_LEN, sizeof(uint8_t));
+	s_rtosTxMsgQueue = xQueueCreate(MYUSART_RTOS_TX_MSG_QUEUE_LEN, sizeof(MyUsartRtosTxMsg_t));
+	s_rtosRxLineQueue = xQueueCreate(MYUSART_RTOS_RX_LINE_QUEUE_LEN, sizeof(MyUsartRtosRxLine_t));
+	s_rtosRxSem = xSemaphoreCreateBinary();
+	s_rtosTxMutex = xSemaphoreCreateMutex();
+
+	if ((s_rtosRxByteQueue == 0) || (s_rtosTxMsgQueue == 0) || (s_rtosRxLineQueue == 0) ||
+		(s_rtosRxSem == 0) || (s_rtosTxMutex == 0))
+	{
+		return 0U;
+	}
+
+	if (xTaskCreate(MyUsart_RtosTxTask,
+					"uart_tx",
+					MYUSART_RTOS_TX_TASK_STACK_WORDS,
+					0,
+					MYUSART_RTOS_TX_TASK_PRIORITY,
+					0) != pdPASS)
+	{
+		return 0U;
+	}
+
+	if (xTaskCreate(MyUsart_RtosRxTask,
+					"uart_rx",
+					MYUSART_RTOS_RX_TASK_STACK_WORDS,
+					0,
+					MYUSART_RTOS_RX_TASK_PRIORITY,
+					0) != pdPASS)
+	{
+		return 0U;
+	}
+
+	s_rtosStarted = 1U;
+	return 1U;
+}
+
+/* TX 后台任务：唯一串口发送出口。 */
+static void MyUsart_RtosTxTask(void *pvParameters)
+{
+	MyUsartRtosTxMsg_t msg;
+
+	(void)pvParameters;
+
+	for (;;)
+	{
+		if (xQueueReceive(s_rtosTxMsgQueue, &msg, portMAX_DELAY) == pdPASS)
+		{
+			(void)xSemaphoreTake(s_rtosTxMutex, portMAX_DELAY);
+			usart_SendString(s_rtosUsart, msg.text);
+			(void)xSemaphoreGive(s_rtosTxMutex);
+		}
+	}
+}
+
+/*
+ * RX 后台任务：
+ * - 接收 ISR 投递的字节流；
+ * - 以 \r/\n 为分隔组装成一行；
+ * - 把整行放入行队列，供业务任务读取。
+ */
+static void MyUsart_RtosRxTask(void *pvParameters)
+{
+	uint8_t rxByte;
+	uint8_t lineLen;
+	MyUsartRtosRxLine_t lineMsg;
+
+	(void)pvParameters;
+	lineLen = 0U;
+	(void)memset(&lineMsg, 0, sizeof(lineMsg));
+
+	for (;;)
+	{
+		if (xSemaphoreTake(s_rtosRxSem, portMAX_DELAY) != pdPASS)
+		{
+			continue;
+		}
+
+		while (xQueueReceive(s_rtosRxByteQueue, &rxByte, 0U) == pdPASS)
+		{
+			if ((rxByte == '\r') || (rxByte == '\n'))
+			{
+				if (lineLen == 0U)
+				{
+					continue;
+				}
+
+				lineMsg.line[lineLen] = '\0';
+				(void)xQueueSend(s_rtosRxLineQueue, &lineMsg, 0U);
+				lineLen = 0U;
+				(void)memset(&lineMsg, 0, sizeof(lineMsg));
+			}
+			else if (lineLen < (uint8_t)(sizeof(lineMsg.line) - 1U))
+			{
+				lineMsg.line[lineLen] = (char)rxByte;
+				lineLen++;
+			}
+			else
+			{
+				lineLen = 0U;
+				(void)memset(&lineMsg, 0, sizeof(lineMsg));
+				(void)MyUsart_RtosSendText("rx line too long, dropped\\r\\n");
+			}
+		}
 	}
 }
 

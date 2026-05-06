@@ -240,6 +240,12 @@ set(FREERTOS_SOURCES
     ${FREERTOS_KERNEL_DIR}/portable/MemMang/heap_4.c
 )
 
+# 第三方内核文件告警抑制：仅对 port.c 关闭 unused-variable。
+# 说明：该告警来自 FreeRTOS 官方移植层实现，不属于业务代码问题。
+set_source_files_properties(${FREERTOS_PORT_DIR}/port.c PROPERTIES
+    COMPILE_OPTIONS "-Wno-unused-variable"
+)
+
 set(TARGET_SOURCES
     ${APP_LAYER_SOURCES}
     ${SYS_LAYER_SOURCES}

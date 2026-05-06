@@ -19,7 +19,7 @@
  * 2) 这样 Enroll.c 里只需要写一次模板，不用重复手写每个 LED 项。
  */
 
-/* LED 板级映射：注册 1 路LED */
+/* LED 板级映射：注册 2 路LED */
 #define HW_LED_MAP(X) \
 	X(LED1, GPIOC, GPIO_Pin_13)
 

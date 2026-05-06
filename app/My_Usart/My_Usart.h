@@ -47,6 +47,31 @@ typedef F407_USART_View_t USART_TypeDef;
 #endif
 
 /*
+ * ===================== RTOS 串口封装  =====================
+ * 目标：中断收字节 + 任务发消息 + 任务解析输入
+ * 接收链路：USART IRQ -> RX字节队列 -> RX任务 -> 行消息队列
+ * 发送链路：App任务 -> TX消息队列 -> TX任务 -> USART
+ *
+ * 注意：以下接口需要 FreeRTOS 调度器已启动后调用。
+ * ====================================================================
+ */
+
+/* RTOS 封装初始化：创建串口 RX/TX 队列、信号量、互斥锁和后台任务。 */
+uint8_t MyUsart_RtosStart(USART_TypeDef *USARTx);
+
+/* USARTx IRQ 的 RXNE 分支调用此接口（ISR 上下文）。 */
+void MyUsart_RtosRxIrqHandler(USART_TypeDef *USARTx);
+
+/* 投递一条文本到 RTOS 发送链路。返回 1=成功，0=失败。 */
+uint8_t MyUsart_RtosSendText(const char *text);
+
+/* 类 printf 投递到 RTOS 发送链路。返回 1=成功，0=失败。 */
+uint8_t MyUsart_RtosPrintf(const char *format, ...);
+
+/* 从 RTOS 接收链路读取一行文本（不含 CR/LF）。timeoutMs=等待毫秒。 */
+uint8_t MyUsart_RtosRecvLine(char *lineBuf, uint16_t bufSize, uint32_t timeoutMs);
+
+/*
  * 串口数据包解析状态结构：
  * 协议示例：s12,-34,56e
  * - 's'：包头
