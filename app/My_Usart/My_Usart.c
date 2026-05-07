@@ -30,33 +30,89 @@ static USART_TxAsyncQueue g_usart_tx_q3 = {USART3, 0U, 0U, {0}};
 USART_DataType USART_DataTypeStruct;
 
 /* ======================== RTOS 串口封装区 ======================== */
+/* RX 字节队列长度：ISR 收到的单字节先进入这里。 */
 #define MYUSART_RTOS_RX_BYTE_QUEUE_LEN   (64U)
+/* TX 消息队列长度：业务任务要发送的整段文本先进入这里。 */
 #define MYUSART_RTOS_TX_MSG_QUEUE_LEN    (16U)
+/* RX 行队列长度：RX 后台任务组包后的“完整一行文本”进入这里。 */
 #define MYUSART_RTOS_RX_LINE_QUEUE_LEN   (8U)
+/* 单条待发送文本的最大长度。 */
 #define MYUSART_RTOS_TX_MSG_MAX_LEN      (96U)
+/* 单条接收文本的最大长度。 */
 #define MYUSART_RTOS_RX_LINE_MAX_LEN     (64U)
 
+/* TX/RX 后台任务的栈大小与优先级。 */
 #define MYUSART_RTOS_TX_TASK_STACK_WORDS (256U)
 #define MYUSART_RTOS_RX_TASK_STACK_WORDS (256U)
 #define MYUSART_RTOS_TX_TASK_PRIORITY    (tskIDLE_PRIORITY + 2U)
 #define MYUSART_RTOS_RX_TASK_PRIORITY    (tskIDLE_PRIORITY + 2U)
+/* RX 空闲判定时间：超过该时间未收到新字节，则把当前缓存当作一行上报。 */
+#define MYUSART_RTOS_RX_IDLE_MS          (30U)
 
+/*
+ * TX 队列里的消息单元：
+ * 每个队列节点保存“一整条准备发送的字符串”。
+ * 例如业务任务调用：MyUsart_RtosSendText("HFY\r\n")
+ * 就会把这条文本拷贝到该结构体后再放进 TX 队列。
+ */
 typedef struct
 {
 	char text[MYUSART_RTOS_TX_MSG_MAX_LEN];
 } MyUsartRtosTxMsg_t;
 
+/*
+ * RX 行队列里的消息单元：
+ * RX 后台任务会把收到的一串字节组装成“完整文本包”，
+ * 然后存进这个结构体，再投递给上层业务任务读取。
+ */
 typedef struct
 {
 	char line[MYUSART_RTOS_RX_LINE_MAX_LEN];
 } MyUsartRtosRxLine_t;
 
-static QueueHandle_t s_rtosRxByteQueue;  /* ISR -> RX任务 */
-static QueueHandle_t s_rtosTxMsgQueue;   /* App任务 -> TX任务 */
-static QueueHandle_t s_rtosRxLineQueue;  /* RX任务 -> App任务 */
-static SemaphoreHandle_t s_rtosRxSem;    /* ISR 到 RX任务通知 */
-static SemaphoreHandle_t s_rtosTxMutex;  /* 串口发送互斥保护 */
-static USART_TypeDef *s_rtosUsart;       /* RTOS封装绑定的串口实例 */
+/*
+ * RX 字节队列：
+ * - 生产者：USART1 中断
+ * - 消费者：RX 后台任务
+ * - 作用：把“一个一个字节”从 ISR 安全搬运到任务上下文
+ */
+static QueueHandle_t s_rtosRxByteQueue;
+
+/*
+ * TX 消息队列：
+ * - 生产者：任意业务任务
+ * - 消费者：TX 后台任务
+ * - 作用：把“待发送文本”统一交给串口发送任务处理
+ */
+static QueueHandle_t s_rtosTxMsgQueue;
+
+/*
+ * RX 行队列：
+ * - 生产者：RX 后台任务
+ * - 消费者：业务任务（例如回显任务、命令任务）
+ * - 作用：把已经成包的文本交给上层业务
+ */
+static QueueHandle_t s_rtosRxLineQueue;
+
+/*
+ * RX 二值信号量：
+ * - 发送者：USART 中断（GiveFromISR）
+ * - 等待者：RX 后台任务（Take）
+ * - 作用：通知 RX 任务“有新字节到了，快来处理”
+ */
+static SemaphoreHandle_t s_rtosRxSem;
+
+/*
+ * TX 互斥锁：
+ * - 作用：保护串口发送过程，避免共享发送资源时被并发打断
+ * - 当前只有 TX 后台任务真正发送，但保留此锁更利于后续扩展
+ */
+static SemaphoreHandle_t s_rtosTxMutex;
+
+/* 当前 RTOS 串口封装绑定的串口实例，例如 USART1。 */
+static USART_TypeDef *s_rtosUsart;
+
+/* 标记 RTOS 串口封装是否已经初始化启动。 */
 static uint8_t s_rtosStarted;
 
 /* 前置声明：RTOS 串口后台任务。 */
@@ -549,8 +605,9 @@ static void MyUsart_RtosTxTask(void *pvParameters)
 /*
  * RX 后台任务：
  * - 接收 ISR 投递的字节流；
- * - 以 \r/\n 为分隔组装成一行；
- * - 把整行放入行队列，供业务任务读取。
+ * - 如果收到 \r 或 \n，则立即把当前缓存当作一包上报；
+ * - 如果上位机没发换行，则按“短暂空闲”自动成包；
+ * - 把整包文本放入行队列，供业务任务读取。
  */
 static void MyUsart_RtosRxTask(void *pvParameters)
 {
@@ -569,21 +626,27 @@ static void MyUsart_RtosRxTask(void *pvParameters)
 			continue;
 		}
 
-		while (xQueueReceive(s_rtosRxByteQueue, &rxByte, 0U) == pdPASS)
+		while (xQueueReceive(s_rtosRxByteQueue, &rxByte, pdMS_TO_TICKS(MYUSART_RTOS_RX_IDLE_MS)) == pdPASS)
 		{
+			/*
+			 * 如果收到了换行结束符：
+			 * 1) 当前已有缓存，则立即上报一包；
+			 * 2) 当前没缓存，则忽略连续换行。
+			 */
 			if ((rxByte == '\r') || (rxByte == '\n'))
 			{
-				if (lineLen == 0U)
+				if (lineLen > 0U)
 				{
-					continue;
+					lineMsg.line[lineLen] = '\0';
+					(void)xQueueSend(s_rtosRxLineQueue, &lineMsg, 0U);
+					lineLen = 0U;
+					(void)memset(&lineMsg, 0, sizeof(lineMsg));
 				}
 
-				lineMsg.line[lineLen] = '\0';
-				(void)xQueueSend(s_rtosRxLineQueue, &lineMsg, 0U);
-				lineLen = 0U;
-				(void)memset(&lineMsg, 0, sizeof(lineMsg));
+				continue;
 			}
-			else if (lineLen < (uint8_t)(sizeof(lineMsg.line) - 1U))
+
+			if (lineLen < (uint8_t)(sizeof(lineMsg.line) - 1U))
 			{
 				lineMsg.line[lineLen] = (char)rxByte;
 				lineLen++;
@@ -594,6 +657,15 @@ static void MyUsart_RtosRxTask(void *pvParameters)
 				(void)memset(&lineMsg, 0, sizeof(lineMsg));
 				(void)MyUsart_RtosSendText("rx line too long, dropped\\r\\n");
 			}
+		}
+
+		/* 当 RX 在短时间内空闲且已有缓存内容时，自动上报一包。 */
+		if (lineLen > 0U)
+		{
+			lineMsg.line[lineLen] = '\0';
+			(void)xQueueSend(s_rtosRxLineQueue, &lineMsg, 0U);
+			lineLen = 0U;
+			(void)memset(&lineMsg, 0, sizeof(lineMsg));
 		}
 	}
 }

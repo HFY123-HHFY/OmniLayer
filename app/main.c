@@ -5,12 +5,12 @@
 #include "FreeRTOS.h"	/* FreeRTOS 基础定义 */
 #include "task.h" 		/* 任务管理接口 */
 
-/* app 任务层：最小 FreeRTOS 任务创建入口 */
-#include "Control_Task/Control_Task_Rtos.h"
+/* app 任务层：RTOS 任务编排入口 */
+#include "Control_Rtos/Control_Rtos.h"
 
 int main(void)
 {
-	ControlTask_RtosCreate(); /* 创建 app 任务 */
+	ControlRtos_Create(); /* 创建 app 任务 */
 	vTaskStartScheduler(); /* 启动调度器 */
 
 	for (;;)

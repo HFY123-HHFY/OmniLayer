@@ -68,7 +68,7 @@ endif()
 set(APP_LAYER_SOURCES
     ${CMAKE_SOURCE_DIR}/app/main.c
     ${CMAKE_SOURCE_DIR}/app/Control/Control.c
-    ${CMAKE_SOURCE_DIR}/app/Control_Task/Control_Task_Rtos.c
+    ${CMAKE_SOURCE_DIR}/app/Control_Rtos/Control_Rtos.c
     ${CMAKE_SOURCE_DIR}/app/My_Usart/My_Usart.c
     ${CMAKE_SOURCE_DIR}/app/My_I2c/My_I2c.c
     ${CMAKE_SOURCE_DIR}/app/My_SPI/My_SPI.c
@@ -124,6 +124,7 @@ if(RESOLVED_MCU_TARGET STREQUAL "F103")
     set(MCU_INCLUDE_DIRS
         # 头文件搜索路径：新增目录在这里加，删除目录在这里移除。
         ${CMAKE_SOURCE_DIR}/app
+        ${CMAKE_SOURCE_DIR}/app/Control_Rtos
         ${CMAKE_SOURCE_DIR}/app/Control_Task
         ${CMAKE_SOURCE_DIR}/app/Control
         ${CMAKE_SOURCE_DIR}/app/My_Usart
@@ -179,6 +180,7 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
     set(MCU_INCLUDE_DIRS
         # 头文件搜索路径：新增目录在这里加，删除目录在这里移除。
         ${CMAKE_SOURCE_DIR}/app
+        ${CMAKE_SOURCE_DIR}/app/Control_Rtos
         ${CMAKE_SOURCE_DIR}/app/Control_Task
         ${CMAKE_SOURCE_DIR}/app/Control
         ${CMAKE_SOURCE_DIR}/app/My_Usart
