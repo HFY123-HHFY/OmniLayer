@@ -1,9 +1,21 @@
 #include "LED.h"
+#include <string.h>
+#include "FreeRTOS.h"
+#include "task.h"
 
 /* s_ledConfigTable: 已注册 LED 配置表，由 Enroll 层通过 LED_Register 注入。 */
 static const LED_Config_t *s_ledConfigTable;
 /* s_ledConfigCount: 当前配置表中有效 LED 数量。 */
 static uint8_t s_ledConfigCount;
+
+/* 每个 LED 的闪烁上下文。 */
+typedef struct
+{
+	LED_Level_t currentLevel;
+	uint8_t levelKnown;
+} LED_TurnContext_t;
+
+static LED_TurnContext_t s_ledTurnCtx[3];
 
 /* 归一化电平输入，保证只返回 LED_HIGH 或 LED_LOW。 */
 static LED_Level_t LED_NormalizeLevel(LED_Level_t level)
@@ -50,6 +62,9 @@ void LED_Register(const LED_Config_t *configTable, uint8_t count)
 	s_ledConfigTable = configTable;
 	s_ledConfigCount = count;
 
+	/* 注册后重置闪烁上下文，避免切换配置表时继承旧状态。 */
+	(void)memset(s_ledTurnCtx, 0, sizeof(s_ledTurnCtx));
+
 	/* 注册阶段只保存表，不做 IO 电平写入。 */
 }
 
@@ -93,6 +108,7 @@ void LED_Control(LED_Id_t id, LED_Level_t level)
 {
 	/* config: 查找到的 LED 映射配置。 */
 	const LED_Config_t *config;
+	LED_Level_t normalized;
 
 	config = LED_FindConfig(id);
 	if (config == 0)
@@ -101,5 +117,36 @@ void LED_Control(LED_Id_t id, LED_Level_t level)
 	}
 
 	/* 电平控制 */
-	config->gpioWrite(config->port, config->pin, LED_NormalizeLevel(level));
+	normalized = LED_NormalizeLevel(level);
+	config->gpioWrite(config->port, config->pin, normalized);
+
+	/* 同步保存当前电平，供 LED_Turn 做非阻塞翻转。 */
+	if ((uint32_t)id < (uint32_t)(sizeof(s_ledTurnCtx) / sizeof(s_ledTurnCtx[0])))
+	{
+		s_ledTurnCtx[id].currentLevel = normalized;
+		s_ledTurnCtx[id].levelKnown = 1U;
+	}
+}
+
+/*
+ * LED_Turn：阻塞翻转接口。
+ * 每次调用执行一次翻转，然后阻塞 periodMs。
+ */
+void LED_Turn(LED_Id_t id, uint16_t periodMs)
+{
+	if ((periodMs == 0U) || ((uint32_t)id >= (uint32_t)(sizeof(s_ledTurnCtx) / sizeof(s_ledTurnCtx[0]))))
+	{
+		return;
+	}
+
+	if (s_ledTurnCtx[id].levelKnown == 0U)
+	{
+		s_ledTurnCtx[id].currentLevel = LED_LOW;
+		s_ledTurnCtx[id].levelKnown = 1U;
+	}
+
+	s_ledTurnCtx[id].currentLevel =
+		(s_ledTurnCtx[id].currentLevel == LED_LOW) ? LED_HIGH : LED_LOW;
+	LED_Control(id, s_ledTurnCtx[id].currentLevel);
+	vTaskDelay(pdMS_TO_TICKS((uint32_t)periodMs));
 }

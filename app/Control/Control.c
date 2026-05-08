@@ -3,7 +3,6 @@
 /* 1 开，0 关。 */
 uint8_t pid_flag = 1U;
 uint8_t pid_enabled = 1U;
-uint8_t pid_task_flag = 0U;
 
 /* 目标层：姿态与高度。 */
 float Target_Pitch = 0.0f;
@@ -135,13 +134,6 @@ void PID_Pitch_Roll_Combined(float actual_pitch, float actual_roll)
 	{
 		return;
 	}
-
-	/* 只有节拍到来才执行一次 PID。 */
-	if (pid_task_flag != 1U)
-	{
-		return;
-	}
-	pid_task_flag = 0U;
 
 	/* 外环目标角度来自上位控制（遥控/导航）。 */
 	pid_pitch.Target = Target_Pitch;

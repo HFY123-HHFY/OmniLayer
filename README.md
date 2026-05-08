@@ -1,156 +1,114 @@
-# OmniLayer
+# OmniLayer (FreeRTOS Branch)
 
-一个面向多 MCU 与多开发范式的嵌入式工程框架，使用 CMake + GCC + OpenOCD 统一构建、烧录和维护流程。
+这是 OmniLayer 的 FreeRTOS 分支说明文档，重点面向 RTOS 架构、任务编排和多 MCU 切换流程。
 
-当前支持/覆盖方向：STM32F103、STM32F407，及 TI MSPG3507（MSPM0G3507）维护线。
+## 项目定位
 
-当前 README 为 FreeRTOS 分支说明，重点描述 RTOS 方向下的分层结构与维护方式。
+OmniLayer 的目标是让应用逻辑与芯片底层解耦，在同一套工程中支持多 MCU，并保持一致的构建/烧录体验。
 
-## 🚀 项目定位
+- 面向 MCU：STM32F103、STM32F407
+- 核心中间件：FreeRTOS Kernel (LTS)
+- 构建体系：CMake + Ninja + GCC ARM
+- 烧录体系：OpenOCD
 
-OmniLayer 的核心目标是把应用逻辑和芯片实现解耦，让工程可迁移、可扩展、可长期维护。
+## FreeRTOS 分支重点
 
-- 同一套业务代码，按目标芯片切换底层实现。
-- 统一构建入口，减少多工程并行维护成本。
-- 保留 VS Code 与 Keil 双工作流，兼容不同团队习惯。
-- 在 FreeRTOS 分支中，进一步把“任务编排”和“硬件驱动”解耦。
+该分支不是裸机主循环改名，而是明确采用 RTOS 分层开发：
 
-## 🌿 分支策略
+- 中断层只做最小动作（清标志、搬运、通知）
+- 周期任务统一承接定时节拍并做软件分频
+- 控制台任务负责串口命令交互
+- 遥测任务负责低优先级调试输出，避免串口打印干扰周期业务
 
-为了让协作者快速理解仓库方向，当前分支职责如下：
-
-| 分支 | 定位 | 状态 |
-| --- | --- | --- |
-| main | 裸机开发主线（当前稳定主架构） | 持续维护 |
-| FreeRTOS | 操作系统开发主线（RTOS 方向） | 持续维护 |
-| MSPG3507 | TI MSPG3507 / MSPM0G3507 适配与迁移线 | 维护中 |
-
-## ✨ 架构亮点
-
-- 🧭 多目标工程：同一仓库支持多 MCU 目标扩展。
-- 🧱 分层清晰：应用层、接口层、BSP、注册层、核心层职责明确。
-- ⚙️ 工具统一：CMakePresets 构建，OpenOCD 烧录，流程一致。
-- 🚌 软件总线：I2C/SPI 参数集中配置，调优成本低。
-- 🔁 双 IDE 兼容：VS Code + CMake 与 Keil 并行可用。
-- 🧵 FreeRTOS 分支中，任务编排统一放在 `app/Control_Rtos/`，便于维护。
-
-## 🧩 注册层（Enroll）特色
-
-`Enroll/` 是本项目最有辨识度的一层，作用可以理解为“硬件资源注册中心”：
-
-- 把板级外设资源映射到具体 MCU 引脚与外设实例。
-- 让上层 BSP / APP 不需要关心不同芯片的引脚差异。
-- 切换 MCU 时，主要改注册与底层映射，不重写整套业务逻辑。
-
-## 📁 项目结构
+## 当前目录结构（RTOS 分支）
 
 ```text
 OmniLayer/
-├─ API/                        # MCU 片内外设抽象接口层（adc/gpio/pwm/tim/usart）
-│  ├─ inc/
-│  └─ src/
-├─ app/                        # 应用层：业务逻辑、控制算法、RTOS任务编排
+├─ .vscode/                   # VS Code 任务配置
+├─ API/                       # MCU 外设统一 API 抽象层
+├─ app/                       # 应用层与 RTOS 任务编排
 │  ├─ main.c
-│  ├─ BusRate.h                # 软件总线速率集中配置
-│  ├─ Control/
-│  ├─ Control_Rtos/            # FreeRTOS 分支下的任务编排入口
-│  ├─ Control_Task/            # 中断/历史任务相关兼容代码或板级任务逻辑
-│  ├─ Filter/
-│  ├─ PID/
+│  ├─ Control_Rtos/           # RTOS 任务入口与任务组织
+│  ├─ Control_Task/           # 中断入口（TIM/USART/EXTI）
+│  ├─ Control/                # 控制算法入口（PID等）
+│  ├─ My_Usart/               # 串口 RTOS 封装
 │  ├─ My_I2c/
 │  ├─ My_SPI/
-│  └─ My_Usart/
-├─ BSP/                        # 板级支持层：OLED/MPU6050/QMC5883P/NRF24L01 等
-│  ├─ BMP280/
-│  ├─ KEY/
-│  ├─ LED/
-│  ├─ MPU6050/
-│  ├─ NRF24L01/
-│  ├─ OLED/
-│  └─ QMC5883P/
-├─ Core/                       # 芯片相关底层实现（按 MCU 分目录）
-│  ├─ STM32F103/
-│  └─ STM32F407/
-├─ Drivers/                    # 启动文件、SDK/CMSIS/HAL 等底层资源
-│  ├─ Drivers_STM32F1/
-│  └─ Drivers_STM32F4/
-├─ Enroll/                     # 硬件资源注册与板级映射（103/407_hw_config）
-├─ Middlewares/                # 中间件（FreeRTOS、USB 等）
-├─ OpenOCD/                    # 下载配置（F103/F407）
-├─ SYSTEM/                     # 系统级初始化（时钟/中断/系统配置）
-├─ MDK_ARM/                    # Keil 工程（保留兼容开发习惯）
-├─ build/                      # 构建输出目录（Debug/F103/F407...）
-├─ docs/                       # 学习文档（FreeRTOS核心、FreeRTOS串口）
-├─ CMakeLists.txt              # 统一构建入口
-├─ CMakePresets.json           # 构建预设
-└─ gcc-arm-none-eabi.cmake     # GCC ARM 交叉编译工具链
+│  ├─ PID/
+│  └─ Filter/
+├─ BSP/                       # 板级设备封装（LED/KEY/OLED/MPU等）
+├─ Core/                      # F103/F407 底层实现
+├─ Drivers/                   # 启动文件/CMSIS/厂商头文件
+├─ Enroll/                    # 资源注册与板级映射
+├─ Middlewares/               # FreeRTOS 与其他中间件
+├─ OpenOCD/                   # F103/F407 烧录脚本
+├─ SYSTEM/                    # 系统级基础封装
+├─ docs/                      # 分支文档（核心/串口/定时器）
+├─ CMakeLists.txt
+├─ CMakePresets.json
+└─ gcc-arm-none-eabi.cmake
 ```
 
-## 🏗️ 分层说明
+## 分层职责（RTOS 视角）
 
 | 层级 | 目录 | 职责 |
 | --- | --- | --- |
-| 应用层 | app/ | 控制任务、业务逻辑、算法组合 |
-| RTOS编排层 | app/Control_Rtos/ | 任务创建、初始化任务、业务任务组织 |
-| 接口层 | API/ | 统一片内外设接口，屏蔽芯片差异 |
-| 板级层 | BSP/ | 封装板载器件，向上提供稳定设备接口 |
-| 注册层 | Enroll/ | 资源映射与注册，衔接板级与芯片层 |
-| 核心层 | Core/ | GPIO/TIM/USART/中断等 MCU 相关实现 |
-| 系统层 | SYSTEM/ | 时钟、系统初始化、中断分发 |
-| 驱动资源层 | Drivers/ | 启动文件、CMSIS/HAL/标准库 |
-| 中间件层 | Middlewares/ | FreeRTOS、USB 等可复用组件 |
+| 任务编排层 | app/Control_Rtos | 创建任务、组织周期逻辑、控制台与遥测策略 |
+| 中断桥接层 | app/Control_Task | TIM/USART/EXTI 中断入口，通知任务 |
+| 业务控制层 | app/Control | 控制算法（PID等） |
+| 外设抽象层 | API | 跨 MCU 统一外设接口 |
+| 板级设备层 | BSP | LED/KEY/传感器封装 |
+| 注册映射层 | Enroll | 板级资源到 MCU 外设的绑定 |
+| 底层实现层 | Core | F103/F407 专属寄存器与驱动实现 |
+| 中间件层 | Middlewares | FreeRTOS 内核与可选组件 |
 
-## ⚙️ 构建与烧录
+## 构建与烧录
 
-### ⌨️ VS Code 快捷键
+### 默认路径（无需手工改命令）
 
-- F7：编译（先配置再构建，对应 Build Debug）
-- F8：烧录（先编译再烧录，对应 Flash Debug）
+- F7：执行 Build Debug
+- F8：执行 Flash Debug
 
-### 🔧 命令行方式
+默认 Debug 预设使用 MCU_TARGET=AUTO，会按工程配置自动解析目标。
 
-```bash
-cmake --preset Debug
-cmake --build --preset Debug
-```
+### 选择 MCU 路径（弹窗选择）
 
-### 🛰️ OpenOCD 配置
+已配置“弹出式选择 MCU”的任务输入：
 
-- `OpenOCD/F103_OpenOCD.cfg`
-- `OpenOCD/F407_OpenOCD.cfg`
+- Build Select MCU：弹窗选择 Debug-F103 / Debug-F407 后构建
+- Flash Select MCU：弹窗选择 Debug-F103 / Debug-F407 后烧录
 
-## 🚌 软件总线（I2C / SPI）
+用户级快捷键已绑定为：
 
-支持软件 I2C 与软件 SPI 的统一管理。
+- Ctrl+Shift+F1：Build Select MCU
+- Ctrl+Shift+F2：Flash Select MCU
 
-- 总线速率和默认档位集中在 `app/BusRate.h` 配置。
-- 需要调速时，优先修改该配置文件，无需在各驱动分散改动。
+### 预设说明
 
-## 🧱 新增 MCU 快速接入
+CMakePresets 中当前可用：
 
-1. 在 `Core/`、`SYSTEM/`、`Drivers/Start/` 补齐该芯片最小启动与系统文件。
-2. 在根 `CMakeLists.txt` 新增 MCU 分支。
-3. 在 `OpenOCD/` 新增对应下载配置（建议命名 `Fxxx_OpenOCD.cfg`）。
-4. 在 `Enroll/xxx_hw_config.h` 补齐板级映射。
-5. 复用现有构建/烧录流程，快速落地新目标。
+- Debug（AUTO）
+- Debug-F103
+- Debug-F407
 
-## 📌 维护原则
+## RTOS 任务说明（当前主线）
 
-- 业务逻辑尽量不直接操作寄存器。
-- 目标相关代码集中在 `Core / SYSTEM / Drivers`。
-- BSP 接口尽量稳定，切换芯片时优先替换映射与底层实现。
-- FreeRTOS 分支下，任务创建统一收敛到 `app/Control_Rtos/`。
-- 收发类外设优先采用“发送分散、接收集中”的任务设计思路。
+位于 app/Control_Rtos：
 
-## 📚 文档索引
+- TaskSystemInit：一次性初始化（注册资源、启动驱动、创建常驻任务后自删）
+- TaskPeriodicService：消费 1ms 节拍，执行软件分频（2ms 控制入口、1s 时间戳等）
+- TaskConsoleService：串口命令输入与交互（例如 rate 命令）
+- TaskTelemetryService：低优先级调试打印（由周期任务通知触发）
 
-- `docs/FreeRTOS_core.md`：FreeRTOS 核心知识说明
-- `docs/FreeRTOS_usart.md`：当前 RTOS 串口接管方案说明
+## 文档索引
 
-## 📮 项目状态与联系
+- docs/FreeRTOS_core.md：FreeRTOS 内核知识与基础概念
+- docs/FreeRTOS_usart.md：串口 RTOS 封装与收发链路说明
+- docs/FreeRTOS_timer.md：RTOS 接管定时器的实现思路与实践说明
 
-项目持续维护中。
+## 维护建议
 
-如果你在使用过程中遇到问题，欢迎联系：
-
-- QQ 邮箱：634591772@qq.com
+- 新增功能优先先定“任务职责边界”，再写代码。
+- 不在 ISR 中做复杂业务逻辑，把重活下沉到任务。
+- 打印与调试输出尽量低优先级解耦，避免影响周期任务稳定性。
+- 切 MCU 时优先使用 Select MCU 任务，减少目标不一致导致的误判。

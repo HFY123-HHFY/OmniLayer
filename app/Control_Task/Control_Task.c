@@ -4,30 +4,38 @@
 #include "usart.h"
 #include "My_Usart/My_Usart.h"
 #include "Control/Control.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 #include "MPU6050_Int.h"
 
 /* 程序运行的时间戳（s） */
 uint32_t Timer_Bsp_t = 0;
 
-/* printf节拍-50ms */
-volatile uint8_t print_task_flag = 0;
+/*
+ * TIM3 对应的周期服务任务句柄：
+ * - 由 RTOS 任务层注册；
+ * - TIM3 IRQ 每 1ms 给该任务发送一次通知；
+ * - ISR 不再负责软件分频和业务逻辑。
+ */
+static TaskHandle_t s_periodicTaskHandle = NULL;
 
-/* 串口1接收数据 */
-uint32_t USART_1_RX = 0;
+void ControlTask_RegisterTimerTickTarget(TaskHandle_t periodicTaskHandle)
+{
+	s_periodicTaskHandle = periodicTaskHandle;
+}
 
 /*
  * TIM3 中断服务函数：
  * 1) 判断 TIM3 是否发生更新中断；
  * 2) 清除更新中断标志；
- * 3) 执行按键节拍与系统计时。
+ * 3) 仅向 RTOS 周期任务发送 1ms 节拍通知。
  */
 void TIM3_IRQHandler(void)
 {
-	static uint16_t time_t = 0U; /* 程序运行时间计数 */
-	static uint8_t printf_50ms = 0U; /* 50ms printf 节拍计数 */
-	static uint8_t pid_2ms_tick = 0U; /* 2ms PID 节拍计数 */
+	BaseType_t xHigherPriorityTaskWoken = pdFALSE; /* 用于记录是否需要切换到更高优先级任务 */
 
+	/* 判断 TIM3 是否发生更新中断 */
 	if ((TIM3->SR & TIM_SR_UIF) == 0U)
 	{
 		return;
@@ -36,28 +44,17 @@ void TIM3_IRQHandler(void)
 	/* 先清除更新中断标志，避免重复进中断。 */
 	TIM3->SR &= ~TIM_SR_UIF;
 
-	Key_Tick();
-	printf_50ms++;
-	time_t++;
-	pid_2ms_tick++;
-
-	if (pid_2ms_tick >= 2U)
+	/*
+	 * FreeRTOS 分支约束：TIM3 只提供最小 1ms 节拍通知。
+	 * 所有 2ms/50ms/1s 软件分频都放在任务里做，避免 ISR 膨胀。
+	 */
+	if (s_periodicTaskHandle != NULL)
 	{
-		pid_2ms_tick = 0U;
-		pid_task_flag = 1U;
+		vTaskNotifyGiveFromISR(s_periodicTaskHandle, &xHigherPriorityTaskWoken);
 	}
 
-	if (printf_50ms >= 50U)
-	{
-		printf_50ms = 0U;
-		print_task_flag = 1U;
-	}
-
-	if (time_t >= 1000U)
-	{
-		time_t = 0U;
-		Timer_Bsp_t++; /* 每 1s 更新一次全局时间戳 */
-	}
+	/* 若本次中断唤醒了更高优先级任务，则请求立刻切换。 */
+	portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
 /*

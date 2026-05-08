@@ -22,8 +22,6 @@ extern "C" {
 extern uint8_t pid_flag;
 /* PID 计算开关：1 允许计算，0 跳过计算。 */
 extern uint8_t pid_enabled;
-/* PID 任务节拍标志：由定时中断置位。 */
-extern uint8_t pid_task_flag;
 
 /* 目标姿态/高度。 */
 extern float Target_Pitch;

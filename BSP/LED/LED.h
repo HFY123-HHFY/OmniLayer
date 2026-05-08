@@ -54,6 +54,8 @@ void LED_Register(const LED_Config_t *configTable, uint8_t count);
 void LED_Init(LED_Level_t initLevel);
 /* BSP 层控制：给指定 LED 写高/低电平。 */
 void LED_Control(LED_Id_t id, LED_Level_t level);
+/* BSP 层控制：周期性翻转指定 LED 的电平，周期由参数 periodMs 定义-单位ms*/
+void LED_Turn(LED_Id_t id, uint16_t periodMs);
 
 #ifdef __cplusplus
 }

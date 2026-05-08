@@ -1,7 +1,10 @@
 #include "f103_tim.h"
+#include "FreeRTOSConfig.h"
 
 /* Cortex-M NVIC ISER 寄存器基址。 */
 #define F103_NVIC_ISER_BASE  (0xE000E100UL)
+/* Cortex-M NVIC IPR 寄存器基址。 */
+#define F103_NVIC_IPR_BASE   (0xE000E400UL)
 
 /* APB1 总线定时器基址。 */
 #define F103_TIM2_BASE       (0x40000000UL)
@@ -63,6 +66,11 @@ typedef struct
 	volatile uint32_t ISER[8];
 } F103_NVIC_Regs_t;
 
+typedef struct
+{
+	volatile uint8_t IPR[240];
+} F103_NVIC_PriorityRegs_t;
+
 #define F103_RCC_BASE  (0x40021000UL)
 #define F103_RCC       ((F103_RCC_Regs_t *)F103_RCC_BASE)
 
@@ -101,12 +109,22 @@ static F103_TIM_Map_t F103_TIM_GetMap(uint8_t timId)
 static void F103_TIM_EnableNvicIrq(uint32_t irqNum)
 {
 	F103_NVIC_Regs_t *nvic;
+	F103_NVIC_PriorityRegs_t *nvicPriority;
 	uint32_t iserIndex;
 	uint32_t iserBit;
+	uint8_t priorityValue;
 
 	nvic = (F103_NVIC_Regs_t *)F103_NVIC_ISER_BASE;
+	nvicPriority = (F103_NVIC_PriorityRegs_t *)F103_NVIC_IPR_BASE;
 	iserIndex = irqNum / 32U;
 	iserBit = irqNum % 32U;
+	priorityValue = (uint8_t)(configLIBRARY_MAX_SYSCALL_INTERRUPT_PRIORITY << (8U - configPRIO_BITS));
+
+	/*
+	 * TIMx 中断会调用 FreeRTOS 的 FromISR API，
+	 * 因此其中断优先级必须落在“允许调用内核 API”的范围内。
+	 */
+	nvicPriority->IPR[irqNum] = priorityValue;
 	nvic->ISER[iserIndex] = (1UL << iserBit);
 }
 

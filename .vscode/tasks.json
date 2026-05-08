@@ -57,6 +57,61 @@
 				"Build Debug"
 			],
 			"dependsOrder": "sequence"
+		},
+		{
+			"label": "Build Select MCU",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"--preset",
+				"${input:mcuBuildPreset}"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$gcc"
+			]
+		},
+		{
+			"label": "Flash Select MCU",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"--preset",
+				"${input:mcuFlashPreset}",
+				"--target",
+				"flash"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [],
+			"dependsOn": []
+		}
+	],
+	"inputs": [
+		{
+			"id": "mcuBuildPreset",
+			"type": "pickString",
+			"description": "选择要构建的 MCU 目标",
+			"options": [
+				"Debug-F103",
+				"Debug-F407"
+			],
+			"default": "Debug-F103"
+		},
+		{
+			"id": "mcuFlashPreset",
+			"type": "pickString",
+			"description": "选择要烧录的 MCU 目标",
+			"options": [
+				"Debug-F103",
+				"Debug-F407"
+			],
+			"default": "Debug-F103"
 		}
 	]
 }
