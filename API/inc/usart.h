@@ -11,16 +11,19 @@ extern "C" {
 #include "f103_usart.h"
 #elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
 #include "f407_usart.h"
+#elif (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+#include "G3507_usart.h"
+#include "ti/devices/msp/m0p/mspm0g350x.h"
 #else
 #error "Unsupported ENROLL_MCU_TARGET."
 #endif
 
 typedef enum
 {
-	API_USART1 = 0U,
-	API_USART2 = 1U,
-	API_USART3 = 2U,
-	API_USART4 = 3U
+	API_USART1 = 1U,
+	API_USART2 = 2U,
+	API_USART3 = 3U,
+	API_USART4 = 4U
 } API_USART_Id_t;
 
 typedef struct
@@ -70,6 +73,16 @@ typedef struct
 #define USART2 ((F407_USART_View_t *)0x40004400UL)
 #define USART3 ((F407_USART_View_t *)0x40004800UL)
 #define USART4 ((F407_USART_View_t *)0x40004C00UL)
+#define USART_SR_RXNE (1UL << 5)
+#define USART_SR_TC   (1UL << 6)
+#define USART_SR_TXE  (1UL << 7)
+#elif (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+typedef UART_Regs G3507_USART_View_t;
+
+#define USART1 ((G3507_USART_View_t *)UART0)
+#define USART2 ((G3507_USART_View_t *)UART1)
+#define USART3 ((G3507_USART_View_t *)UART2)
+/* G3507 无与 STM32 完全同名位定义，这里仅保留兼容常量。 */
 #define USART_SR_RXNE (1UL << 5)
 #define USART_SR_TC   (1UL << 6)
 #define USART_SR_TXE  (1UL << 7)

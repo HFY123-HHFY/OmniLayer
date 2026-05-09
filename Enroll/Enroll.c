@@ -21,6 +21,16 @@ static const LED_Config_t s_ledTable[] =
 
 #undef ENROLL_LED_ITEM
 
+/* ENROLL_USART_ITEM 负责把板级 USART 宏映射展开成 API 配置项。 */
+#define ENROLL_USART_ITEM(id, txPort, txPin, rxPort, rxPin) \
+	{ id, txPort, txPin, rxPort, rxPin },
+
+static const API_USART_Config_t s_usartTable[] =
+{
+	HW_USART_MAP(ENROLL_USART_ITEM)
+};
+
+#undef ENROLL_USART_ITEM
 
 /*
  * Enroll_LED_Init：
@@ -36,4 +46,11 @@ void Enroll_LED_Init(LED_Level_t initLevel)
 void Enroll_LED_Control(LED_Id_t id, LED_Level_t level)
 {
 	LED_Control(id, level);
+}
+
+/* Enroll_USART_Init：注册板级 USART 后初始化指定串口。 */
+void Enroll_USART_Init(API_USART_Id_t id, uint32_t baudRate)
+{
+	API_USART_Register(s_usartTable, HW_USART_COUNT);
+	API_USART_Init(id, baudRate);
 }

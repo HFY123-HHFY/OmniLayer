@@ -1,5 +1,9 @@
 #include "usart.h"
 #include "gpio.h"
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+#include "G3507_hw_config.h"
+#include "ti/driverlib/dl_gpio.h"
+#endif
 
 static const API_USART_Config_t *s_usartTable;
 static uint8_t s_usartCount;
@@ -120,6 +124,63 @@ static void API_USART_ConfigAfPin(void *port, uint16_t pin, uint8_t af)
 	}
 }
 
+#elif (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+static uint8_t API_USART_GetG3507Pinmux(
+	API_USART_Id_t id, uint8_t isTx, uint32_t *iomux, uint32_t *func)
+{
+	if ((iomux == 0) || (func == 0))
+	{
+		return 0U;
+	}
+
+	switch (id)
+	{
+	case API_USART1:
+		if (isTx != 0U)
+		{
+			*iomux = G3507_USART0_TX_IOMUX;
+			*func = G3507_USART0_TX_FUNC;
+		}
+		else
+		{
+			*iomux = G3507_USART0_RX_IOMUX;
+			*func = G3507_USART0_RX_FUNC;
+		}
+		return 1U;
+	default:
+		break;
+	}
+
+	return 0U;
+}
+
+static void API_USART_ConfigTxPin(API_USART_Id_t id, void *port, uint16_t pin)
+{
+	uint32_t iomux;
+	uint32_t func;
+
+	(void)port;
+	(void)pin;
+	if (API_USART_GetG3507Pinmux(id, 1U, &iomux, &func) == 0U)
+	{
+		return;
+	}
+	DL_GPIO_initPeripheralOutputFunction(iomux, func);
+}
+
+static void API_USART_ConfigRxPin(API_USART_Id_t id, void *port, uint16_t pin)
+{
+	uint32_t iomux;
+	uint32_t func;
+
+	(void)port;
+	(void)pin;
+	if (API_USART_GetG3507Pinmux(id, 0U, &iomux, &func) == 0U)
+	{
+		return;
+	}
+	DL_GPIO_initPeripheralInputFunction(iomux, func);
+}
 #else
 static void API_USART_ConfigTxPin(void *port, uint16_t pin)
 {
@@ -147,6 +208,23 @@ static void API_USART_ConfigAfPin(void *port, uint16_t pin, uint8_t af)
 }
 #endif
 
+/* API 串口ID从1开始，底层驱动索引从0开始，这里统一做转换。 */
+static uint8_t API_USART_ToCoreIndex(API_USART_Id_t id, uint8_t *coreIndex)
+{
+	if (coreIndex == 0)
+	{
+		return 0U;
+	}
+
+	if ((id < API_USART1) || (id > API_USART4))
+	{
+		return 0U;
+	}
+
+	*coreIndex = (uint8_t)(id - API_USART1);
+	return 1U;
+}
+
 /*
  * 串口底层初始化：
  * 这层只负责注册、引脚复用和调用 Core 初始化，不处理接收中断包装。
@@ -154,22 +232,74 @@ static void API_USART_ConfigAfPin(void *port, uint16_t pin, uint8_t af)
 #if (ENROLL_MCU_TARGET == ENROLL_MCU_F103)
 static void API_USART_CoreInit(API_USART_Id_t id, uint32_t baudRate)
 {
-	F103_USART_Init((uint8_t)id, baudRate);
+	uint8_t coreIndex;
+
+	if (API_USART_ToCoreIndex(id, &coreIndex) == 0U)
+	{
+		return;
+	}
+
+	F103_USART_Init(coreIndex, baudRate);
 }
 
 static void API_USART_CoreWriteByte(API_USART_Id_t id, uint8_t data)
 {
-	F103_USART_WriteByte((uint8_t)id, data);
+	uint8_t coreIndex;
+
+	if (API_USART_ToCoreIndex(id, &coreIndex) == 0U)
+	{
+		return;
+	}
+
+	F103_USART_WriteByte(coreIndex, data);
 }
 #elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
 static void API_USART_CoreInit(API_USART_Id_t id, uint32_t baudRate)
 {
-	F407_USART_Init((uint8_t)id, baudRate);
+	uint8_t coreIndex;
+
+	if (API_USART_ToCoreIndex(id, &coreIndex) == 0U)
+	{
+		return;
+	}
+
+	F407_USART_Init(coreIndex, baudRate);
 }
 
 static void API_USART_CoreWriteByte(API_USART_Id_t id, uint8_t data)
 {
-	F407_USART_WriteByte((uint8_t)id, data);
+	uint8_t coreIndex;
+
+	if (API_USART_ToCoreIndex(id, &coreIndex) == 0U)
+	{
+		return;
+	}
+
+	F407_USART_WriteByte(coreIndex, data);
+}
+#elif (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+static void API_USART_CoreInit(API_USART_Id_t id, uint32_t baudRate)
+{
+	uint8_t coreIndex;
+
+	if (API_USART_ToCoreIndex(id, &coreIndex) == 0U)
+	{
+		return;
+	}
+
+	G3507_USART_Init(coreIndex, baudRate);
+}
+
+static void API_USART_CoreWriteByte(API_USART_Id_t id, uint8_t data)
+{
+	uint8_t coreIndex;
+
+	if (API_USART_ToCoreIndex(id, &coreIndex) == 0U)
+	{
+		return;
+	}
+
+	G3507_USART_WriteByte(coreIndex, data);
 }
 #else
 static void API_USART_CoreInit(API_USART_Id_t id, uint32_t baudRate)
@@ -243,6 +373,16 @@ void API_USART_Init(API_USART_Id_t id, uint32_t baudRate)
 	if ((config->rxPort != 0) && (config->rxPin != 0U))
 	{
 		API_USART_ConfigAfPin(config->rxPort, config->rxPin, API_USART_GetAfNum(id));
+	}
+#elif (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+	if ((config->txPort != 0) && (config->txPin != 0U))
+	{
+		API_USART_ConfigTxPin(id, config->txPort, config->txPin);
+	}
+
+	if ((config->rxPort != 0) && (config->rxPin != 0U))
+	{
+		API_USART_ConfigRxPin(id, config->rxPort, config->rxPin);
 	}
 #endif
 

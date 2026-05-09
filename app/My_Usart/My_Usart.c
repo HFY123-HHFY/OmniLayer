@@ -7,7 +7,7 @@
  * - head: 生产者写入位置（主循环或任务上下文）
  * - tail: 消费者取出位置（TXE 中断上下文）
  */
-
+#if (ENROLL_MCU_TARGET != ENROLL_MCU_G3507)
 typedef struct
 {
 	USART_TypeDef *instance;
@@ -20,9 +20,6 @@ typedef struct
 static USART_TxAsyncQueue g_usart_tx_q1 = {USART1, 0U, 0U, {0}};
 static USART_TxAsyncQueue g_usart_tx_q2 = {USART2, 0U, 0U, {0}};
 static USART_TxAsyncQueue g_usart_tx_q3 = {USART3, 0U, 0U, {0}};
-
-/* 全局接收解析状态。 */
-USART_DataType USART_DataTypeStruct;
 
 /* 根据 USART 实例返回对应发送队列。 */
 static USART_TxAsyncQueue *usart_get_tx_queue(USART_TypeDef *USARTx)
@@ -42,6 +39,29 @@ static USART_TxAsyncQueue *usart_get_tx_queue(USART_TypeDef *USARTx)
 
 	return 0;
 }
+
+/* 进入临界区：返回进入前 PRIMASK 状态。 */
+static uint32_t usart_enter_critical(void)
+{
+	uint32_t primask;
+
+	__asm volatile("MRS %0, PRIMASK" : "=r"(primask));
+	__asm volatile("cpsid i" : : : "memory");
+	return primask;
+}
+
+/* 退出临界区：仅在进入前中断开放时恢复中断。 */
+static void usart_exit_critical(uint32_t primask)
+{
+	if ((primask & 0x1U) == 0U)
+	{
+		__asm volatile("cpsie i" : : : "memory");
+	}
+}
+#endif
+
+/* 全局接收解析状态。 */
+USART_DataType USART_DataTypeStruct;
 
 /*
  * 把 USARTx 寄存器实例转换为 API 层 ID。
@@ -80,25 +100,6 @@ static uint8_t usart_instance_to_id(USART_TypeDef *USARTx, API_USART_Id_t *id)
 	return 0U;
 }
 
-/* 进入临界区：返回进入前 PRIMASK 状态。 */
-static uint32_t usart_enter_critical(void)
-{
-	uint32_t primask;
-
-	__asm volatile("MRS %0, PRIMASK" : "=r"(primask));
-	__asm volatile("cpsid i" : : : "memory");
-	return primask;
-}
-
-/* 退出临界区：仅在进入前中断开放时恢复中断。 */
-static void usart_exit_critical(uint32_t primask)
-{
-	if ((primask & 0x1U) == 0U)
-	{
-		__asm volatile("cpsie i" : : : "memory");
-	}
-}
-
 /*
  * 发送 1 字节：
  * 1) 先尝试异步入队；
@@ -123,11 +124,16 @@ void usart_send_byte(USART_TypeDef *USARTx, uint8_t Byte)
 
 /*
  * 异步发送 1 字节：
- * - 成功：写入队列并打开 TXEIE，中断后续搬运发送；
- * - 失败：返回 0（队列满或实例不支持）。
+ * - STM32: 成功入队后由 TXE 中断搬运发送；
+ * - G3507: 先统一走阻塞发送链路，返回 0 触发兜底。
  */
 uint8_t usart_send_byte_async(USART_TypeDef *USARTx, uint8_t Byte)
 {
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+	(void)USARTx;
+	(void)Byte;
+	return 0U;
+#else
 	uint32_t primask;
 	uint16_t next_head;
 	USART_TxAsyncQueue *q;
@@ -153,6 +159,7 @@ uint8_t usart_send_byte_async(USART_TypeDef *USARTx, uint8_t Byte)
 
 	usart_exit_critical(primask);
 	return 1U;
+#endif
 }
 
 /* 发送 C 字符串（逐字节调用 usart_send_byte）。 */
@@ -312,11 +319,14 @@ void usart_printf(USART_TypeDef *USARTx, const char *format, ...)
 
 /*
  * TXE 中断服务分发函数：
- * - 队列有数据：写 DR 并前移 tail；
- * - 队列为空：关闭 TXEIE，避免空中断反复触发。
+ * - STM32: 队列有数据时写 DR，空时关闭 TXEIE；
+ * - G3507: 当前不使用此路径，保留空实现避免上层改动。
  */
 void usart_tx_irq_handler(USART_TypeDef *USARTx)
 {
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+	(void)USARTx;
+#else
 	USART_TxAsyncQueue *q;
 
 	q = usart_get_tx_queue(USARTx);
@@ -334,6 +344,7 @@ void usart_tx_irq_handler(USART_TypeDef *USARTx)
 	{
 		q->instance->CR1 &= ~USART_CR1_TXEIE;
 	}
+#endif
 }
 
 /*

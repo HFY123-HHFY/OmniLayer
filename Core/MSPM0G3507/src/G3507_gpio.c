@@ -53,7 +53,8 @@ uint32_t G3507_GetIomux(GPIO_Regs *port, uint32_t pin)
                 case DL_GPIO_PIN_12: return B12;
                 case DL_GPIO_PIN_13: return B13;
                 case DL_GPIO_PIN_14: return B14;
-                case DL_GPIO_PIN_15: return B15;
+				case DL_GPIO_PIN_15: return B15;
+				case DL_GPIO_PIN_22: return B22;
                 default: return 0xFFFFFFFFUL;
             }
         default:

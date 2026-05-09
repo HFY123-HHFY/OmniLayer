@@ -37,11 +37,14 @@
  * USART_TypeDef 统一别名：
  * - F103: 对应 F103_USART_View_t
  * - F407: 对应 F407_USART_View_t
+ * - G3507: 对应 G3507_USART_View_t
  */
 #if (ENROLL_MCU_TARGET == ENROLL_MCU_F103)
 typedef F103_USART_View_t USART_TypeDef;
 #elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
 typedef F407_USART_View_t USART_TypeDef;
+#elif (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+typedef G3507_USART_View_t USART_TypeDef;
 #else
 #error "Unsupported ENROLL_MCU_TARGET."
 #endif
@@ -118,3 +121,32 @@ void usart_Dispose_Data(USART_TypeDef *USARTx, USART_DataType *USART_DataTypeStr
 int16_t USART_Deal(USART_DataType *pData, int8_t index);
 
 #endif
+
+// 说明：
+// 本库为多平台兼容的串口适配层，所有串口相关操作均通过指针和宏映射实现。
+// 
+// 1. 串口初始化（Enroll_USART_Init）
+//    - STM32F103/STM32F407：建议从 API_USART1 开始作为“首串口”（对应硬件 USART1）。
+//    - MSPM0G3507：首串口也使用 API_USART1（映射到硬件 UART0）。
+//    - 统一后应用层可固定写 API_USART1 + USART1，跨平台更直观。
+// 
+// 2. 串口发送与 usart_printf
+//    - 所有 usart_printf、usart_send_byte 等接口，参数为 USARTx 宏（如 USART1、USART2）。
+//    - STM32F103/407：USARTx 直接对应硬件串口。
+//    - MSPM0G3507：USART1 宏实际映射到 UART0，USART2/3/4 也同理。
+//    - 这样保证了应用层代码无需关心底层硬件差异，直接用 USARTx 即可。
+// 
+// 3. 兼容性说明
+//    - 若需严格“用谁就叫什么名字”，需全局重命名并调整多平台适配，工程量大且易出错。
+//    - 推荐保持现有指针/宏映射方案，保证跨平台和可维护性。
+// 
+// 4. 典型用法示例：
+//    Enroll_USART_Init(API_USART1, 115200U); // 初始化第一个串口
+//    usart_printf(USART1, "hello\r\n");      // 通过第一个串口发送
+//    // MSPM0G3507下，USART1 实际就是 UART0
+// 
+// 5. 相关文件：
+//    - API/inc/usart.h：宏定义与映射
+//    - Enroll/G3507_hw_config.h：G3507板级资源映射
+//    - app/My_Usart/My_Usart.c：指针适配实现
+//    - app/main.c：应用层调用示例

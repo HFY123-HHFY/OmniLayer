@@ -25,6 +25,7 @@
 
 #include "LED.h"
 #include "gpio.h"
+#include "usart.h"
 
 /*
  * 条件编译选择不同 MCU 的 hw_config。
@@ -57,6 +58,9 @@ void Enroll_LED_Init(LED_Level_t initLevel);
 
 /* 把 app/main 的 LED 控制请求转发给 BSP。 */
 void Enroll_LED_Control(LED_Id_t id, LED_Level_t level);
+
+/* 串口注册并初始化：按板级映射绑定 API 与 Core。 */
+void Enroll_USART_Init(API_USART_Id_t id, uint32_t baudRate);
 
 #ifdef __cplusplus
 }
