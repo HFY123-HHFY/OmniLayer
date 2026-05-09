@@ -58,14 +58,14 @@ void F407_GPIO_EnablePortClock(void *port)
  * 把单 bit 引脚掩码转换为引脚编号（0~15）。
  * 例如 GPIO_Pin_13 -> 13。
  */
-uint32_t F407_GPIO_PinIndex(uint16_t pin)
+uint32_t F407_GPIO_PinIndex(uint32_t pin)
 {
 	/* index: 遍历引脚编号。 */
 	uint32_t index;
 
 	for (index = 0U; index < 16U; ++index)
 	{
-		if (pin == (uint16_t)(1U << index))
+		if (pin == (1UL << index))
 		{
 			return index;
 		}
@@ -82,7 +82,7 @@ uint32_t F407_GPIO_PinIndex(uint16_t pin)
  * 4) 配置 OTYPER 为推挽
  * 5) 配置 OSPEEDR 为低速
  */
-void F407_GPIO_InitOutput(void *port, uint16_t pin)
+void F407_GPIO_InitOutput(void *port, uint32_t pin)
 {
 	/* gpioPort: GPIO 寄存器映射地址。 */
 	F407_GPIO_Regs_t *gpioPort;
@@ -121,7 +121,7 @@ void F407_GPIO_InitOutput(void *port, uint16_t pin)
 }
 
 /* GPIO 输入初始化：配置为无上下拉输入。 */
-void F407_GPIO_InitInput(void *port, uint16_t pin)
+void F407_GPIO_InitInput(void *port, uint32_t pin)
 {
 	/* gpioPort: GPIO 寄存器映射地址。 */
 	F407_GPIO_Regs_t *gpioPort;
@@ -150,7 +150,7 @@ void F407_GPIO_InitInput(void *port, uint16_t pin)
 }
 
 /* GPIO 上拉输入初始化：配置为输入并打开内部上拉。 */
-void F407_GPIO_InitInputPullUp(void *port, uint16_t pin)
+void F407_GPIO_InitInputPullUp(void *port, uint32_t pin)
 {
 	/* gpioPort: GPIO 寄存器映射地址。 */
 	F407_GPIO_Regs_t *gpioPort;
@@ -180,7 +180,7 @@ void F407_GPIO_InitInputPullUp(void *port, uint16_t pin)
 }
 
 /* GPIO 写电平接口：内部使用 BSRR 原子置位和复位。 */
-void F407_GPIO_Write(void *port, uint16_t pin, uint8_t level)
+void F407_GPIO_Write(void *port, uint32_t pin, uint8_t level)
 {
 	/* gpioPort: GPIO 寄存器映射地址。 */
 	F407_GPIO_Regs_t *gpioPort;
@@ -204,7 +204,7 @@ void F407_GPIO_Write(void *port, uint16_t pin, uint8_t level)
 }
 
 /* GPIO 读电平接口：读取 IDR 对应位。 */
-uint8_t F407_GPIO_Read(void *port, uint16_t pin)
+uint8_t F407_GPIO_Read(void *port, uint32_t pin)
 {
 	/* gpioPort: GPIO 寄存器映射地址。 */
 	F407_GPIO_Regs_t *gpioPort;

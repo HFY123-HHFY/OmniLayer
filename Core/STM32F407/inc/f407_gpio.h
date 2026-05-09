@@ -111,18 +111,18 @@ typedef struct
 /* 根据端口地址打开对应 AHB1 GPIO 时钟。 */
 void F407_GPIO_EnablePortClock(void *port);
 /* 把单 bit 引脚掩码转换为引脚编号（0~15）。 */
-uint32_t F407_GPIO_PinIndex(uint16_t pin);
+uint32_t F407_GPIO_PinIndex(uint32_t pin);
 
 /* GPIO 输出初始化：当前实现为推挽输出低速模式。 */
-void F407_GPIO_InitOutput(void *port, uint16_t pin);
+void F407_GPIO_InitOutput(void *port, uint32_t pin);
 /* GPIO 输入初始化：当前实现为无上下拉输入。 */
-void F407_GPIO_InitInput(void *port, uint16_t pin);
+void F407_GPIO_InitInput(void *port, uint32_t pin);
 /* GPIO 上拉输入初始化：用于按键等低电平触发输入。 */
-void F407_GPIO_InitInputPullUp(void *port, uint16_t pin);
+void F407_GPIO_InitInputPullUp(void *port, uint32_t pin);
 /* GPIO 写电平：level 非 0 写高，0 写低。 */
-void F407_GPIO_Write(void *port, uint16_t pin, uint8_t level);
+void F407_GPIO_Write(void *port, uint32_t pin, uint8_t level);
 /* GPIO 读输入电平：返回 1 表示高电平，0 表示低电平。 */
-uint8_t F407_GPIO_Read(void *port, uint16_t pin);
+uint8_t F407_GPIO_Read(void *port, uint32_t pin);
 
 #ifdef __cplusplus
 }

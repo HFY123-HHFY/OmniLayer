@@ -14,21 +14,24 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/artifacts)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/artifacts)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/artifacts)
 
-set(MCU_TARGET "AUTO" CACHE STRING "Target MCU family: AUTO/F103/F407")
-set_property(CACHE MCU_TARGET PROPERTY STRINGS AUTO F103 F407)
+set(MCU_TARGET "AUTO" CACHE STRING "Target MCU family: AUTO/F103/F407/G3507")
+set_property(CACHE MCU_TARGET PROPERTY STRINGS AUTO F103 F407 G3507)
 
 # AUTO 模式下，从 Enroll.h 的默认宏读取当前目标 MCU。
 if(MCU_TARGET STREQUAL "AUTO")
     file(READ "${CMAKE_SOURCE_DIR}/Enroll/Enroll.h" ENROLL_HEADER_CONTENT)
-    string(REGEX MATCH "#define[ \t]+ENROLL_MCU_TARGET[ \t]+ENROLL_MCU_F407" ENROLL_TARGET_IS_F407 "${ENROLL_HEADER_CONTENT}")
-    string(REGEX MATCH "#define[ \t]+ENROLL_MCU_TARGET[ \t]+ENROLL_MCU_F103" ENROLL_TARGET_IS_F103 "${ENROLL_HEADER_CONTENT}")
+    string(REGEX MATCH "(^|[\r\n])[ \t]*#define[ \t]+ENROLL_MCU_TARGET[ \t]+ENROLL_MCU_F407([ \t]|[\r\n]|$)" ENROLL_TARGET_IS_F407 "${ENROLL_HEADER_CONTENT}")
+    string(REGEX MATCH "(^|[\r\n])[ \t]*#define[ \t]+ENROLL_MCU_TARGET[ \t]+ENROLL_MCU_F103([ \t]|[\r\n]|$)" ENROLL_TARGET_IS_F103 "${ENROLL_HEADER_CONTENT}")
+    string(REGEX MATCH "(^|[\r\n])[ \t]*#define[ \t]+ENROLL_MCU_TARGET[ \t]+ENROLL_MCU_G3507([ \t]|[\r\n]|$)" ENROLL_TARGET_IS_G3507 "${ENROLL_HEADER_CONTENT}")
 
     if(ENROLL_TARGET_IS_F407)
         set(RESOLVED_MCU_TARGET "F407")
     elseif(ENROLL_TARGET_IS_F103)
         set(RESOLVED_MCU_TARGET "F103")
+    elseif(ENROLL_TARGET_IS_G3507)
+        set(RESOLVED_MCU_TARGET "G3507")
     else()
-        message(FATAL_ERROR "Cannot detect ENROLL_MCU_TARGET from Enroll/Enroll.h")
+        message(FATAL_ERROR "Cannot detect ENROLL_MCU_TARGET from Enroll/Enroll.h.\n请检查 #define ENROLL_MCU_TARGET ... 是否为 ENROLL_MCU_F103/F407/G3507 之一。")
     endif()
 else()
     set(RESOLVED_MCU_TARGET "${MCU_TARGET}")
@@ -40,6 +43,8 @@ if(RESOLVED_MCU_TARGET STREQUAL "F103")
     set(ENROLL_MCU_TARGET_VALUE 0)
 elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
     set(ENROLL_MCU_TARGET_VALUE 1)
+elseif(RESOLVED_MCU_TARGET STREQUAL "G3507")
+    set(ENROLL_MCU_TARGET_VALUE 2)
 else()
     message(FATAL_ERROR "Unsupported resolved MCU target: ${RESOLVED_MCU_TARGET}")
 endif()
@@ -84,6 +89,7 @@ set(SYS_LAYER_SOURCES
 # API 层：对上提供统一外设接口，对下分发到 MCU Core 实现。
 set(API_LAYER_SOURCES
     ${CMAKE_SOURCE_DIR}/API/src/adc.c
+    ${CMAKE_SOURCE_DIR}/API/src/exti.c
     ${CMAKE_SOURCE_DIR}/API/src/gpio.c
     ${CMAKE_SOURCE_DIR}/API/src/tim.c
     ${CMAKE_SOURCE_DIR}/API/src/usart.c
@@ -204,18 +210,53 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start/system_stm32f4xx.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start/startup_stm32f407vetx_gcc.c
     )
+elseif(RESOLVED_MCU_TARGET STREQUAL "G3507")
+    set(TARGET_NAME OmniLayer_MSPM0G3507)
+    set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/cmake/mspm0g3507.lds)
+    set(OPENOCD_CFG ${CMAKE_SOURCE_DIR}/OpenOCD/G3507_OpenOCD.cfg)
+    set(OPENOCD_ERASE_CMD "mspm0 mass_erase 0")
+    set(MCU_CPU_FLAGS -mcpu=cortex-m0plus -mthumb)
+    set(MCU_FPU_FLAGS)
+    set(MCU_DEFINITIONS
+        __MSPM0G3507__
+    )
+    set(MCU_INCLUDE_DIRS
+        ${CMAKE_SOURCE_DIR}/app
+        ${CMAKE_SOURCE_DIR}/API/inc
+        ${CMAKE_SOURCE_DIR}/Enroll
+        ${CMAKE_SOURCE_DIR}/BSP/LED
+        ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/inc
+        ${CMAKE_SOURCE_DIR}/SYSTEM
+        ${CMAKE_SOURCE_DIR}/Drivers/Drivers_M0G3507/source
+        ${CMAKE_SOURCE_DIR}/Drivers/Drivers_M0G3507/source/ti/devices/msp/m0p
+        ${CMAKE_SOURCE_DIR}/Drivers/Drivers_M0G3507/source/third_party/CMSIS/Core/Include
+    )
 else()
     message(FATAL_ERROR "Unsupported MCU target: ${RESOLVED_MCU_TARGET}")
 endif()
 
-set(TARGET_SOURCES
-    ${APP_LAYER_SOURCES}
-    ${SYS_LAYER_SOURCES}
-    ${API_LAYER_SOURCES}
-    ${ENROLL_LAYER_SOURCES}
-    ${BSP_LAYER_SOURCES}
-    ${MCU_SOURCES}
-)
+# G3507 使用最小化源文件集，不包含 STM32 专属层。
+if(RESOLVED_MCU_TARGET STREQUAL "G3507")
+    set(TARGET_SOURCES
+        ${CMAKE_SOURCE_DIR}/app/main.c
+        ${CMAKE_SOURCE_DIR}/BSP/LED/LED.c
+        ${CMAKE_SOURCE_DIR}/Enroll/Enroll.c
+        ${CMAKE_SOURCE_DIR}/API/src/gpio.c
+        ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/G3507_delay.c
+        ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/G3507_sys.c
+        ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_gpio.c
+        ${CMAKE_SOURCE_DIR}/Drivers/Drivers_M0G3507/source/ti/devices/msp/m0p/startup_system_files/gcc/startup_mspm0g350x_gcc.c
+    )
+else()
+    set(TARGET_SOURCES
+        ${APP_LAYER_SOURCES}
+        ${SYS_LAYER_SOURCES}
+        ${API_LAYER_SOURCES}
+        ${ENROLL_LAYER_SOURCES}
+        ${BSP_LAYER_SOURCES}
+        ${MCU_SOURCES}
+    )
+endif()
 
 add_executable(${TARGET_NAME} ${TARGET_SOURCES})
 
@@ -226,6 +267,7 @@ target_include_directories(${TARGET_NAME} PRIVATE
 target_compile_definitions(${TARGET_NAME} PRIVATE
     ENROLL_MCU_F103=0
     ENROLL_MCU_F407=1
+    ENROLL_MCU_G3507=2
     ENROLL_MCU_TARGET=${ENROLL_MCU_TARGET_VALUE}
     ${MCU_DEFINITIONS}
 )
@@ -263,9 +305,9 @@ add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
     COMMENT "Generate .hex/.bin and print size"
 )
 
-# OpenOCD 烧录：按 MCU 选择对应配置文件。
+# OpenOCD 烧录：按 MCU 选择对应配置文件。G3507 不做 verify（避免卡顿）。
 add_custom_target(flash
-    COMMAND openocd -f ${OPENOCD_CFG} -c "program $<TARGET_FILE:${TARGET_NAME}> verify reset exit"
+    COMMAND openocd -f ${OPENOCD_CFG} -c "program $<TARGET_FILE:${TARGET_NAME}> $<IF:$<STREQUAL:${RESOLVED_MCU_TARGET},G3507>,,verify> reset exit"
     DEPENDS ${TARGET_NAME}
     COMMENT "Flash firmware via OpenOCD"
 )

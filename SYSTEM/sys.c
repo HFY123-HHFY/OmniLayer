@@ -1,4 +1,5 @@
 #include "sys.h"
+#include "exti.h"
 
 /* EXTI 线到 NVIC 中断通道映射。 */
 #define SYS_EXTI0_IRQn      (6U)
@@ -13,34 +14,13 @@
 /* 当前已注册 EXTI 线号。 */
 static uint8_t s_sysExtiLineIndex = 0xFFU;
 
-/* F103/F407 仅 EXTI 基地址不同，按目标 MCU 选择。 */
-#if (ENROLL_MCU_TARGET == ENROLL_MCU_F103)
-#define SYS_EXTI_BASE (0x40010400UL)
-#elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
-#define SYS_EXTI_BASE (0x40013C00UL)
-#else
-#error "Unsupported ENROLL_MCU_TARGET."
-#endif
-
-typedef struct
-{
-	volatile uint32_t IMR;
-	volatile uint32_t EMR;
-	volatile uint32_t RTSR;
-	volatile uint32_t FTSR;
-	volatile uint32_t SWIER;
-	volatile uint32_t PR;
-} SYS_EXTI_Regs_t;
-
-#define SYS_EXTI ((SYS_EXTI_Regs_t *)SYS_EXTI_BASE)
-
-static uint8_t SYS_GetPinIndex(uint16_t pin)
+static uint8_t SYS_GetPinIndex(uint32_t pin)
 {
 	uint8_t index;
 
 	for (index = 0U; index < 16U; ++index)
 	{
-		if (pin == (uint16_t)(1U << index))
+		if (pin == (uint32_t)(1UL << index))
 		{
 			return index;
 		}
@@ -92,7 +72,7 @@ void SYS_Init(void)
 	/* 需要全局系统初始化时在此扩展。 */
 }
 
-void SYS_EXTI_Register(void *port, uint16_t pin, SYS_EXTI_Trigger_t trigger,
+void SYS_EXTI_Register(void *port, uint32_t pin, SYS_EXTI_Trigger_t trigger,
 	uint8_t preemptPriority, uint8_t subPriority)
 {
 	uint8_t lineIndex;
@@ -115,11 +95,7 @@ void SYS_EXTI_Register(void *port, uint16_t pin, SYS_EXTI_Trigger_t trigger,
 		return;
 	}
 
-#if (ENROLL_MCU_TARGET == ENROLL_MCU_F103)
-	F103_SYS_EXTI_Init(port, lineIndex, trigger, irqn, preemptPriority, subPriority);
-#elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
-	F407_SYS_EXTI_Init(port, lineIndex, trigger, irqn, preemptPriority, subPriority);
-#endif
+	API_EXTI_Init(port, pin, (API_EXTI_Trigger_t)trigger, irqn, preemptPriority, subPriority);
 
 	s_sysExtiLineIndex = lineIndex;
 }
@@ -136,11 +112,10 @@ uint8_t SYS_EXTI_IRQHandlerGroup(uint8_t startLine, uint8_t endLine)
 	}
 
 	lineMask = (uint32_t)1UL << s_sysExtiLineIndex;
-	if ((SYS_EXTI->PR & lineMask) == 0U)
+	if (API_EXTI_IsPendingAndClear(s_sysExtiLineIndex) == 0U)
 	{
 		return 0U;
 	}
-
-	SYS_EXTI->PR = lineMask;
+	(void)lineMask;
 	return 1U;
 }

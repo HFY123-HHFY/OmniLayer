@@ -57,6 +57,59 @@
 				"Build Debug"
 			],
 			"dependsOrder": "sequence"
+		},
+		{
+			"label": "CMake: Configure Debug-G3507",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--preset",
+				"Debug-G3507"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Debug-G3507",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"--preset",
+				"Debug-G3507"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"dependsOn": [
+				"CMake: Configure Debug-G3507"
+			],
+			"dependsOrder": "sequence"
+		},
+		{
+			"label": "Flash Debug-G3507",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"--preset",
+				"Debug-G3507",
+				"--target",
+				"flash"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [],
+			"dependsOn": [
+				"Build Debug-G3507"
+			],
+			"dependsOrder": "sequence"
 		}
 	]
 }

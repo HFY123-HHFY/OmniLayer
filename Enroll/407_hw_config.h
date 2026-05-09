@@ -8,6 +8,7 @@
 #include "usart.h"
 #include "pwm.h"
 #include "adc.h"
+#include "f407_gpio.h"
 
 /*
  * 407_hw_config.h 板级硬件映射宏

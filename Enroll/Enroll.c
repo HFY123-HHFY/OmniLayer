@@ -1,53 +1,17 @@
 #include "Enroll.h"
-#include "MPU6050_Int.h"
-#include "pwm.h"
-#include "adc.h"
 
 /*
  * Enroll 注册层：
  * 1) 读取 hw_config.h 中的板级映射
- * 2) 把 BSP 抽象 LED 和当前目标 MCU 的 GPIO 驱动连起来
- * 3) 对上层只暴露初始化和控制入口
+ * 2) 对上层只暴露初始化和控制入口
  */
 
 /*
  * ENROLL_LED_ITEM 负责把宏映射展开成 LED_Config_t 结构体项。
- * 这样硬件列表统一维护在 103_hw_config.h，Enroll.c 只保留一份模板。
  */
 #define ENROLL_LED_ITEM(id, port, pin) \
 	{ id, port, pin, ENROLL_GPIO_INIT_FN, ENROLL_GPIO_WRITE_FN },
 
-/* ENROLL_USART_ITEM 负责把串口映射展开成 API_USART_Config_t 结构体项。 */
-#define ENROLL_USART_ITEM(id, txPort, txPin, rxPort, rxPin) \
-	{ id, txPort, txPin, rxPort, rxPin },
-
-/* ENROLL_I2C_ITEM 负责把 I2C 映射展开成 MyI2C_Config_t 结构体项。 */
-#define ENROLL_I2C_ITEM(id, port, sclPin, sdaPin) \
-	{ (uint8_t)(id), port, sclPin, sdaPin },
-
-/* ENROLL_SPI_ITEM 负责把 SPI 映射展开成 MySPI_Config_t 结构体项。 */
-#define ENROLL_SPI_ITEM(id, csPort, csPin, sckPort, sckPin, mosiPort, mosiPin, misoPort, misoPin) \
-	{ (uint8_t)(id), csPort, csPin, sckPort, sckPin, mosiPort, mosiPin, misoPort, misoPin },
-
-/* ENROLL_OLED_SPI_CTRL_ITEM 负责把 OLED SPI 控制引脚展开成配置项。 */
-#define ENROLL_OLED_SPI_CTRL_ITEM(dcPort, dcPin, resPort, resPin) \
-	{ dcPort, dcPin, resPort, resPin },
-
-/* ENROLL_NRF24L01_CTRL_ITEM 负责把 NRF24L01 CE 控制引脚展开成配置项。 */
-#define ENROLL_NRF24L01_CTRL_ITEM(cePort, cePin) \
-	{ cePort, cePin },
-
-/* ENROLL_KEY_ITEM 负责把按键映射展开成 KEY_Config_t 结构体项。 */
-#define ENROLL_KEY_ITEM(id, port, pin) \
-	{ id, port, pin, ENROLL_GPIO_INPUT_FN, ENROLL_GPIO_READ_FN },
-
-/* ENROLL_PWM_ITEM 负责把 PWM 映射展开成 API_PWM_Config_t 结构体项。 */
-#define ENROLL_PWM_ITEM(timId, channel, port, pin) \
-	{ timId, channel, port, pin },
-
-/* ENROLL_ADC_ITEM 负责把 ADC 映射展开成 API_ADC_Config_t 结构体项。 */
-#define ENROLL_ADC_ITEM(adcId, channel, port, pin) \
-	{ adcId, channel, port, pin },
 
 /* 当前板子的 LED 注册表。 */
 static const LED_Config_t s_ledTable[] =
@@ -55,63 +19,8 @@ static const LED_Config_t s_ledTable[] =
 	HW_LED_MAP(ENROLL_LED_ITEM)
 };
 
-/* 当前板子的 USART 注册表。 */
-static const API_USART_Config_t s_usartTable[] =
-{
-	HW_USART_MAP(ENROLL_USART_ITEM)
-};
-
-/* 当前板子的 I2C 注册表。 */
-static const MyI2C_Config_t s_i2cTable[] =
-{
-	HW_I2C_MAP(ENROLL_I2C_ITEM)
-};
-
-/* 当前板子的 SPI 注册表。 */
-static const MySPI_Config_t s_spiTable[] =
-{
-	HW_SPI_MAP(ENROLL_SPI_ITEM)
-};
-
-/* 当前板子的 OLED SPI 控制引脚注册表（DC/RES）。 */
-static const OLED_SpiCtrlConfig_t s_oledSpiCtrlTable[] =
-{
-	HW_OLED_SPI_CTRL_MAP(ENROLL_OLED_SPI_CTRL_ITEM)
-};
-
-/* 当前板子的 NRF24L01 控制引脚注册表（CE）。 */
-static const NRF24L01_CtrlConfig_t s_nrf24l01CtrlTable[] =
-{
-	HW_NRF24L01_CTRL_MAP(ENROLL_NRF24L01_CTRL_ITEM)
-};
-
-/* 当前板子的 KEY 注册表。 */
-static const KEY_Config_t s_keyTable[] =
-{
-	HW_KEY_MAP(ENROLL_KEY_ITEM)
-};
-
-/* 当前板子的 PWM 注册表。 */
-static const API_PWM_Config_t s_pwmTable[] =
-{
-	HW_PWM_MAP(ENROLL_PWM_ITEM)
-};
-
-/* 当前板子的 ADC 注册表。 */
-static const API_ADC_Config_t s_adcTable[] =
-{
-	HW_ADC_MAP(ENROLL_ADC_ITEM)
-};
-
 #undef ENROLL_LED_ITEM
-#undef ENROLL_USART_ITEM
-#undef ENROLL_I2C_ITEM
-#undef ENROLL_SPI_ITEM
-#undef ENROLL_OLED_SPI_CTRL_ITEM
-#undef ENROLL_NRF24L01_CTRL_ITEM
-#undef ENROLL_KEY_ITEM
-#undef ENROLL_PWM_ITEM
-#undef ENROLL_ADC_ITEM
+
 
 /*
  * Enroll_LED_Init：
@@ -127,60 +36,4 @@ void Enroll_LED_Init(LED_Level_t initLevel)
 void Enroll_LED_Control(LED_Id_t id, LED_Level_t level)
 {
 	LED_Control(id, level);
-}
-
-/* Enroll_USART_Register：把当前板子的 USART 引脚映射注册给 API 层。 */
-void Enroll_USART_Register(void)
-{
-	API_USART_Register(s_usartTable, HW_USART_COUNT);
-}
-
-/* Enroll_I2C_Register：把当前板子的 I2C 引脚映射注册给应用层。 */
-void Enroll_I2C_Register(void)
-{
-	MyI2C_Register(s_i2cTable, HW_I2C_COUNT);
-}
-
-/* Enroll_SPI_Register：把当前板子的 SPI 引脚映射注册给应用层。 */
-void Enroll_SPI_Register(void)
-{
-	MySPI_Register(s_spiTable, HW_SPI_COUNT);
-}
-
-/* Enroll_OLED_Register：把 OLED SPI 控制引脚映射注册给 OLED 驱动层。 */
-void Enroll_OLED_Register(void)
-{
-	OLED_RegisterSpiCtrl(s_oledSpiCtrlTable, HW_OLED_SPI_CTRL_COUNT);
-}
-
-/* Enroll_NRF24L01_Register：把 NRF24L01 CE 控制引脚映射注册给驱动层。 */
-void Enroll_NRF24L01_Register(void)
-{
-	NRF24L01_RegisterCtrl(s_nrf24l01CtrlTable, HW_NRF24L01_CTRL_COUNT);
-}
-
-/* Enroll_PWM_Register：把当前板子的 PWM 引脚映射注册给 API 层。 */
-void Enroll_PWM_Register(void)
-{
-	API_PWM_Register(s_pwmTable, HW_PWM_COUNT);
-}
-
-/* Enroll_ADC_Register：把当前板子的 ADC 引脚映射注册给 API 层。 */
-void Enroll_ADC_Register(void)
-{
-	API_ADC_Register(s_adcTable, HW_ADC_COUNT);
-}
-
-/* Enroll_MPU6050_EXTI_Register：按板级配置注册 MPU6050 INT 外部中断。 */
-void Enroll_MPU6050_EXTI_Register(void)
-{
-	/* 板级配置仅提供引脚映射，默认触发沿/优先级由 MPU6050_Int.c 定义。 */
-	MPU6050_EXTI_InitBoard((void *)HW_MPU6050_INT_PORT, HW_MPU6050_INT_PIN);
-}
-
-/* Enroll_KEY_Init：把当前板子的按键映射注册给 BSP 并完成初始化。 */
-void Enroll_KEY_Init(void)
-{
-	KEY_Register(s_keyTable, HW_KEY_COUNT);
-	KEY_Init();
 }

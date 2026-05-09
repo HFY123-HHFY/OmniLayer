@@ -19,7 +19,7 @@ typedef enum
 void SYS_Init(void);
 
 /* 注册一条 EXTI 线并配置触发沿/优先级。 */
-void SYS_EXTI_Register(void *port, uint16_t pin, SYS_EXTI_Trigger_t trigger,
+void SYS_EXTI_Register(void *port, uint32_t pin, SYS_EXTI_Trigger_t trigger,
 	uint8_t preemptPriority, uint8_t subPriority);
 
 /*
@@ -27,14 +27,6 @@ void SYS_EXTI_Register(void *port, uint16_t pin, SYS_EXTI_Trigger_t trigger,
  * 返回 1 表示本次确实处理到注册线中断，返回 0 表示未命中。
  */
 uint8_t SYS_EXTI_IRQHandlerGroup(uint8_t startLine, uint8_t endLine);
-
-#if (ENROLL_MCU_TARGET == ENROLL_MCU_F103)
-void F103_SYS_EXTI_Init(void *port, uint8_t lineIndex, SYS_EXTI_Trigger_t trigger,
-	uint32_t irqn, uint8_t preemptPriority, uint8_t subPriority);
-#elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
-void F407_SYS_EXTI_Init(void *port, uint8_t lineIndex, SYS_EXTI_Trigger_t trigger,
-	uint32_t irqn, uint8_t preemptPriority, uint8_t subPriority);
-#endif
 
 #ifdef __cplusplus
 }

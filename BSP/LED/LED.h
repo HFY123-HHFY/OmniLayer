@@ -31,9 +31,9 @@ typedef enum
 } LED_Level_t;
 
 /* LED 对接到底层 GPIO 的初始化函数指针。 */
-typedef void (*LED_GPIO_InitFn)(void *port, uint16_t pin);
+typedef void (*LED_GPIO_InitFn)(void *port, uint32_t pin);
 /* LED 对接到底层 GPIO 的写电平函数指针。 */
-typedef void (*LED_GPIO_WriteFn)(void *port, uint16_t pin, uint8_t level);
+typedef void (*LED_GPIO_WriteFn)(void *port, uint32_t pin, uint8_t level);
 
 typedef struct
 {
@@ -41,7 +41,7 @@ typedef struct
 	LED_Id_t id;
 	/* port 与 pin 由 Enroll 层填入具体 MCU 的 GPIO 资源。 */
 	void *port;
-	uint16_t pin;
+	uint32_t pin;
 	/* Core 层注入的 GPIO 初始化函数。 */
 	LED_GPIO_InitFn gpioInit;
 	/* Core 层注入的 GPIO 写电平函数。 */

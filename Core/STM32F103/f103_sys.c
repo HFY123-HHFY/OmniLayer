@@ -1,4 +1,6 @@
-#include "sys.h"
+#include "f103_exti.h"
+#include "f103_gpio.h"
+#include "gpio.h"
 
 /*
     * F103 “硬件配置实现层”
@@ -86,7 +88,7 @@ static uint8_t F103_SYS_GetPortCode(void *port)
  * 3) 配置 EXTI 触发沿与中断屏蔽；
  * 4) 配置 NVIC 优先级并使能 IRQ。
  */
-void F103_SYS_EXTI_Init(void *port, uint8_t lineIndex, SYS_EXTI_Trigger_t trigger,
+void F103_EXTI_Init(void *port, uint8_t lineIndex, API_EXTI_Trigger_t trigger,
 	uint32_t irqn, uint8_t preemptPriority, uint8_t subPriority)
 {
 	uint32_t extiMask;
@@ -99,7 +101,7 @@ void F103_SYS_EXTI_Init(void *port, uint8_t lineIndex, SYS_EXTI_Trigger_t trigge
 		return;
 	}
 
-	API_GPIO_InitInputPullUp(port, (uint16_t)(1UL << lineIndex));
+	API_GPIO_InitInputPullUp(port, (uint32_t)(1UL << lineIndex));
 
 	F103_RCC->APB2ENR |= (1UL << 0); /* 使能 AFIO 时钟。 */
 	portCode = F103_SYS_GetPortCode(port);
@@ -118,7 +120,7 @@ void F103_SYS_EXTI_Init(void *port, uint8_t lineIndex, SYS_EXTI_Trigger_t trigge
 	EXTI->IMR |= extiMask;
 	EXTI->EMR &= ~extiMask;
 
-	if ((trigger & SYS_EXTI_TRIGGER_RISING) != 0U)
+	if ((trigger & API_EXTI_TRIGGER_RISING) != 0U)
 	{
 		EXTI->RTSR |= extiMask;
 	}
@@ -127,7 +129,7 @@ void F103_SYS_EXTI_Init(void *port, uint8_t lineIndex, SYS_EXTI_Trigger_t trigge
 		EXTI->RTSR &= ~extiMask;
 	}
 
-	if ((trigger & SYS_EXTI_TRIGGER_FALLING) != 0U)
+	if ((trigger & API_EXTI_TRIGGER_FALLING) != 0U)
 	{
 		EXTI->FTSR |= extiMask;
 	}
@@ -140,4 +142,23 @@ void F103_SYS_EXTI_Init(void *port, uint8_t lineIndex, SYS_EXTI_Trigger_t trigge
 	/* Cortex-M 中优先级高 4bit 有效，低位写 0 无影响。 */
 	NVIC->IP[irqn] = (uint8_t)(((uint32_t)preemptPriority << 4U) | (subPriority & 0x0FU));
 	NVIC->ISER[irqn >> 5U] = (uint32_t)(1UL << (irqn & 0x1FU));
+}
+
+uint8_t F103_EXTI_IsPendingAndClear(uint8_t lineIndex)
+{
+	uint32_t extiMask;
+
+	if (lineIndex > 15U)
+	{
+		return 0U;
+	}
+
+	extiMask = (uint32_t)1UL << lineIndex;
+	if ((EXTI->PR & extiMask) == 0U)
+	{
+		return 0U;
+	}
+
+	EXTI->PR = extiMask;
+	return 1U;
 }
