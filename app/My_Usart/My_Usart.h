@@ -108,6 +108,9 @@ void usart_printf(USART_TypeDef *USARTx, const char *format, ...);
  */
 void usart_tx_irq_handler(USART_TypeDef *USARTx);
 
+/* 根据 API 串口 ID 处理 RX/TX 中断事件（由注册层回调触发）。 */
+void usart_irq_dispatch_by_id(API_USART_Id_t id, uint32_t *rxData, uint8_t *rxValid);
+
 /*
  * 接收数据包解析函数：
  * 建议在 RXNE 分支读取到 data 后调用。
@@ -121,32 +124,3 @@ void usart_Dispose_Data(USART_TypeDef *USARTx, USART_DataType *USART_DataTypeStr
 int16_t USART_Deal(USART_DataType *pData, int8_t index);
 
 #endif
-
-// 说明：
-// 本库为多平台兼容的串口适配层，所有串口相关操作均通过指针和宏映射实现。
-// 
-// 1. 串口初始化（Enroll_USART_Init）
-//    - STM32F103/STM32F407：建议从 API_USART1 开始作为“首串口”（对应硬件 USART1）。
-//    - MSPM0G3507：首串口也使用 API_USART1（映射到硬件 UART0）。
-//    - 统一后应用层可固定写 API_USART1 + USART1，跨平台更直观。
-// 
-// 2. 串口发送与 usart_printf
-//    - 所有 usart_printf、usart_send_byte 等接口，参数为 USARTx 宏（如 USART1、USART2）。
-//    - STM32F103/407：USARTx 直接对应硬件串口。
-//    - MSPM0G3507：USART1 宏实际映射到 UART0，USART2/3/4 也同理。
-//    - 这样保证了应用层代码无需关心底层硬件差异，直接用 USARTx 即可。
-// 
-// 3. 兼容性说明
-//    - 若需严格“用谁就叫什么名字”，需全局重命名并调整多平台适配，工程量大且易出错。
-//    - 推荐保持现有指针/宏映射方案，保证跨平台和可维护性。
-// 
-// 4. 典型用法示例：
-//    Enroll_USART_Init(API_USART1, 115200U); // 初始化第一个串口
-//    usart_printf(USART1, "hello\r\n");      // 通过第一个串口发送
-//    // MSPM0G3507下，USART1 实际就是 UART0
-// 
-// 5. 相关文件：
-//    - API/inc/usart.h：宏定义与映射
-//    - Enroll/G3507_hw_config.h：G3507板级资源映射
-//    - app/My_Usart/My_Usart.c：指针适配实现
-//    - app/main.c：应用层调用示例

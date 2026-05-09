@@ -143,3 +143,22 @@ void F103_TIM_PeriodicInit(uint8_t timId, uint32_t periodMs)
 	/* 开启 NVIC 对应中断通道。 */
 	F103_TIM_EnableNvicIrq(map.irqNum);
 }
+
+uint8_t F103_TIM_CheckAndClearUpdateIrq(uint8_t timId)
+{
+	F103_TIM_Map_t map;
+
+	map = F103_TIM_GetMap(timId);
+	if (map.regs == 0)
+	{
+		return 0U;
+	}
+
+	if ((map.regs->SR & 1UL) == 0U)
+	{
+		return 0U;
+	}
+
+	map.regs->SR &= ~1UL;
+	return 1U;
+}

@@ -3,6 +3,7 @@
 
 #include "LED.h"
 #include "usart.h"
+#include "tim.h"
 #include "ti/driverlib/dl_gpio.h"
 
 /*
@@ -27,11 +28,17 @@
 #define G3507_USART0_RX_FUNC  IOMUX_PINCM22_PF_UART0_RX
 
 #define HW_USART_MAP(X) \
-    X(API_USART1, HW_USART0_TX_PORT, HW_USART0_TX_PIN, HW_USART0_RX_PORT, HW_USART0_RX_PIN)
+    X(API_USART1, API_USART_CORE_UART0, HW_USART0_TX_PORT, HW_USART0_TX_PIN, HW_USART0_RX_PORT, HW_USART0_RX_PIN)
+
+/* TIM 板级映射：逻辑 API_TIM1 绑定到硬件 TIMG0。 */
+#define HW_TIM_MAP(X) \
+    X(API_TIM1, API_TIM_CORE_TIMG0)
 
 /* 当前板子上注册了 1 个 LED */
 #define HW_LED_COUNT    1U
 /* 当前板子上注册了 1 路 USART */
 #define HW_USART_COUNT  1U
+/* 当前板子上注册了 1 路 TIM */
+#define HW_TIM_COUNT    1U
 
 #endif /* __G3507_HW_CONFIG_H */

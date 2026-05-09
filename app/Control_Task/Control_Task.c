@@ -3,9 +3,9 @@
 #include "tim.h"
 #include "usart.h"
 #include "My_Usart/My_Usart.h"
-#include "Control/Control.h"
+// #include "Control/Control.h"
 
-#include "MPU6050_Int.h"
+// #include "MPU6050_Int.h"
 
 /* 程序运行的时间戳（s） */
 uint32_t Timer_Bsp_t = 0;
@@ -17,26 +17,21 @@ volatile uint8_t print_task_flag = 0;
 uint32_t USART_1_RX = 0;
 
 /*
- * TIM3 中断服务函数：
- * 1) 判断 TIM3 是否发生更新中断；
- * 2) 清除更新中断标志；
- * 3) 执行按键节拍与系统计时。
+ * 定时器回调函数：
+ * 由 API_TIM 的通用中断分发层在更新中断到来后调用。
  */
-void TIM3_IRQHandler(void)
+void Control_Task_TIM_Callback(API_TIM_Id_t id)
 {
 	static uint16_t time_t = 0U; /* 程序运行时间计数 */
 	static uint8_t printf_50ms = 0U; /* 50ms printf 节拍计数 */
 	static uint8_t pid_2ms_tick = 0U; /* 2ms PID 节拍计数 */
 
-	if ((TIM3->SR & TIM_SR_UIF) == 0U)
+	if (id != API_TIM1)
 	{
 		return;
 	}
 
-	/* 先清除更新中断标志，避免重复进中断。 */
-	TIM3->SR &= ~TIM_SR_UIF;
-
-	Key_Tick();
+	// Key_Tick();
 	printf_50ms++;
 	time_t++;
 	pid_2ms_tick++;
@@ -44,7 +39,7 @@ void TIM3_IRQHandler(void)
 	if (pid_2ms_tick >= 2U)
 	{
 		pid_2ms_tick = 0U;
-		pid_task_flag = 1U;
+		// pid_task_flag = 1U;
 	}
 
 	if (printf_50ms >= 50U)
@@ -60,35 +55,33 @@ void TIM3_IRQHandler(void)
 	}
 }
 
-/*
- * USART1 中断服务函数：
- * 1) RXNE 读取接收数据；
- * 2) TXE 调用串口发送中断处理。
- */
-void USART1_IRQHandler(void)
+/* 串口中断回调：由 API_USART 的通用分发层按 id 调用。 */
+void Control_Task_USART_Callback(API_USART_Id_t id)
 {
-	static uint32_t data = 0U;
+	uint32_t data;
+	uint8_t rxValid;
 
-	if ((USART1->SR & USART_SR_RXNE) != 0U)
+	if (id != API_USART1)
 	{
-		data = USART1->DR;
+		return;
+	}
+
+	data = 0U;
+	rxValid = 0U;
+	usart_irq_dispatch_by_id(id, &data, &rxValid);
+	if (rxValid != 0U)
+	{
 		USART_1_RX = data;
 	}
-
-	if (((USART1->SR & USART_SR_TXE) != 0U) &&
-		((USART1->CR1 & USART_CR1_TXEIE) != 0U))
-	{
-		usart_tx_irq_handler(USART1);
-	}
 }
 
-/*
-	MPU6050外部中断服务函数
- */
-void EXTI9_5_IRQHandler(void)
-{
-	if (SYS_EXTI_IRQHandlerGroup(5U, 9U) != 0U)
-	{
-		mpu_flag = 1U;
-	}
-}
+// /*
+// 	MPU6050外部中断服务函数
+//  */
+// void EXTI9_5_IRQHandler(void)
+// {
+// 	if (SYS_EXTI_IRQHandlerGroup(5U, 9U) != 0U)
+// 	{
+// 		mpu_flag = 1U;
+// 	}
+// }

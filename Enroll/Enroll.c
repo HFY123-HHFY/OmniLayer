@@ -22,8 +22,8 @@ static const LED_Config_t s_ledTable[] =
 #undef ENROLL_LED_ITEM
 
 /* ENROLL_USART_ITEM 负责把板级 USART 宏映射展开成 API 配置项。 */
-#define ENROLL_USART_ITEM(id, txPort, txPin, rxPort, rxPin) \
-	{ id, txPort, txPin, rxPort, rxPin },
+#define ENROLL_USART_ITEM(id, coreId, txPort, txPin, rxPort, rxPin) \
+	{ id, coreId, txPort, txPin, rxPort, rxPin },
 
 static const API_USART_Config_t s_usartTable[] =
 {
@@ -31,6 +31,17 @@ static const API_USART_Config_t s_usartTable[] =
 };
 
 #undef ENROLL_USART_ITEM
+
+/* ENROLL_TIM_ITEM 负责把板级 TIM 宏映射展开成 API 配置项。 */
+#define ENROLL_TIM_ITEM(id, coreId) \
+	{ id, coreId },
+
+static const API_TIM_Config_t s_timTable[] =
+{
+	HW_TIM_MAP(ENROLL_TIM_ITEM)
+};
+
+#undef ENROLL_TIM_ITEM
 
 /*
  * Enroll_LED_Init：
@@ -53,4 +64,26 @@ void Enroll_USART_Init(API_USART_Id_t id, uint32_t baudRate)
 {
 	API_USART_Register(s_usartTable, HW_USART_COUNT);
 	API_USART_Init(id, baudRate);
+}
+
+void Enroll_USART_RegisterIrqHandler(API_USART_IrqHandler_t handler)
+{
+	uint8_t i;
+
+	API_USART_Register(s_usartTable, HW_USART_COUNT);
+	for (i = 0U; i < HW_USART_COUNT; ++i)
+	{
+		API_USART_RegisterIrqHandler(s_usartTable[i].id, handler);
+	}
+}
+
+void Enroll_TIM_RegisterIrqHandler(API_TIM_IrqHandler_t handler)
+{
+	uint8_t i;
+
+	API_TIM_Register(s_timTable, HW_TIM_COUNT);
+	for (i = 0U; i < HW_TIM_COUNT; ++i)
+	{
+		API_TIM_RegisterIrqHandler(s_timTable[i].id, handler);
+	}
 }

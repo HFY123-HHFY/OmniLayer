@@ -30,6 +30,26 @@
         "CMAKE_BUILD_TYPE": "Debug",
         "MCU_TARGET": "G3507"
       }
+    },
+    {
+      "name": "Debug-F103",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/F103/Debug",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/gcc-arm-none-eabi.cmake",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "MCU_TARGET": "F103"
+      }
+    },
+    {
+      "name": "Debug-F407",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/F407/Debug",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/gcc-arm-none-eabi.cmake",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "MCU_TARGET": "F407"
+      }
     }
   ],
   "buildPresets": [
@@ -44,6 +64,14 @@
     {
       "name": "Debug-G3507",
       "configurePreset": "Debug-G3507"
+    },
+    {
+      "name": "Debug-F103",
+      "configurePreset": "Debug-F103"
+    },
+    {
+      "name": "Debug-F407",
+      "configurePreset": "Debug-F407"
     }
   ]
 }

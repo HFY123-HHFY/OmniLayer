@@ -3,10 +3,16 @@
 #if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
 #include "G3507_hw_config.h"
 #include "ti/driverlib/dl_gpio.h"
+#include "ti/driverlib/dl_uart_main.h"
 #endif
 
 static const API_USART_Config_t *s_usartTable;
 static uint8_t s_usartCount;
+static API_USART_IrqHandler_t s_usartIrqHandlers[API_USART4 + 1U];
+
+#ifndef API_USART_CR1_TXEIE
+#define API_USART_CR1_TXEIE (1UL << 7)
+#endif
 
 #if (ENROLL_MCU_TARGET == ENROLL_MCU_F103)
 /* 配置 F103 的 TX 引脚为复用推挽输出。 */
@@ -208,109 +214,50 @@ static void API_USART_ConfigAfPin(void *port, uint16_t pin, uint8_t af)
 }
 #endif
 
-/* API 串口ID从1开始，底层驱动索引从0开始，这里统一做转换。 */
-static uint8_t API_USART_ToCoreIndex(API_USART_Id_t id, uint8_t *coreIndex)
-{
-	if (coreIndex == 0)
-	{
-		return 0U;
-	}
-
-	if ((id < API_USART1) || (id > API_USART4))
-	{
-		return 0U;
-	}
-
-	*coreIndex = (uint8_t)(id - API_USART1);
-	return 1U;
-}
-
 /*
  * 串口底层初始化：
  * 这层只负责注册、引脚复用和调用 Core 初始化，不处理接收中断包装。
  */
 #if (ENROLL_MCU_TARGET == ENROLL_MCU_F103)
-static void API_USART_CoreInit(API_USART_Id_t id, uint32_t baudRate)
+static void API_USART_CoreInit(uint8_t coreId, uint32_t baudRate)
 {
-	uint8_t coreIndex;
-
-	if (API_USART_ToCoreIndex(id, &coreIndex) == 0U)
-	{
-		return;
-	}
-
-	F103_USART_Init(coreIndex, baudRate);
+	F103_USART_Init(coreId, baudRate);
 }
 
-static void API_USART_CoreWriteByte(API_USART_Id_t id, uint8_t data)
+static void API_USART_CoreWriteByte(uint8_t coreId, uint8_t data)
 {
-	uint8_t coreIndex;
-
-	if (API_USART_ToCoreIndex(id, &coreIndex) == 0U)
-	{
-		return;
-	}
-
-	F103_USART_WriteByte(coreIndex, data);
+	F103_USART_WriteByte(coreId, data);
 }
 #elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
-static void API_USART_CoreInit(API_USART_Id_t id, uint32_t baudRate)
+static void API_USART_CoreInit(uint8_t coreId, uint32_t baudRate)
 {
-	uint8_t coreIndex;
-
-	if (API_USART_ToCoreIndex(id, &coreIndex) == 0U)
-	{
-		return;
-	}
-
-	F407_USART_Init(coreIndex, baudRate);
+	F407_USART_Init(coreId, baudRate);
 }
 
-static void API_USART_CoreWriteByte(API_USART_Id_t id, uint8_t data)
+static void API_USART_CoreWriteByte(uint8_t coreId, uint8_t data)
 {
-	uint8_t coreIndex;
-
-	if (API_USART_ToCoreIndex(id, &coreIndex) == 0U)
-	{
-		return;
-	}
-
-	F407_USART_WriteByte(coreIndex, data);
+	F407_USART_WriteByte(coreId, data);
 }
 #elif (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
-static void API_USART_CoreInit(API_USART_Id_t id, uint32_t baudRate)
+static void API_USART_CoreInit(uint8_t coreId, uint32_t baudRate)
 {
-	uint8_t coreIndex;
-
-	if (API_USART_ToCoreIndex(id, &coreIndex) == 0U)
-	{
-		return;
-	}
-
-	G3507_USART_Init(coreIndex, baudRate);
+	G3507_USART_Init(coreId, baudRate);
 }
 
-static void API_USART_CoreWriteByte(API_USART_Id_t id, uint8_t data)
+static void API_USART_CoreWriteByte(uint8_t coreId, uint8_t data)
 {
-	uint8_t coreIndex;
-
-	if (API_USART_ToCoreIndex(id, &coreIndex) == 0U)
-	{
-		return;
-	}
-
-	G3507_USART_WriteByte(coreIndex, data);
+	G3507_USART_WriteByte(coreId, data);
 }
 #else
-static void API_USART_CoreInit(API_USART_Id_t id, uint32_t baudRate)
+static void API_USART_CoreInit(uint8_t coreId, uint32_t baudRate)
 {
-	(void)id;
+	(void)coreId;
 	(void)baudRate;
 }
 
-static void API_USART_CoreWriteByte(API_USART_Id_t id, uint8_t data)
+static void API_USART_CoreWriteByte(uint8_t coreId, uint8_t data)
 {
-	(void)id;
+	(void)coreId;
 	(void)data;
 }
 #endif
@@ -336,11 +283,42 @@ static const API_USART_Config_t *API_USART_FindConfig(API_USART_Id_t id)
 	return 0;
 }
 
+/* 在注册表中按 Core USART 索引查找配置。 */
+static const API_USART_Config_t *API_USART_FindConfigByCoreId(uint8_t coreId)
+{
+	uint8_t index;
+
+	if ((s_usartTable == 0) || (s_usartCount == 0U))
+	{
+		return 0;
+	}
+
+	for (index = 0U; index < s_usartCount; ++index)
+	{
+		if (s_usartTable[index].coreId == coreId)
+		{
+			return &s_usartTable[index];
+		}
+	}
+
+	return 0;
+}
+
 /* 注册板级串口资源映射表。 */
 void API_USART_Register(const API_USART_Config_t *configTable, uint8_t count)
 {
 	s_usartTable = configTable;
 	s_usartCount = count;
+}
+
+void API_USART_RegisterIrqHandler(API_USART_Id_t id, API_USART_IrqHandler_t handler)
+{
+	if ((id < API_USART1) || (id > API_USART4))
+	{
+		return;
+	}
+
+	s_usartIrqHandlers[id] = handler;
 }
 
 /* 串口初始化入口：id 选串口，baudRate 配置波特率。 */
@@ -391,16 +369,96 @@ void API_USART_Init(API_USART_Id_t id, uint32_t baudRate)
 		return;
 	}
 
-	API_USART_CoreInit(id, baudRate);
+	API_USART_CoreInit(config->coreId, baudRate);
 }
 
 /* 串口发送 1 字节。 */
 void API_USART_WriteByte(API_USART_Id_t id, uint8_t data)
 {
-	if (API_USART_FindConfig(id) == 0)
+	const API_USART_Config_t *config;
+
+	config = API_USART_FindConfig(id);
+	if (config == 0)
 	{
 		return;
 	}
 
-	API_USART_CoreWriteByte(id, data);
+	API_USART_CoreWriteByte(config->coreId, data);
 }
+
+void API_USART_HandleIrqByCoreId(uint8_t coreId)
+{
+	const API_USART_Config_t *config;
+	API_USART_IrqHandler_t handler;
+
+	config = API_USART_FindConfigByCoreId(coreId);
+	if (config == 0)
+	{
+		return;
+	}
+
+	if ((config->id < API_USART1) || (config->id > API_USART4))
+	{
+		return;
+	}
+
+	handler = s_usartIrqHandlers[config->id];
+	if (handler == 0)
+	{
+		return;
+	}
+
+	handler(config->id);
+}
+
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_F103)
+void USART1_IRQHandler(void)
+{
+	API_USART_HandleIrqByCoreId(API_USART_CORE_USART1);
+}
+
+void USART2_IRQHandler(void)
+{
+	API_USART_HandleIrqByCoreId(API_USART_CORE_USART2);
+}
+
+void USART3_IRQHandler(void)
+{
+	API_USART_HandleIrqByCoreId(API_USART_CORE_USART3);
+}
+#elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
+void USART1_IRQHandler(void)
+{
+	API_USART_HandleIrqByCoreId(API_USART_CORE_USART1);
+}
+
+void USART2_IRQHandler(void)
+{
+	API_USART_HandleIrqByCoreId(API_USART_CORE_USART2);
+}
+
+void USART3_IRQHandler(void)
+{
+	API_USART_HandleIrqByCoreId(API_USART_CORE_USART3);
+}
+
+void UART4_IRQHandler(void)
+{
+	API_USART_HandleIrqByCoreId(API_USART_CORE_USART4);
+}
+#elif (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+void UART0_IRQHandler(void)
+{
+	API_USART_HandleIrqByCoreId(API_USART_CORE_UART0);
+}
+
+void UART1_IRQHandler(void)
+{
+	API_USART_HandleIrqByCoreId(API_USART_CORE_UART1);
+}
+
+void UART2_IRQHandler(void)
+{
+	API_USART_HandleIrqByCoreId(API_USART_CORE_UART2);
+}
+#endif

@@ -1,13 +1,15 @@
 #include "My_Usart.h"
 
 #include <sys/stat.h>
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+#include "ti/driverlib/dl_uart_main.h"
+#endif
 
 /*
  * 发送环形队列结构：
  * - head: 生产者写入位置（主循环或任务上下文）
  * - tail: 消费者取出位置（TXE 中断上下文）
  */
-#if (ENROLL_MCU_TARGET != ENROLL_MCU_G3507)
 typedef struct
 {
 	USART_TypeDef *instance;
@@ -58,7 +60,118 @@ static void usart_exit_critical(uint32_t primask)
 		__asm volatile("cpsie i" : : : "memory");
 	}
 }
+
+/* 统一映射：API 串口 ID -> USART 寄存器实例。 */
+static USART_TypeDef *usart_id_to_instance(API_USART_Id_t id)
+{
+	if (id == API_USART1)
+	{
+		return USART1;
+	}
+	if (id == API_USART2)
+	{
+		return USART2;
+	}
+	if (id == API_USART3)
+	{
+		return USART3;
+	}
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
+	if (id == API_USART4)
+	{
+		return USART4;
+	}
 #endif
+
+	return 0;
+}
+
+static void usart_enable_tx_irq(USART_TypeDef *USARTx)
+{
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+	DL_UART_Main_enableInterrupt((UART_Regs *)USARTx, DL_UART_MAIN_INTERRUPT_TX);
+#else
+	USARTx->CR1 |= USART_CR1_TXEIE;
+#endif
+}
+
+static void usart_disable_tx_irq(USART_TypeDef *USARTx)
+{
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+	DL_UART_Main_disableInterrupt((UART_Regs *)USARTx, DL_UART_MAIN_INTERRUPT_TX);
+#else
+	USARTx->CR1 &= ~USART_CR1_TXEIE;
+#endif
+}
+
+static uint8_t usart_is_tx_irq_enabled(USART_TypeDef *USARTx)
+{
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+	if (DL_UART_Main_getEnabledInterruptStatus((UART_Regs *)USARTx, DL_UART_MAIN_INTERRUPT_TX) != 0U)
+	{
+		return 1U;
+	}
+	return 0U;
+#else
+	if ((USARTx->CR1 & USART_CR1_TXEIE) != 0U)
+	{
+		return 1U;
+	}
+	return 0U;
+#endif
+}
+
+static uint8_t usart_is_tx_ready(USART_TypeDef *USARTx)
+{
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+	if (DL_UART_Main_isTXFIFOFull((UART_Regs *)USARTx) == 0U)
+	{
+		return 1U;
+	}
+	return 0U;
+#else
+	if ((USARTx->SR & USART_SR_TXE) != 0U)
+	{
+		return 1U;
+	}
+	return 0U;
+#endif
+}
+
+static uint8_t usart_is_rx_ready(USART_TypeDef *USARTx)
+{
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+	if (DL_UART_Main_isRXFIFOEmpty((UART_Regs *)USARTx) == 0U)
+	{
+		return 1U;
+	}
+	return 0U;
+#else
+	if ((USARTx->SR & USART_SR_RXNE) != 0U)
+	{
+		return 1U;
+	}
+	return 0U;
+#endif
+}
+
+static uint32_t usart_read_data(USART_TypeDef *USARTx)
+{
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+	return DL_UART_Main_receiveData((UART_Regs *)USARTx);
+#else
+	return USARTx->DR;
+#endif
+}
+
+static void usart_write_data(USART_TypeDef *USARTx, uint8_t data)
+{
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+	DL_UART_Main_transmitData((UART_Regs *)USARTx, (uint32_t)data);
+#else
+	USARTx->DR = data;
+#endif
+}
 
 /* 全局接收解析状态。 */
 USART_DataType USART_DataTypeStruct;
@@ -129,11 +242,6 @@ void usart_send_byte(USART_TypeDef *USARTx, uint8_t Byte)
  */
 uint8_t usart_send_byte_async(USART_TypeDef *USARTx, uint8_t Byte)
 {
-#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
-	(void)USARTx;
-	(void)Byte;
-	return 0U;
-#else
 	uint32_t primask;
 	uint16_t next_head;
 	USART_TxAsyncQueue *q;
@@ -155,11 +263,18 @@ uint8_t usart_send_byte_async(USART_TypeDef *USARTx, uint8_t Byte)
 
 	q->buf[q->head] = Byte;
 	q->head = next_head;
-	q->instance->CR1 |= USART_CR1_TXEIE;
+	usart_enable_tx_irq(q->instance);
+
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+	/* MSPM0 上使能 TX 中断后可能不会立刻触发首个搬运，主动 kick 一次。 */
+	if (usart_is_tx_ready(q->instance) != 0U)
+	{
+		usart_tx_irq_handler(q->instance);
+	}
+#endif
 
 	usart_exit_critical(primask);
 	return 1U;
-#endif
 }
 
 /* 发送 C 字符串（逐字节调用 usart_send_byte）。 */
@@ -324,9 +439,6 @@ void usart_printf(USART_TypeDef *USARTx, const char *format, ...)
  */
 void usart_tx_irq_handler(USART_TypeDef *USARTx)
 {
-#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
-	(void)USARTx;
-#else
 	USART_TxAsyncQueue *q;
 
 	q = usart_get_tx_queue(USARTx);
@@ -335,16 +447,42 @@ void usart_tx_irq_handler(USART_TypeDef *USARTx)
 		return;
 	}
 
-	if (q->tail != q->head)
+	if ((q->tail != q->head) && (usart_is_tx_ready(q->instance) != 0U))
 	{
-		q->instance->DR = q->buf[q->tail];
+		usart_write_data(q->instance, q->buf[q->tail]);
 		q->tail = (uint16_t)((q->tail + 1U) % USART_TX_BUF_SIZE);
 	}
-	else
+
+	if (q->tail == q->head)
 	{
-		q->instance->CR1 &= ~USART_CR1_TXEIE;
+		usart_disable_tx_irq(q->instance);
 	}
-#endif
+}
+
+void usart_irq_dispatch_by_id(API_USART_Id_t id, uint32_t *rxData, uint8_t *rxValid)
+{
+	USART_TypeDef *instance;
+
+	instance = usart_id_to_instance(id);
+	if (instance == 0)
+	{
+		return;
+	}
+
+	if ((rxData != 0) && (rxValid != 0))
+	{
+		*rxValid = 0U;
+		if (usart_is_rx_ready(instance) != 0U)
+		{
+			*rxData = usart_read_data(instance);
+			*rxValid = 1U;
+		}
+	}
+
+	if ((usart_is_tx_irq_enabled(instance) != 0U) && (usart_is_tx_ready(instance) != 0U))
+	{
+		usart_tx_irq_handler(instance);
+	}
 }
 
 /*

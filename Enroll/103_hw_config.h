@@ -6,6 +6,7 @@
 #include "My_I2c.h"
 #include "My_SPI.h"
 #include "usart.h"
+#include "tim.h"
 #include "pwm.h"
 #include "adc.h"
 #include "f103_gpio.h"
@@ -36,7 +37,11 @@
 
 /* USART 板级映射：注册 1 路串口 */
 #define HW_USART_MAP(X) \
-	X(API_USART1, HW_USART1_TX_PORT, HW_USART1_TX_PIN, HW_USART1_RX_PORT, HW_USART1_RX_PIN)
+	X(API_USART1, API_USART_CORE_USART1, HW_USART1_TX_PORT, HW_USART1_TX_PIN, HW_USART1_RX_PORT, HW_USART1_RX_PIN)
+
+/* TIM 板级映射：逻辑 API_TIM1 绑定到硬件 TIM3。 */
+#define HW_TIM_MAP(X) \
+	X(API_TIM1, API_TIM_CORE_TIM3)
 
 /* PWM 板级映射 */
 #define HW_PWM_MAP(X) \
@@ -132,6 +137,9 @@
 
 /* 当前板子上注册了 1 路 USART */
 #define HW_USART_COUNT  1U
+
+/* 当前板子上注册了 1 路 TIM */
+#define HW_TIM_COUNT  1U
 
 /* 当前板子上注册了 2 路 PWM 通道 */
 #define HW_PWM_COUNT  2U
