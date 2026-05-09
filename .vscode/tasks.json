@@ -110,6 +110,125 @@
 				"Build Debug-G3507"
 			],
 			"dependsOrder": "sequence"
+		},
+		{
+			"label": "CMake: Configure Select MCU (Build)",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--preset",
+				"${input:mcuBuildPreset}"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build Select MCU",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"--preset",
+				"${input:mcuBuildPreset}"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$gcc"
+			],
+			"dependsOn": [
+				"CMake: Configure Select MCU (Build)"
+			],
+			"dependsOrder": "sequence"
+		},
+		{
+			"label": "CMake: Configure Select MCU (Flash)",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--preset",
+				"${input:mcuFlashPreset}"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Flash Select MCU",
+			"type": "shell",
+			"command": "cmake",
+			"args": [
+				"--build",
+				"--preset",
+				"${input:mcuFlashPreset}",
+				"--target",
+				"flash"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [],
+			"dependsOn": [
+				"CMake: Configure Select MCU (Flash)"
+			],
+			"dependsOrder": "sequence"
+		},
+		{
+			"label": "Set Default MCU Target",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-File",
+				"${workspaceFolder}\\.vscode\\set-default-mcu-target.ps1",
+				"-Target",
+				"${input:mcuMacroTarget}"
+			],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": []
+		}
+	],
+	"inputs": [
+		{
+			"id": "mcuBuildPreset",
+			"type": "pickString",
+			"description": "选择要编译的 MCU 目标",
+			"options": [
+				"Debug-F103",
+				"Debug-F407",
+				"Debug-G3507"
+			],
+			"default": "Debug-F103"
+		},
+		{
+			"id": "mcuFlashPreset",
+			"type": "pickString",
+			"description": "选择要下载的 MCU 目标",
+			"options": [
+				"Debug-F103",
+				"Debug-F407",
+				"Debug-G3507"
+			],
+			"default": "Debug-F103"
+		},
+		{
+			"id": "mcuMacroTarget",
+			"type": "pickString",
+			"description": "选择并写入 ENROLL_MCU_TARGET 默认目标",
+			"options": [
+				"ENROLL_MCU_F103",
+				"ENROLL_MCU_F407",
+				"ENROLL_MCU_G3507"
+			],
+			"default": "ENROLL_MCU_G3507"
 		}
 	]
 }
