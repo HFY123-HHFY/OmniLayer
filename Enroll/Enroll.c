@@ -43,6 +43,17 @@ static const API_PWM_Config_t s_pwmTable[] =
 
 #undef ENROLL_PWM_ITEM
 
+/* ENROLL_ADC_ITEM 负责把板级 ADC 宏映射展开成 API 配置项。 */
+#define ENROLL_ADC_ITEM(id, channel, port, pin) \
+	{ id, channel, port, pin },
+
+static const API_ADC_Config_t s_adcTable[] =
+{
+	HW_ADC_MAP(ENROLL_ADC_ITEM)
+};
+
+#undef ENROLL_ADC_ITEM
+
 /* ENROLL_TIM_ITEM 负责把板级 TIM 宏映射展开成 API 配置项。 */
 #define ENROLL_TIM_ITEM(id, coreId) \
 	{ id, coreId },
@@ -103,4 +114,10 @@ void Enroll_TIM_RegisterIrqHandler(API_TIM_IrqHandler_t handler)
 	{
 		API_TIM_RegisterIrqHandler(s_timTable[i].id, handler);
 	}
+}
+
+void Enroll_ADC_Init(API_ADC_Id_t id)
+{
+	API_ADC_Register(s_adcTable, HW_ADC_COUNT);
+	API_ADC_Init(id);
 }

@@ -56,6 +56,8 @@ LED1 绿 LED2 红 LED3 蓝
 
 /* ADC 板级映射 */
 #define HW_ADC_MAP(X) \
+	X(API_ADC1, API_ADC_CH0, GPIOA, GPIO_Pin_0) \
+	X(API_ADC1, API_ADC_CH1, GPIOA, GPIO_Pin_1) \
 	X(API_ADC1, API_ADC_CH2, GPIOA, GPIO_Pin_2) \
 	X(API_ADC1, API_ADC_CH3, GPIOA, GPIO_Pin_3)
 
@@ -150,8 +152,8 @@ LED1 绿 LED2 红 LED3 蓝
 /* 当前板子上注册了 4 路 PWM 通道 */
 #define HW_PWM_COUNT  4U
 
-/* 当前板子上注册了 2 路 ADC 通道 */
-#define HW_ADC_COUNT  2U
+/* 当前板子上注册了 4 路 ADC 通道 */
+#define HW_ADC_COUNT  4U
 
 /* 当前板子上注册了 2 路软件 I2C */
 #define HW_I2C_COUNT  2U

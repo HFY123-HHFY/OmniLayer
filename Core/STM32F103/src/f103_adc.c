@@ -1,4 +1,5 @@
 #include "f103_adc.h"
+#include "f103_gpio.h"
 
 typedef struct
 {
@@ -138,6 +139,17 @@ static void F103_ADC_SetSampleTime(F103_ADC_Regs_t *adc, uint8_t channel)
 	}
 }
 
+// 保存每个ADC通道的端口和引脚信息，便于采样时动态配置
+typedef struct {
+    void *port;
+    uint16_t pin;
+} F103_ADC_PinMap_t;
+
+// 假设最多支持2个ADC，每个ADC最多18个通道
+#define F103_ADC_MAX      2
+#define F103_ADC_CH_MAX   18
+static F103_ADC_PinMap_t s_adcPinMap[F103_ADC_MAX][F103_ADC_CH_MAX] = {0};
+
 void F103_ADC_InitChannel(uint8_t adcId, uint8_t channel, void *port, uint16_t pin)
 {
 	F103_ADC_Map_t map;
@@ -187,42 +199,65 @@ void F103_ADC_InitChannel(uint8_t adcId, uint8_t channel, void *port, uint16_t p
 	{
 		/* 等待校准完成。 */
 	}
+
+	// 记录端口和引脚
+	if (adcId < F103_ADC_MAX && channel < F103_ADC_CH_MAX) {
+		s_adcPinMap[adcId][channel].port = port;
+		s_adcPinMap[adcId][channel].pin = pin;
+	}
 }
 
 uint16_t F103_ADC_ReadChannel(uint8_t adcId, uint8_t channel)
 {
-	F103_ADC_Map_t map;
-	uint32_t timeout;
+    F103_ADC_Map_t map;
+    uint32_t timeout;
+	uint32_t dummy;
 
-	if (channel > 17U)
-	{
+    if (channel >= F103_ADC_CH_MAX) {
+        return 0U;
+    }
+
+    map = F103_ADC_GetMap(adcId);
+    if (map.regs == 0) {
+        return 0U;
+    }
+
+	if (adcId >= F103_ADC_MAX) {
 		return 0U;
 	}
 
-	map = F103_ADC_GetMap(adcId);
-	if (map.regs == 0)
-	{
-		return 0U;
-	}
+	// 确保通道对应的GPIO已配置为模拟输入
+    void *port = s_adcPinMap[adcId][channel].port;
+    uint16_t pin = s_adcPinMap[adcId][channel].pin;
+	if (port == 0 || pin == 0) {
+        return 0U;
+    }
+    F103_ADC_ConfigAnalogPin(port, pin);
 
-	map.regs->SQR1 &= ~(0xFUL << 20);
-	map.regs->SQR3 = (uint32_t)channel;
-	F103_ADC_SetSampleTime(map.regs, channel);
+    // 配置规则序列
+    map.regs->SQR1 &= ~(0xFUL << 20); // 规则序列长度为1
+    map.regs->SQR3 = (uint32_t)channel;
+    F103_ADC_SetSampleTime(map.regs, channel);
 
-	map.regs->SR &= ~F103_ADC_SR_EOC;
-	map.regs->CR2 |= F103_ADC_CR2_EXTTRIG;
-	map.regs->CR2 &= ~(0x7UL << 17);
-	map.regs->CR2 |= F103_ADC_CR2_EXTSEL_SW;
-	map.regs->CR2 |= F103_ADC_CR2_ADON;
-	map.regs->CR2 |= F103_ADC_CR2_SWSTART;
+		// 启动新转换前，先读一次DR并清SR，尽量排空旧EOC/旧数据
+		dummy = map.regs->DR;
+		(void)dummy;
+		map.regs->SR = 0U;
 
-	for (timeout = 0U; timeout < 50000U; ++timeout)
-	{
-		if ((map.regs->SR & F103_ADC_SR_EOC) != 0U)
-		{
-			return (uint16_t)(map.regs->DR & 0x0FFFU);
-		}
-	}
+    // 启动转换
+    map.regs->CR2 |= F103_ADC_CR2_EXTTRIG;
+    map.regs->CR2 &= ~(0x7UL << 17);
+    map.regs->CR2 |= F103_ADC_CR2_EXTSEL_SW;
+    map.regs->CR2 |= F103_ADC_CR2_ADON;
+    map.regs->CR2 |= F103_ADC_CR2_SWSTART;
 
-	return 0U;
+    for (timeout = 0U; timeout < 50000U; ++timeout) {
+        if ((map.regs->SR & F103_ADC_SR_EOC) != 0U) {
+            uint16_t val = (uint16_t)(map.regs->DR & 0x0FFFU);
+			map.regs->SR = 0U;
+            return val;
+        }
+    }
+
+    return 0U;
 }

@@ -11,6 +11,8 @@ extern "C" {
 #include "f103_adc.h"
 #elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
 #include "f407_adc.h"
+#elif (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+#include "G3507_adc.h"
 #else
 #error "Unsupported ENROLL_MCU_TARGET."
 #endif
@@ -55,7 +57,7 @@ typedef struct
 	/* 映射到的 GPIO 端口。 */
 	void *port;
 	/* 映射到的 GPIO 引脚（位掩码）。 */
-	uint16_t pin;
+	uint32_t pin;
 } API_ADC_Config_t;
 
 /* 注册板级 ADC 映射表。 */

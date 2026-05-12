@@ -50,8 +50,10 @@
 
 /* ADC 板级映射 */
 #define HW_ADC_MAP(X) \
-	X(API_ADC1, API_ADC_CH2, GPIOA, GPIO_Pin_1) \
-	X(API_ADC1, API_ADC_CH3, GPIOA, GPIO_Pin_2)
+	X(API_ADC1, API_ADC_CH0, GPIOA, GPIO_Pin_0) \
+	X(API_ADC1, API_ADC_CH1, GPIOA, GPIO_Pin_1) \
+	X(API_ADC1, API_ADC_CH2, GPIOA, GPIO_Pin_2) \
+	X(API_ADC1, API_ADC_CH3, GPIOA, GPIO_Pin_3)
 
 /* 软件 I2C1 引脚定义：SCL=PB6，SDA=PB7 MPU6050 */
 #define HW_I2C1_SCL_PORT GPIOB
@@ -144,8 +146,8 @@
 /* 当前板子上注册了 2 路 PWM 通道 */
 #define HW_PWM_COUNT  2U
 
-/* 当前板子上注册了 2 路 ADC 通道 */
-#define HW_ADC_COUNT  2U
+/* 当前板子上注册了 4 路 ADC 通道 */
+#define HW_ADC_COUNT  4U
 
 /* 当前板子上注册了 2 路软件 I2C */
 #define HW_I2C_COUNT  2U

@@ -28,6 +28,7 @@
 #include "pwm.h"
 #include "usart.h"
 #include "tim.h"
+#include "adc.h"
 
 /*
  * 条件编译选择不同 MCU 的 hw_config。
@@ -71,23 +72,14 @@ void Enroll_PWM_Init(API_PWM_Tim_t timId, uint16_t arr, uint16_t psc);
 /* 定时器注册并绑定统一中断回调。 */
 void Enroll_TIM_RegisterIrqHandler(API_TIM_IrqHandler_t handler);
 
+/* ADC 注册并初始化：按板级映射绑定 API 与 Core。 */
+void Enroll_ADC_Init(API_ADC_Id_t id);
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* __ENROLL_H */
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

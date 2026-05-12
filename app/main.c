@@ -8,6 +8,7 @@
 #include "usart.h"
 #include "tim.h"
 #include "pwm.h"
+#include "adc.h"
 
 /*app应用层*/
 #include "My_Usart/My_Usart.h"
@@ -23,25 +24,33 @@ int main(void)
 	Enroll_USART_Init(API_USART1, 115200U);	/* USART 资源注册 */
 	Enroll_USART_RegisterIrqHandler(Control_Task_USART_Callback); 	/* 串口中断回调注册 */
 	Enroll_TIM_RegisterIrqHandler(Control_Task_TIM_Callback); 		/* 定时器中断回调注册 */
+	/* PWM资源注册: G3507  TIM1 -> 10kHz 400，8  | 103 TIM2 -> 1kHz 100，720 | 407 TIM1 -> 50Hz 4000，840*/
+	// Enroll_PWM_Init(API_PWM_TIM1, 400U - 1U, 8U - 1U);
+	Enroll_ADC_Init(API_ADC1); /* ADC资源注册 */
 
-	// Enroll_PWM_Init(API_PWM_TIM1, 400U - 1U, 8U - 1U); /* G3507 PWM: TIM1 -> 10kHz */
-	// Enroll_PWM_Init(API_PWM_TIM2, 100U - 1U, 720U - 1U); /* 103 PWM: TIM2 -> 1kHz */
-	// Enroll_PWM_Init(API_PWM_TIM1, 4000U - 1U, 840U - 1U); /* 407 PWM: TIM1 -> 50Hz */
-
+/*API层 MCU片内外设初始化*/	
 	API_TIM_Init(API_TIM1, 1U); /* 定时器初始化：API_TIM1，每 1ms 触发一次更新中断 */
 
 	while (1)
 	{
 /* LED 测试 */
 		// LED_Control(LED1, LED_HIGH);
+		Delay_ms(500U);
+		// LED_Control(LED1, LED_LOW);
+		Delay_ms(500U);
 
-/*串口测试*/
-	usart_printf(USART1, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
-	Delay_ms(500U);
-	Delay_ms(500U);
+/* 串口测试 */
+		// usart_printf(USART1, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
 
-/*PWM测试*/
+/* PWM测试 */
 		// API_PWM_Setcom(API_PWM_TIM1, API_PWM_CH1, 100U);
 		// API_PWM_Setcom(API_PWM_TIM1, API_PWM_CH2, 300U);
+
+/* ADC测试 */
+		uint16_t adc0 = API_ADC_GetValue(API_ADC1, API_ADC_CH0);
+		uint16_t adc1 = API_ADC_GetValue(API_ADC1, API_ADC_CH1);
+		uint16_t adc2 = API_ADC_GetValue(API_ADC1, API_ADC_CH2);
+		uint16_t adc3 = API_ADC_GetValue(API_ADC1, API_ADC_CH3);
+		usart_printf(USART1, "ADC0:%u ADC1:%u ADC2:%u ADC3:%u\r\n", adc0, adc1, adc2, adc3);
 	}
 }

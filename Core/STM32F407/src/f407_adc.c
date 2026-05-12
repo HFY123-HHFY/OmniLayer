@@ -70,8 +70,14 @@ typedef struct
 #define F407_ADC_CR2_ADON      (1UL << 0)
 #define F407_ADC_CR2_CONT      (1UL << 1)
 #define F407_ADC_CR2_EOCS      (1UL << 10)
+#define F407_ADC_CR2_ALIGN     (1UL << 11)
 #define F407_ADC_CR2_SWSTART   (1UL << 30)
+#define F407_ADC_CR2_EXTSEL_MASK (0xFUL << 24)
+#define F407_ADC_CR2_EXTEN_MASK  (0x3UL << 28)
 #define F407_ADC_SR_EOC        (1UL << 1)
+#define F407_ADC_SR_OVR        (1UL << 5)
+#define F407_ADC_CR1_RES_MASK  (0x3UL << 24)
+#define F407_ADC_CR1_SCAN      (1UL << 8)
 
 /* 把 GPIO 配置为模拟输入（MODER=11，PUPDR=00）。 */
 static void F407_ADC_ConfigAnalogPin(void *port, uint16_t pin)
@@ -138,13 +144,13 @@ static void F407_ADC_SetSampleTime(F407_ADC_Regs_t *adc, uint8_t channel)
 	{
 		shift = (uint32_t)channel * 3U;
 		adc->SMPR2 &= ~(0x7UL << shift);
-		adc->SMPR2 |= (0x6UL << shift);
+		adc->SMPR2 |= (0x7UL << shift);
 	}
 	else if (channel <= 18U)
 	{
 		shift = ((uint32_t)channel - 10U) * 3U;
 		adc->SMPR1 &= ~(0x7UL << shift);
-		adc->SMPR1 |= (0x6UL << shift);
+		adc->SMPR1 |= (0x7UL << shift);
 	}
 	else
 	{
@@ -172,12 +178,14 @@ void F407_ADC_InitChannel(uint8_t adcId, uint8_t channel, void *port, uint16_t p
 
 	F407_RCC_ADC->APB2ENR |= (1UL << map.rccBit);
 
-	/* ADC 公共时钟分频：PCLK2/4，满足 F4 ADC 时钟上限。 */
+	/* ADC 公共时钟分频：PCLK2/8，保守配置，避免在不同系统时钟下超规格。 */
+	F407_ADC_COMMON->CCR &= ~(0x1FUL << 0); /* MULTI=00000，独立模式 */
 	F407_ADC_COMMON->CCR &= ~(0x3UL << 16);
-	F407_ADC_COMMON->CCR |= (0x1UL << 16);
+	F407_ADC_COMMON->CCR |= (0x3UL << 16);
 
 	map.regs->CR1 = 0U;
-	map.regs->CR2 &= ~(F407_ADC_CR2_CONT);
+	map.regs->CR1 &= ~(F407_ADC_CR1_RES_MASK | F407_ADC_CR1_SCAN);
+	map.regs->CR2 &= ~(F407_ADC_CR2_CONT | F407_ADC_CR2_ALIGN | F407_ADC_CR2_EXTSEL_MASK | F407_ADC_CR2_EXTEN_MASK);
 	map.regs->CR2 |= F407_ADC_CR2_EOCS;
 	map.regs->SQR1 &= ~(0xFUL << 20); /* 规则序列长度 L=0，只转 1 次。 */
 	map.regs->SQR3 = (uint32_t)channel;
@@ -194,6 +202,8 @@ uint16_t F407_ADC_ReadChannel(uint8_t adcId, uint8_t channel)
 {
 	F407_ADC_Map_t map;
 	uint32_t timeout;
+	uint16_t raw;
+	volatile uint32_t dummy;
 
 	if (channel > 18U)
 	{
@@ -209,18 +219,27 @@ uint16_t F407_ADC_ReadChannel(uint8_t adcId, uint8_t channel)
 	map.regs->SQR1 &= ~(0xFUL << 20);
 	map.regs->SQR3 = (uint32_t)channel;
 	F407_ADC_SetSampleTime(map.regs, channel);
+	map.regs->CR1 &= ~(F407_ADC_CR1_RES_MASK | F407_ADC_CR1_SCAN);
+	map.regs->CR2 &= ~(F407_ADC_CR2_CONT | F407_ADC_CR2_ALIGN | F407_ADC_CR2_EXTSEL_MASK | F407_ADC_CR2_EXTEN_MASK);
+	map.regs->CR2 |= F407_ADC_CR2_EOCS;
+
+	/* 启动新转换前先读一次 DR，尽量排空旧 EOC/旧数据。 */
+	dummy = map.regs->DR;
+	(void)dummy;
+	map.regs->SR = 0U;
 
 	map.regs->CR2 |= F407_ADC_CR2_ADON;
-	map.regs->SR &= ~F407_ADC_SR_EOC;
 	map.regs->CR2 |= F407_ADC_CR2_SWSTART;
 
 	for (timeout = 0U; timeout < 50000U; ++timeout)
 	{
 		if ((map.regs->SR & F407_ADC_SR_EOC) != 0U)
 		{
-			return (uint16_t)(map.regs->DR & 0x0FFFU);
+			raw = (uint16_t)(map.regs->DR & 0x0FFFU);
+			map.regs->SR = 0U;
+			return raw;
 		}
 	}
-
 	return 0U;
+
 }

@@ -5,6 +5,7 @@
 #include "pwm.h"
 #include "usart.h"
 #include "tim.h"
+#include "adc.h"
 #include "ti/driverlib/dl_gpio.h"
 
 /*
@@ -50,6 +51,12 @@
     X(API_PWM_TIM1, API_PWM_CH1, API_PWM_CORE_TIMA1, API_PWM_CORE_CCP0, G3507_PWM_TIMA1_CH0_PORT, G3507_PWM_TIMA1_CH0_PIN) \
     X(API_PWM_TIM1, API_PWM_CH2, API_PWM_CORE_TIMA1, API_PWM_CORE_CCP1, G3507_PWM_TIMA1_CH1_PORT, G3507_PWM_TIMA1_CH1_PIN)
 
+#define G3507_ADC0_CH2_PORT  GPIOA
+#define G3507_ADC0_CH2_PIN   DL_GPIO_PIN_25
+#define G3507_ADC0_CH2_IOMUX IOMUX_PINCM55
+#define HW_ADC_MAP(X) \
+    X(API_ADC1, API_ADC_CH2, G3507_ADC0_CH2_PORT, G3507_ADC0_CH2_PIN)
+
 /* 当前板子上注册了 1 个 LED */
 #define HW_LED_COUNT    1U
 /* 当前板子上注册了 1 路 USART */
@@ -58,5 +65,8 @@
 #define HW_PWM_COUNT    2U
 /* 当前板子上注册了 1 路 TIM */
 #define HW_TIM_COUNT    1U
+
+/* 当前板子上注册了 1 路 ADC */
+#define HW_ADC_COUNT  1U
 
 #endif /* __G3507_HW_CONFIG_H */

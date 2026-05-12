@@ -6,9 +6,9 @@ static const API_ADC_Config_t *s_adcTable = 0;
 static uint8_t s_adcCount = 0U;
 
 #if (ENROLL_MCU_TARGET == ENROLL_MCU_F103)
-static void API_ADC_CoreInitChannel(API_ADC_Id_t id, uint8_t channel, void *port, uint16_t pin)
+static void API_ADC_CoreInitChannel(API_ADC_Id_t id, uint8_t channel, void *port, uint32_t pin)
 {
-	F103_ADC_InitChannel((uint8_t)id, channel, port, pin);
+	F103_ADC_InitChannel((uint8_t)id, channel, port, (uint16_t)pin);
 }
 
 static uint16_t API_ADC_CoreReadChannel(API_ADC_Id_t id, uint8_t channel)
@@ -16,17 +16,27 @@ static uint16_t API_ADC_CoreReadChannel(API_ADC_Id_t id, uint8_t channel)
 	return F103_ADC_ReadChannel((uint8_t)id, channel);
 }
 #elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
-static void API_ADC_CoreInitChannel(API_ADC_Id_t id, uint8_t channel, void *port, uint16_t pin)
+static void API_ADC_CoreInitChannel(API_ADC_Id_t id, uint8_t channel, void *port, uint32_t pin)
 {
-	F407_ADC_InitChannel((uint8_t)id, channel, port, pin);
+	F407_ADC_InitChannel((uint8_t)id, channel, port, (uint16_t)pin);
 }
 
 static uint16_t API_ADC_CoreReadChannel(API_ADC_Id_t id, uint8_t channel)
 {
 	return F407_ADC_ReadChannel((uint8_t)id, channel);
 }
+#elif (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+static void API_ADC_CoreInitChannel(API_ADC_Id_t id, uint8_t channel, void *port, uint32_t pin)
+{
+	G3507_ADC_InitChannel((uint8_t)id, channel, port, pin);
+}
+
+static uint16_t API_ADC_CoreReadChannel(API_ADC_Id_t id, uint8_t channel)
+{
+	return G3507_ADC_ReadChannel((uint8_t)id, channel);
+}
 #else
-static void API_ADC_CoreInitChannel(API_ADC_Id_t id, uint8_t channel, void *port, uint16_t pin)
+static void API_ADC_CoreInitChannel(API_ADC_Id_t id, uint8_t channel, void *port, uint32_t pin)
 {
 	(void)id;
 	(void)channel;
