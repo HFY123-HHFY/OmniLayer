@@ -20,11 +20,12 @@
  * 全局宏重定义 ENROLL_MCU_TARGET。
  */
 #ifndef ENROLL_MCU_TARGET
-#define ENROLL_MCU_TARGET  ENROLL_MCU_G3507
+#define ENROLL_MCU_TARGET  ENROLL_MCU_F407
 #endif
 
 #include "LED.h"
 #include "gpio.h"
+#include "pwm.h"
 #include "usart.h"
 #include "tim.h"
 
@@ -64,6 +65,9 @@ void Enroll_LED_Control(LED_Id_t id, LED_Level_t level);
 void Enroll_USART_Init(API_USART_Id_t id, uint32_t baudRate);
 void Enroll_USART_RegisterIrqHandler(API_USART_IrqHandler_t handler);
 
+/* PWM 注册并初始化：按板级映射绑定 API 与 Core。 */
+void Enroll_PWM_Init(API_PWM_Tim_t timId, uint16_t arr, uint16_t psc);
+
 /* 定时器注册并绑定统一中断回调。 */
 void Enroll_TIM_RegisterIrqHandler(API_TIM_IrqHandler_t handler);
 
@@ -72,6 +76,23 @@ void Enroll_TIM_RegisterIrqHandler(API_TIM_IrqHandler_t handler);
 #endif
 
 #endif /* __ENROLL_H */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

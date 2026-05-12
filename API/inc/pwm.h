@@ -27,22 +27,55 @@ typedef enum
 	API_PWM_CH4 = 4U
 } API_PWM_Channel_t;
 
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_F103)
+#define API_PWM_CORE_TIM1   (1U)
+#define API_PWM_CORE_TIM2   (2U)
+#define API_PWM_CORE_TIM3   (3U)
+#define API_PWM_CORE_TIM4   (4U)
+#define API_PWM_CORE_CH1    (1U)
+#define API_PWM_CORE_CH2    (2U)
+#define API_PWM_CORE_CH3    (3U)
+#define API_PWM_CORE_CH4    (4U)
+#elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
+#define API_PWM_CORE_TIM1   (1U)
+#define API_PWM_CORE_TIM2   (2U)
+#define API_PWM_CORE_TIM3   (3U)
+#define API_PWM_CORE_TIM4   (4U)
+#define API_PWM_CORE_TIM5   (5U)
+#define API_PWM_CORE_TIM9   (9U)
+#define API_PWM_CORE_CH1    (1U)
+#define API_PWM_CORE_CH2    (2U)
+#define API_PWM_CORE_CH3    (3U)
+#define API_PWM_CORE_CH4    (4U)
+#elif (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+#define API_PWM_CORE_TIMA0  (2U)
+#define API_PWM_CORE_TIMA1  (3U)
+#define API_PWM_CORE_CCP0   (0U)
+#define API_PWM_CORE_CCP1   (1U)
+#endif
+
 typedef struct
 {
 	/* 选择哪个定时器输出 PWM。 */
 	API_PWM_Tim_t timId;
 	/* 该定时器的通道号。 */
 	API_PWM_Channel_t channel;
+	/* 绑定到的底层定时器实例编号。 */
+	uint8_t coreTimId;
+	/* 绑定到的底层比较通道编号。 */
+	uint8_t coreChannel;
 	/* 映射到的 GPIO 端口。 */
 	void *port;
 	/* 映射到的 GPIO 引脚（位掩码）。 */
-	uint16_t pin;
+	uint32_t pin;
 } API_PWM_Config_t;
 
 #if (ENROLL_MCU_TARGET == ENROLL_MCU_F103)
 #include "f103_pwm.h"
 #elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
 #include "f407_pwm.h"
+#elif (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+#include "G3507_pwm.h"
 #else
 #error "Unsupported ENROLL_MCU_TARGET."
 #endif

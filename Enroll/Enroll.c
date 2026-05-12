@@ -32,6 +32,17 @@ static const API_USART_Config_t s_usartTable[] =
 
 #undef ENROLL_USART_ITEM
 
+/* ENROLL_PWM_ITEM 负责把板级 PWM 宏映射展开成 API 配置项。 */
+#define ENROLL_PWM_ITEM(timId, channel, coreTimId, coreChannel, port, pin) \
+	{ timId, channel, coreTimId, coreChannel, port, pin },
+
+static const API_PWM_Config_t s_pwmTable[] =
+{
+	HW_PWM_MAP(ENROLL_PWM_ITEM)
+};
+
+#undef ENROLL_PWM_ITEM
+
 /* ENROLL_TIM_ITEM 负责把板级 TIM 宏映射展开成 API 配置项。 */
 #define ENROLL_TIM_ITEM(id, coreId) \
 	{ id, coreId },
@@ -75,6 +86,12 @@ void Enroll_USART_RegisterIrqHandler(API_USART_IrqHandler_t handler)
 	{
 		API_USART_RegisterIrqHandler(s_usartTable[i].id, handler);
 	}
+}
+
+void Enroll_PWM_Init(API_PWM_Tim_t timId, uint16_t arr, uint16_t psc)
+{
+	API_PWM_Register(s_pwmTable, HW_PWM_COUNT);
+	API_PWM_Init(timId, arr, psc);
 }
 
 void Enroll_TIM_RegisterIrqHandler(API_TIM_IrqHandler_t handler)

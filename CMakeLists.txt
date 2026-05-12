@@ -244,11 +244,13 @@ if(RESOLVED_MCU_TARGET STREQUAL "G3507")
         ${CMAKE_SOURCE_DIR}/BSP/LED/LED.c
         ${CMAKE_SOURCE_DIR}/Enroll/Enroll.c
         ${CMAKE_SOURCE_DIR}/API/src/gpio.c
+        ${CMAKE_SOURCE_DIR}/API/src/pwm.c
         ${CMAKE_SOURCE_DIR}/API/src/tim.c
         ${CMAKE_SOURCE_DIR}/API/src/usart.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/G3507_delay.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/G3507_sys.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_gpio.c
+        ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_pwm.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_tim.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_usart.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_M0G3507/source/ti/devices/msp/m0p/startup_system_files/gcc/startup_mspm0g350x_gcc.c
