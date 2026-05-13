@@ -2,7 +2,7 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"label": "CMake: Configure Debug",
+			"label": "_Cfg Debug",
 			"type": "shell",
 			"command": "cmake",
 			"args": [
@@ -12,10 +12,11 @@
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
-			"problemMatcher": []
+			"problemMatcher": [],
+			"hide": true
 		},
 		{
-			"label": "Build Debug",
+			"label": "Build",
 			"type": "shell",
 			"command": "cmake",
 			"args": [
@@ -34,12 +35,12 @@
 				"isDefault": true
 			},
 			"dependsOn": [
-				"CMake: Configure Debug"
+				"_Cfg Debug"
 			],
 			"dependsOrder": "sequence"
 		},
 		{
-			"label": "Flash Debug",
+			"label": "Flash",
 			"type": "shell",
 			"command": "cmake",
 			"args": [
@@ -54,78 +55,12 @@
 			},
 			"problemMatcher": [],
 			"dependsOn": [
-				"Build Debug"
+				"Build"
 			],
 			"dependsOrder": "sequence"
 		},
 		{
-			"label": "CMake: Configure Debug-G3507",
-			"type": "shell",
-			"command": "cmake",
-			"args": [
-				"--preset",
-				"Debug-G3507"
-			],
-			"options": {
-				"cwd": "${workspaceFolder}"
-			},
-			"problemMatcher": []
-		},
-		{
-			"label": "Build Debug-G3507",
-			"type": "shell",
-			"command": "cmake",
-			"args": [
-				"--build",
-				"--preset",
-				"Debug-G3507"
-			],
-			"options": {
-				"cwd": "${workspaceFolder}"
-			},
-			"problemMatcher": [
-				"$gcc"
-			],
-			"dependsOn": [
-				"CMake: Configure Debug-G3507"
-			],
-			"dependsOrder": "sequence"
-		},
-		{
-			"label": "Flash Debug-G3507",
-			"type": "shell",
-			"command": "cmake",
-			"args": [
-				"--build",
-				"--preset",
-				"Debug-G3507",
-				"--target",
-				"flash"
-			],
-			"options": {
-				"cwd": "${workspaceFolder}"
-			},
-			"problemMatcher": [],
-			"dependsOn": [
-				"Build Debug-G3507"
-			],
-			"dependsOrder": "sequence"
-		},
-		{
-			"label": "CMake: Configure Select MCU (Build)",
-			"type": "shell",
-			"command": "cmake",
-			"args": [
-				"--preset",
-				"${input:mcuBuildPreset}"
-			],
-			"options": {
-				"cwd": "${workspaceFolder}"
-			},
-			"problemMatcher": []
-		},
-		{
-			"label": "Build Select MCU",
+			"label": "KEY1 Build MCU",
 			"type": "shell",
 			"command": "cmake",
 			"args": [
@@ -138,27 +73,10 @@
 			},
 			"problemMatcher": [
 				"$gcc"
-			],
-			"dependsOn": [
-				"CMake: Configure Select MCU (Build)"
-			],
-			"dependsOrder": "sequence"
+			]
 		},
 		{
-			"label": "CMake: Configure Select MCU (Flash)",
-			"type": "shell",
-			"command": "cmake",
-			"args": [
-				"--preset",
-				"${input:mcuFlashPreset}"
-			],
-			"options": {
-				"cwd": "${workspaceFolder}"
-			},
-			"problemMatcher": []
-		},
-		{
-			"label": "Flash Select MCU",
+			"label": "KEY2 Flash MCU",
 			"type": "shell",
 			"command": "cmake",
 			"args": [
@@ -171,14 +89,10 @@
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
-			"problemMatcher": [],
-			"dependsOn": [
-				"CMake: Configure Select MCU (Flash)"
-			],
-			"dependsOrder": "sequence"
+			"problemMatcher": []
 		},
 		{
-			"label": "Set Default MCU Target",
+			"label": "KEY3 Set MCU",
 			"type": "shell",
 			"command": "powershell",
 			"args": [

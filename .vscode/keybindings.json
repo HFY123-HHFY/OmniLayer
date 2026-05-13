@@ -1,17 +1,27 @@
 [
 	{
+		"key": "f7",
+		"command": "workbench.action.tasks.runTask",
+		"args": "Build"
+	},
+	{
+		"key": "f8",
+		"command": "workbench.action.tasks.runTask",
+		"args": "Flash"
+	},
+	{
 		"key": "ctrl+shift+f1",
 		"command": "workbench.action.tasks.runTask",
-		"args": "Build Select MCU"
+		"args": "KEY1 Build MCU"
 	},
 	{
 		"key": "ctrl+shift+f2",
 		"command": "workbench.action.tasks.runTask",
-		"args": "Flash Select MCU"
+		"args": "KEY2 Flash MCU"
 	},
 	{
 		"key": "ctrl+shift+f3",
 		"command": "workbench.action.tasks.runTask",
-		"args": "Set Default MCU Target"
+		"args": "KEY3 Set MCU"
 	}
 ]
