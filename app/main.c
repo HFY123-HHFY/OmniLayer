@@ -26,7 +26,8 @@ int main(void)
 	Enroll_TIM_RegisterIrqHandler(Control_Task_TIM_Callback); 		/* 定时器中断回调注册 */
 	/* PWM资源注册: G3507  TIM1 -> 10kHz 400，8  | 103 TIM2 -> 1kHz 100，720 | 407 TIM1 -> 50Hz 4000，840*/
 	// Enroll_PWM_Init(API_PWM_TIM1, 400U - 1U, 8U - 1U);
-	Enroll_ADC_Init(API_ADC1); /* ADC资源注册 */
+	Enroll_ADC_Init(API_ADC1); /* ADC0资源注册 */
+	Enroll_ADC_Init(API_ADC2); /* ADC1资源注册 */
 
 /*API层 MCU片内外设初始化*/	
 	API_TIM_Init(API_TIM1, 1U); /* 定时器初始化：API_TIM1，每 1ms 触发一次更新中断 */
@@ -48,6 +49,7 @@ int main(void)
 
 /* ADC测试 */
 		uint16_t adc2 = API_ADC_GetValue(API_ADC1, API_ADC_CH2);
-		usart_printf(USART1, "ADC2:%u\r\n", adc2);
+		uint16_t adc5 = API_ADC_GetValue(API_ADC2, API_ADC_CH5);
+		usart_printf(USART1, "ADC2:%u, ADC5:%u\r\n", adc2, adc5);
 	}
 }
