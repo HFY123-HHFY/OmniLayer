@@ -22,9 +22,9 @@ typedef enum
 } KEY_Id_t;
 
 /* 按键底层 GPIO 初始化函数指针。 */
-typedef void (*KEY_GPIO_InitFn)(void *port, uint16_t pin);
+typedef void (*KEY_GPIO_InitFn)(void *port, uint32_t pin);
 /* 按键底层 GPIO 读取函数指针。 */
-typedef uint8_t (*KEY_GPIO_ReadFn)(void *port, uint16_t pin);
+typedef uint8_t (*KEY_GPIO_ReadFn)(void *port, uint32_t pin);
 
 /*
  * 按键板级配置项：
@@ -40,7 +40,7 @@ typedef struct
 	/* 由 Enroll 层注入的具体 GPIO 端口。 */
 	void *port;
 	/* 由 Enroll 层注入的具体 GPIO 引脚。 */
-	uint16_t pin;
+	uint32_t pin;
 	/* 底层 GPIO 输入初始化函数。 */
 	KEY_GPIO_InitFn gpioInit;
 	/* 底层 GPIO 电平读取函数。 */

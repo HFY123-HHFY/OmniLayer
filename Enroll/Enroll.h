@@ -66,6 +66,9 @@ void Enroll_LED_Control(LED_Id_t id, LED_Level_t level);
 void Enroll_USART_Init(API_USART_Id_t id, uint32_t baudRate);
 void Enroll_USART_RegisterIrqHandler(API_USART_IrqHandler_t handler);
 
+/* 按键注册并初始化：按板级映射绑定 API 与 Core。 */
+void Enroll_KEY_Init(void);
+
 /* PWM 注册并初始化：按板级映射绑定 API 与 Core。 */
 void Enroll_PWM_Init(API_PWM_Tim_t timId, uint16_t arr, uint16_t psc);
 
@@ -80,6 +83,14 @@ void Enroll_ADC_Init(API_ADC_Id_t id);
 #endif
 
 #endif /* __ENROLL_H */
+
+
+
+
+
+
+
+
 
 
 

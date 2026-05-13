@@ -32,6 +32,17 @@ static const API_USART_Config_t s_usartTable[] =
 
 #undef ENROLL_USART_ITEM
 
+/* ENROLL_KEY_ITEM 负责把板级 KEY 宏映射展开成 BSP 配置项。 */
+#define ENROLL_KEY_ITEM(id, port, pin) \
+	{ id, port, pin, ENROLL_GPIO_INPUT_FN, ENROLL_GPIO_READ_FN },
+
+static const KEY_Config_t s_keyTable[] =
+{
+	HW_KEY_MAP(ENROLL_KEY_ITEM)
+};
+
+#undef ENROLL_KEY_ITEM
+
 /* ENROLL_PWM_ITEM 负责把板级 PWM 宏映射展开成 API 配置项。 */
 #define ENROLL_PWM_ITEM(timId, channel, coreTimId, coreChannel, port, pin) \
 	{ timId, channel, coreTimId, coreChannel, port, pin },
@@ -97,6 +108,12 @@ void Enroll_USART_RegisterIrqHandler(API_USART_IrqHandler_t handler)
 	{
 		API_USART_RegisterIrqHandler(s_usartTable[i].id, handler);
 	}
+}
+
+void Enroll_KEY_Init(void)
+{
+	KEY_Register(s_keyTable, HW_KEY_COUNT);
+	KEY_Init();
 }
 
 void Enroll_PWM_Init(API_PWM_Tim_t timId, uint16_t arr, uint16_t psc)

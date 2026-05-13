@@ -2,6 +2,7 @@
 #define __G3507_HW_CONFIG_H
 
 #include "LED.h"
+#include "KEY.h"
 #include "pwm.h"
 #include "usart.h"
 #include "tim.h"
@@ -17,6 +18,11 @@
 #define G3507_LED1_IOMUX  IOMUX_PINCM50
 #define HW_LED_MAP(X) \
     X(LED1, GPIOB, DL_GPIO_PIN_22)
+
+/* KEY 板级映射：KEY1 = PB21，低电平按下。 */
+#define G3507_KEY1_IOMUX IOMUX_PINCM49
+#define HW_KEY_MAP(X) \
+    X(KEY1, GPIOB, DL_GPIO_PIN_21)
 
 /* USART0 板级映射（TX=PA10, RX=PA11） */
 #define HW_USART0_TX_PORT GPIOA
@@ -65,6 +71,8 @@
     X(API_ADC2, API_ADC_CH5, G3507_ADC1_CH5_PORT, G3507_ADC1_CH5_PIN)
 
 #define HW_LED_COUNT    1U
+/* 当前板子上注册了 1 个按键 */
+#define HW_KEY_COUNT    1U
 /* 当前板子上注册了 1 路 USART */
 #define HW_USART_COUNT  1U
 /* 当前板子上注册了 1 路 PWM（2 个输出通道） */

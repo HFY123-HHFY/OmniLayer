@@ -31,7 +31,8 @@ void Control_Task_TIM_Callback(API_TIM_Id_t id)
 		return;
 	}
 
-	// Key_Tick();
+	Key_Tick(); /* 按键扫描函数，更新按键状态和事件 */
+
 	printf_50ms++;
 	time_t++;
 	pid_2ms_tick++;
