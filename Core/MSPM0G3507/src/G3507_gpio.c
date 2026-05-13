@@ -10,7 +10,7 @@
  */
 
 /* 根据 port+pin 获取 IOMUX */
-uint32_t G3507_GetIomux(GPIO_Regs *port, uint32_t pin)
+uint32_t G3507_GetIomux(void *port, uint32_t pin)
 {
     switch ((uintptr_t)port)
     {

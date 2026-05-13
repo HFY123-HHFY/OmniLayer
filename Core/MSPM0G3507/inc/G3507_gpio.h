@@ -7,6 +7,9 @@
 extern "C" {
 #endif
 
+/* 根据 port+pin 获取对应的 IOMUX PINCM 索引。无效时返回 0xFFFFFFFFU。 */
+uint32_t G3507_GetIomux(void *port, uint32_t pin);
+
 /* GPIO 输出初始化：配置 port 的 pin 为推挽输出。 */
 void G3507_GPIO_InitOutput(void *port, uint32_t pin);
 /* GPIO 输入初始化：配置 port 的 pin 为浮空输入。 */

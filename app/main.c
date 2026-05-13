@@ -34,9 +34,9 @@ int main(void)
 	while (1)
 	{
 /* LED 测试 */
-		// LED_Control(LED1, LED_HIGH);
+		LED_Control(LED1, LED_HIGH);
 		Delay_ms(500U);
-		// LED_Control(LED1, LED_LOW);
+		LED_Control(LED1, LED_LOW);
 		Delay_ms(500U);
 
 /* 串口测试 */
@@ -47,10 +47,7 @@ int main(void)
 		// API_PWM_Setcom(API_PWM_TIM1, API_PWM_CH2, 300U);
 
 /* ADC测试 */
-		uint16_t adc0 = API_ADC_GetValue(API_ADC1, API_ADC_CH0);
-		uint16_t adc1 = API_ADC_GetValue(API_ADC1, API_ADC_CH1);
 		uint16_t adc2 = API_ADC_GetValue(API_ADC1, API_ADC_CH2);
-		uint16_t adc3 = API_ADC_GetValue(API_ADC1, API_ADC_CH3);
-		usart_printf(USART1, "ADC0:%u ADC1:%u ADC2:%u ADC3:%u\r\n", adc0, adc1, adc2, adc3);
+		usart_printf(USART1, "ADC2:%u\r\n", adc2);
 	}
 }
