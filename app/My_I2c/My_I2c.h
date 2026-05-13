@@ -18,8 +18,8 @@ typedef struct
 {
 	uint8_t id;
 	void *port;
-	uint16_t sclPin;
-	uint16_t sdaPin;
+	uint32_t sclPin;
+	uint32_t sdaPin;
 } MyI2C_Config_t;
 
 typedef enum

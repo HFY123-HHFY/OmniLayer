@@ -3,6 +3,7 @@
 
 #include "LED.h"
 #include "KEY.h"
+#include "My_I2c.h"
 #include "pwm.h"
 #include "usart.h"
 #include "tim.h"
@@ -70,6 +71,27 @@
     X(API_ADC1, API_ADC_CH2, G3507_ADC0_CH2_PORT, G3507_ADC0_CH2_PIN) \
     X(API_ADC2, API_ADC_CH5, G3507_ADC1_CH5_PORT, G3507_ADC1_CH5_PIN)
 
+/* 软件 I2C1：SCL=PA1，SDA=PA0 */
+#define HW_I2C1_SCL_PORT GPIOA
+#define HW_I2C1_SCL_PIN  DL_GPIO_PIN_1
+#define HW_I2C1_SCL_IOMUX IOMUX_PINCM2
+#define HW_I2C1_SDA_PORT GPIOA
+#define HW_I2C1_SDA_PIN  DL_GPIO_PIN_0
+#define HW_I2C1_SDA_IOMUX IOMUX_PINCM1
+
+/* 软件 I2C2：SCL=PB9，SDA=PB8 */
+#define HW_I2C2_SCL_PORT GPIOB
+#define HW_I2C2_SCL_PIN  DL_GPIO_PIN_9
+#define HW_I2C2_SCL_IOMUX IOMUX_PINCM26
+#define HW_I2C2_SDA_PORT GPIOB
+#define HW_I2C2_SDA_PIN  DL_GPIO_PIN_8
+#define HW_I2C2_SDA_IOMUX IOMUX_PINCM25
+
+/* I2C 板级映射：注册 2 路软件 I2C。 */
+#define HW_I2C_MAP(X) \
+    X(My_I2C1, HW_I2C1_SCL_PORT, HW_I2C1_SCL_PIN, HW_I2C1_SDA_PIN) \
+    X(My_I2C2, HW_I2C2_SCL_PORT, HW_I2C2_SCL_PIN, HW_I2C2_SDA_PIN)
+
 #define HW_LED_COUNT    1U
 /* 当前板子上注册了 1 个按键 */
 #define HW_KEY_COUNT    1U
@@ -82,5 +104,7 @@
 
 /* 当前板子上注册了 1 路 ADC */
 #define HW_ADC_COUNT  2U
+/* 当前板子上注册了 2 路软件 I2C */
+#define HW_I2C_COUNT  2U
 
 #endif /* __G3507_HW_CONFIG_H */

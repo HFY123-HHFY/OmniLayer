@@ -29,6 +29,11 @@ int main(void)
 	/* PWM资源注册: G3507  TIM1 -> 10kHz 400，8  | 103 TIM2 -> 1kHz 100，720 | 407 TIM1 -> 50Hz 4000，840*/
 	// Enroll_PWM_Init(API_PWM_TIM1, 400U - 1U, 8U - 1U);
 	Enroll_ADC_Init(API_ADC1); /* ADC0资源注册 */
+	Enroll_I2C_Register();					/*  I2C 资源注册   */
+
+/* 通信协议初始化 */
+	MyI2C_Init();							/* 软件 I2C 初始化 */
+	App_I2C_ScanOnce();						/* 开机执行一次 I2C 扫描 */
 
 /*API层 MCU片内外设初始化*/	
 	API_TIM_Init(API_TIM1, 1U); /* 定时器初始化：API_TIM1，每 1ms 触发一次更新中断 */
@@ -36,10 +41,10 @@ int main(void)
 	while (1)
 	{
 /* LED和延时测试 */
-		// LED_Control(LED1, LED_HIGH);
-		// Delay_ms(500U);
-		// LED_Control(LED1, LED_LOW);
-		// Delay_ms(500U);
+		LED_Control(LED1, LED_HIGH);
+		Delay_ms(500U);
+		LED_Control(LED1, LED_LOW);
+		Delay_ms(500U);
 
 /* KEY测试 Key 0变成1 */
 		// key_Get();

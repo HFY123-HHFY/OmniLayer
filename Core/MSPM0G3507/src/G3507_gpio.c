@@ -1,12 +1,11 @@
 #include "G3507_gpio.h"
-#include "G3507_hw_config.h"
 #include "ti/driverlib/dl_gpio.h"
 #include "ti/devices/msp/m0p/mspm0g350x.h"
 #include "G3507_pinmux.h" // 引入查表参考
 
 /*
  * G3507_gpio.c
- * 删除查表逻辑，直接从 G3507_hw_config.h 获取 IOMUX。
+ * 通过 pin mask + port 在本地表中查找 IOMUX PINCM。
  */
 
 static uint32_t G3507_PinToIndex(uint32_t pin)
@@ -146,6 +145,8 @@ void G3507_GPIO_InitInput(void *port, uint32_t pin)
 	}
 
 	G3507_GPIO_EnsurePower(gpioPort);
+	/* 切输入前先关闭输出驱动，避免保留上一次输出状态。 */
+	DL_GPIO_disableOutput(gpioPort, pin);
 	DL_GPIO_initDigitalInputFeatures((uint32_t)iomux,
 		DL_GPIO_INVERSION_DISABLE,
 		DL_GPIO_RESISTOR_NONE,
@@ -172,6 +173,8 @@ void G3507_GPIO_InitInputPullUp(void *port, uint32_t pin)
 	}
 
 	G3507_GPIO_EnsurePower(gpioPort);
+	/* 软件 I2C 释放高电平依赖输入上拉，必须先断开输出驱动。 */
+	DL_GPIO_disableOutput(gpioPort, pin);
 	DL_GPIO_initDigitalInputFeatures((uint32_t)iomux,
 		DL_GPIO_INVERSION_DISABLE,
 		DL_GPIO_RESISTOR_PULL_UP,

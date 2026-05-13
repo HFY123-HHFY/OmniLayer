@@ -18,7 +18,7 @@ static volatile I2C_SpeedTypeDef s_i2cSpeed = I2C_SPEED_100K;
  * - 输出 0：配置为输出并拉低
  * - 输出 1：配置为上拉输入，释放总线
  */
-static void MyI2C_DriveLine(void *port, uint16_t pin, uint8_t level)
+static void MyI2C_DriveLine(void *port, uint32_t pin, uint8_t level)
 {
 	if (level != 0U)
 	{

@@ -43,6 +43,17 @@ static const KEY_Config_t s_keyTable[] =
 
 #undef ENROLL_KEY_ITEM
 
+/* ENROLL_I2C_ITEM 负责把板级 I2C 宏映射展开成软件 I2C 配置项。 */
+#define ENROLL_I2C_ITEM(id, port, sclPin, sdaPin) \
+	{ id, port, sclPin, sdaPin },
+
+static const MyI2C_Config_t s_i2cTable[] =
+{
+	HW_I2C_MAP(ENROLL_I2C_ITEM)
+};
+
+#undef ENROLL_I2C_ITEM
+
 /* ENROLL_PWM_ITEM 负责把板级 PWM 宏映射展开成 API 配置项。 */
 #define ENROLL_PWM_ITEM(timId, channel, coreTimId, coreChannel, port, pin) \
 	{ timId, channel, coreTimId, coreChannel, port, pin },
@@ -114,6 +125,11 @@ void Enroll_KEY_Init(void)
 {
 	KEY_Register(s_keyTable, HW_KEY_COUNT);
 	KEY_Init();
+}
+
+void Enroll_I2C_Register(void)
+{
+	MyI2C_Register(s_i2cTable, HW_I2C_COUNT);
 }
 
 void Enroll_PWM_Init(API_PWM_Tim_t timId, uint16_t arr, uint16_t psc)
