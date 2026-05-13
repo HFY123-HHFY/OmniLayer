@@ -9,54 +9,72 @@
  * 删除查表逻辑，直接从 G3507_hw_config.h 获取 IOMUX。
  */
 
+static uint32_t G3507_PinToIndex(uint32_t pin)
+{
+	uint32_t index;
+
+	for (index = 0U; index < 32U; ++index)
+	{
+		if (pin == (1UL << index))
+		{
+			return index;
+		}
+	}
+
+	return 0xFFFFFFFFUL;
+}
+
+static uint32_t G3507_GetPortAIomux(uint32_t pinIndex)
+{
+	static const uint32_t s_aIomux[] = {
+		A0, A1, A2, A3, A4, A5, A6, A7,
+		A8, A9, A10, A11, A12, A13, A14, A15,
+		A16, A17, A18, A19, A20, A21, A22, A23,
+		A24, A25, A26, A27, A28, A29, A30, A31
+	};
+
+	if (pinIndex < (sizeof(s_aIomux) / sizeof(s_aIomux[0])))
+	{
+		return s_aIomux[pinIndex];
+	}
+
+	return 0xFFFFFFFFUL;
+}
+
+static uint32_t G3507_GetPortBIomux(uint32_t pinIndex)
+{
+	static const uint32_t s_bIomux[] = {
+		B0, B1, B2, B3, B4, B5, B6, B7,
+		B8, B9, B10, B11, B12, B13, B14, B15,
+		B16, B17, B18, B19, B20, B21, B22, B23,
+		B24, B25, B26, B27
+	};
+
+	if (pinIndex < (sizeof(s_bIomux) / sizeof(s_bIomux[0])))
+	{
+		return s_bIomux[pinIndex];
+	}
+
+	return 0xFFFFFFFFUL;
+}
+
 /* 根据 port+pin 获取 IOMUX */
 uint32_t G3507_GetIomux(void *port, uint32_t pin)
 {
+	uint32_t pinIndex;
+
+	pinIndex = G3507_PinToIndex(pin);
+	if (pinIndex == 0xFFFFFFFFUL)
+	{
+		return 0xFFFFFFFFUL;
+	}
+
     switch ((uintptr_t)port)
     {
         case (uintptr_t)GPIOA:
-            switch (pin)
-            {
-                case DL_GPIO_PIN_0: return A0;
-                case DL_GPIO_PIN_1: return A1;
-                case DL_GPIO_PIN_2: return A2;
-                case DL_GPIO_PIN_3: return A3;
-                case DL_GPIO_PIN_4: return A4;
-                case DL_GPIO_PIN_5: return A5;
-                case DL_GPIO_PIN_6: return A6;
-                case DL_GPIO_PIN_7: return A7;
-                case DL_GPIO_PIN_8: return A8;
-                case DL_GPIO_PIN_9: return A9;
-                case DL_GPIO_PIN_10: return A10;
-                case DL_GPIO_PIN_11: return A11;
-                case DL_GPIO_PIN_12: return A12;
-                case DL_GPIO_PIN_13: return A13;
-                case DL_GPIO_PIN_14: return A14;
-                case DL_GPIO_PIN_15: return A15;
-                default: return 0xFFFFFFFFUL;
-            }
+			return G3507_GetPortAIomux(pinIndex);
         case (uintptr_t)GPIOB:
-            switch (pin)
-            {
-                case DL_GPIO_PIN_0: return B0;
-                case DL_GPIO_PIN_1: return B1;
-                case DL_GPIO_PIN_2: return B2;
-                case DL_GPIO_PIN_3: return B3;
-                case DL_GPIO_PIN_4: return B4;
-                case DL_GPIO_PIN_5: return B5;
-                case DL_GPIO_PIN_6: return B6;
-                case DL_GPIO_PIN_7: return B7;
-                case DL_GPIO_PIN_8: return B8;
-                case DL_GPIO_PIN_9: return B9;
-                case DL_GPIO_PIN_10: return B10;
-                case DL_GPIO_PIN_11: return B11;
-                case DL_GPIO_PIN_12: return B12;
-                case DL_GPIO_PIN_13: return B13;
-                case DL_GPIO_PIN_14: return B14;
-				case DL_GPIO_PIN_15: return B15;
-				case DL_GPIO_PIN_22: return B22;
-                default: return 0xFFFFFFFFUL;
-            }
+			return G3507_GetPortBIomux(pinIndex);
         default:
             return 0xFFFFFFFFUL;
     }
