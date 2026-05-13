@@ -25,7 +25,7 @@
 LED1 绿 LED2 红 LED3 蓝
 */
 #define HW_LED_MAP(X) \
-	X(LED1, GPIOE, GPIO_Pin_2) \
+	X(LED1, GPIOB, GPIO_Pin_2) \
 	X(LED2, GPIOE, GPIO_Pin_3) \
 	X(LED3, GPIOE, GPIO_Pin_4)
 
