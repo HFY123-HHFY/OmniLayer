@@ -223,6 +223,7 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "G3507")
     set(MCU_INCLUDE_DIRS
         ${CMAKE_SOURCE_DIR}/app
         ${CMAKE_SOURCE_DIR}/app/My_I2c
+        ${CMAKE_SOURCE_DIR}/app/My_SPI
         ${CMAKE_SOURCE_DIR}/API/inc
         ${CMAKE_SOURCE_DIR}/Enroll
         ${CMAKE_SOURCE_DIR}/BSP/LED
@@ -243,6 +244,7 @@ if(RESOLVED_MCU_TARGET STREQUAL "G3507")
         ${CMAKE_SOURCE_DIR}/app/main.c
         ${CMAKE_SOURCE_DIR}/app/Control_Task/Control_Task.c
         ${CMAKE_SOURCE_DIR}/app/My_I2c/My_I2c.c
+        ${CMAKE_SOURCE_DIR}/app/My_SPI/My_SPI.c
         ${CMAKE_SOURCE_DIR}/app/My_Usart/My_Usart.c
         ${CMAKE_SOURCE_DIR}/BSP/LED/LED.c
         ${CMAKE_SOURCE_DIR}/BSP/KEY/KEY.c

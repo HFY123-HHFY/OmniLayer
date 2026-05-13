@@ -4,6 +4,7 @@
 #include "LED.h"
 #include "KEY.h"
 #include "My_I2c.h"
+#include "My_SPI.h"
 #include "pwm.h"
 #include "usart.h"
 #include "tim.h"
@@ -92,6 +93,30 @@
     X(My_I2C1, HW_I2C1_SCL_PORT, HW_I2C1_SCL_PIN, HW_I2C1_SDA_PIN) \
     X(My_I2C2, HW_I2C2_SCL_PORT, HW_I2C2_SCL_PIN, HW_I2C2_SDA_PIN)
 
+/* 软件 SPI1：SCK=PB9，MOSI=PB8，MISO=PB7，CS=PB14 */
+#define HW_SPI1_SCK_PORT  GPIOB
+#define HW_SPI1_SCK_PIN   DL_GPIO_PIN_9
+#define HW_SPI1_SCK_IOMUX IOMUX_PINCM26
+
+#define HW_SPI1_MOSI_PORT GPIOB
+#define HW_SPI1_MOSI_PIN  DL_GPIO_PIN_8
+#define HW_SPI1_MOSI_IOMUX IOMUX_PINCM25
+
+#define HW_SPI1_MISO_PORT GPIOB
+#define HW_SPI1_MISO_PIN  DL_GPIO_PIN_7
+#define HW_SPI1_MISO_IOMUX IOMUX_PINCM24
+
+#define HW_SPI1_CS_PORT   GPIOB
+#define HW_SPI1_CS_PIN    DL_GPIO_PIN_14
+#define HW_SPI1_CS_IOMUX  IOMUX_PINCM31
+
+/* SPI 板级映射：注册 1 路软件 SPI。 */
+#define HW_SPI_MAP(X) \
+        X(My_SPI1, HW_SPI1_CS_PORT, HW_SPI1_CS_PIN, \
+            HW_SPI1_SCK_PORT, HW_SPI1_SCK_PIN, \
+            HW_SPI1_MOSI_PORT, HW_SPI1_MOSI_PIN, \
+            HW_SPI1_MISO_PORT, HW_SPI1_MISO_PIN)
+
 #define HW_LED_COUNT    1U
 /* 当前板子上注册了 1 个按键 */
 #define HW_KEY_COUNT    1U
@@ -106,5 +131,7 @@
 #define HW_ADC_COUNT  2U
 /* 当前板子上注册了 2 路软件 I2C */
 #define HW_I2C_COUNT  2U
+/* 当前板子上注册了 1 路软件 SPI */
+#define HW_SPI_COUNT  1U
 
 #endif /* __G3507_HW_CONFIG_H */

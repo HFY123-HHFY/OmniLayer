@@ -73,6 +73,9 @@ void Enroll_KEY_Init(void);
 /* 软件 I2C 注册：按板级映射绑定两根线到 bit-bang 驱动。 */
 void Enroll_I2C_Register(void);
 
+/* 软件 SPI 注册：按板级映射绑定四根线到 bit-bang 驱动。 */
+void Enroll_SPI_Register(void);
+
 /* PWM 注册并初始化：按板级映射绑定 API 与 Core。 */
 void Enroll_PWM_Init(API_PWM_Tim_t timId, uint16_t arr, uint16_t psc);
 
@@ -87,9 +90,4 @@ void Enroll_ADC_Init(API_ADC_Id_t id);
 #endif
 
 #endif /* __ENROLL_H */
-
-
-
-
-
 

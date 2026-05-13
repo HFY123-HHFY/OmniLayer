@@ -54,6 +54,21 @@ static const MyI2C_Config_t s_i2cTable[] =
 
 #undef ENROLL_I2C_ITEM
 
+#define ENROLL_SPI_ITEM(id, csPort, csPin, sckPort, sckPin, mosiPort, mosiPin, misoPort, misoPin) \
+	{ id, csPort, csPin, sckPort, sckPin, mosiPort, mosiPin, misoPort, misoPin },
+
+static const MySPI_Config_t s_spiTable[] =
+{
+	HW_SPI_MAP(ENROLL_SPI_ITEM)
+};
+
+#undef ENROLL_SPI_ITEM
+
+void Enroll_SPI_Register(void)
+{
+	MySPI_Register(s_spiTable, HW_SPI_COUNT);
+}
+
 /* ENROLL_PWM_ITEM 负责把板级 PWM 宏映射展开成 API 配置项。 */
 #define ENROLL_PWM_ITEM(timId, channel, coreTimId, coreChannel, port, pin) \
 	{ timId, channel, coreTimId, coreChannel, port, pin },

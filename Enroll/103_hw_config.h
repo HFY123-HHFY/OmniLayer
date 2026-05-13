@@ -86,9 +86,6 @@
 #define HW_SPI1_CS_PIN    GPIO_Pin_8
 
 /* 软件 SPI2 引脚定义：给 NRF24L01 */
-#define HW_SPI2_CS_PORT   GPIOB
-#define HW_SPI2_CS_PIN    GPIO_Pin_12
-
 #define HW_SPI2_SCK_PORT  GPIOB
 #define HW_SPI2_SCK_PIN   GPIO_Pin_13
 
@@ -97,6 +94,9 @@
 
 #define HW_SPI2_MISO_PORT GPIOB
 #define HW_SPI2_MISO_PIN  GPIO_Pin_14
+
+#define HW_SPI2_CS_PORT   GPIOB
+#define HW_SPI2_CS_PIN    GPIO_Pin_12
 
 /* SPI 板级映射：注册 2 路软件 SPI */
 #define HW_SPI_MAP(X) \
