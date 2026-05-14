@@ -1,4 +1,5 @@
 #include "Enroll.h"
+#include "OLED.h"
 
 /*
  * Enroll 注册层：
@@ -67,6 +68,21 @@ static const MySPI_Config_t s_spiTable[] =
 void Enroll_SPI_Register(void)
 {
 	MySPI_Register(s_spiTable, HW_SPI_COUNT);
+}
+
+#define ENROLL_OLED_SPI_CTRL_ITEM(dcPort, dcPin, resPort, resPin) \
+	{ dcPort, dcPin, resPort, resPin },
+
+static const OLED_SpiCtrlConfig_t s_oledSpiCtrlTable[] =
+{
+	HW_OLED_SPI_CTRL_MAP(ENROLL_OLED_SPI_CTRL_ITEM)
+};
+
+#undef ENROLL_OLED_SPI_CTRL_ITEM
+
+void Enroll_OLED_Register(void)
+{
+	OLED_RegisterSpiCtrl(s_oledSpiCtrlTable, HW_OLED_SPI_CTRL_COUNT);
 }
 
 /* ENROLL_PWM_ITEM 负责把板级 PWM 宏映射展开成 API 配置项。 */

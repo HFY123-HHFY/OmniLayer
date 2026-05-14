@@ -117,6 +117,19 @@
             HW_SPI1_MOSI_PORT, HW_SPI1_MOSI_PIN, \
             HW_SPI1_MISO_PORT, HW_SPI1_MISO_PIN)
 
+/* OLED SPI 控制引脚定义：DC=PB11，RES=PB10 */
+#define HW_OLED_DC_PORT  GPIOB
+#define HW_OLED_DC_PIN   DL_GPIO_PIN_11
+#define HW_OLED_DC_IOMUX IOMUX_PINCM28
+
+#define HW_OLED_RES_PORT  GPIOB
+#define HW_OLED_RES_PIN   DL_GPIO_PIN_10
+#define HW_OLED_RES_IOMUX IOMUX_PINCM27
+
+/* OLED SPI 控制引脚映射：注册 1 组 DC/RES。 */
+#define HW_OLED_SPI_CTRL_MAP(X) \
+	X(HW_OLED_DC_PORT, HW_OLED_DC_PIN, HW_OLED_RES_PORT, HW_OLED_RES_PIN)
+
 #define HW_LED_COUNT    1U
 /* 当前板子上注册了 1 个按键 */
 #define HW_KEY_COUNT    1U
@@ -133,5 +146,7 @@
 #define HW_I2C_COUNT  2U
 /* 当前板子上注册了 1 路软件 SPI */
 #define HW_SPI_COUNT  1U
+/* 当前板子上注册了 1 组 OLED SPI 控制引脚 */
+#define HW_OLED_SPI_CTRL_COUNT  1U
 
 #endif /* __G3507_HW_CONFIG_H */

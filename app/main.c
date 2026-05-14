@@ -12,11 +12,14 @@
 
 /*app应用层*/
 #include "My_Usart/My_Usart.h"
+#include "My_I2c/My_I2c.h"
+#include "My_SPI/My_SPI.h"
 #include "Control_Task/Control_Task.h"
 
 /*BSP硬件抽象层*/
 #include "LED.h"
 #include "KEY.h"
+#include "OLED.h"
 
 int main(void)
 {
@@ -32,23 +35,27 @@ int main(void)
 
 	Enroll_I2C_Register();					/*  I2C 资源注册   */
 	Enroll_SPI_Register();					/*  SPI 资源注册   */
+	Enroll_OLED_Register();				/* OLED SPI 控制脚注册 */
 
 /*API层 MCU片内外设初始化*/	
 	API_TIM_Init(API_TIM1, 1U); /* 定时器初始化：API_TIM1，每 1ms 触发一次更新中断 */
 
 /* 通信协议初始化 */
-	// MyI2C_Init();							/* 软件 I2C 初始化 */
-	// App_I2C_ScanOnce();						/* 开机执行一次 I2C 扫描 */
+	MyI2C_Init();							/* 软件 I2C 初始化 */
+	App_I2C_ScanOnce();						/* 开机执行一次 I2C 扫描 */
 	MySPI_Init();							/* 软件 SPI 初始化 */
 	App_SPI_TestOnce();						/* 开机执行一次 SPI 测试 */
+ 
+/*BSP硬件抽象层初始化*/
+	OLED_Init(OLED_IF_SPI);		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
 
 	while (1)
 	{
 /* LED和延时测试 */
-		LED_Control(LED1, LED_HIGH);
-		Delay_ms(500U);
-		LED_Control(LED1, LED_LOW);
-		Delay_ms(500U);
+		// LED_Control(LED1, LED_HIGH);
+		// Delay_ms(500U);
+		// LED_Control(LED1, LED_LOW);
+		// Delay_ms(500U);
 
 /* KEY测试 Key 0变成1 */
 		// key_Get();
@@ -63,5 +70,9 @@ int main(void)
 /* ADC测试 */
 		// uint16_t adc2 = API_ADC_GetValue(API_ADC1, API_ADC_CH2);
 		// uint16_t adc5 = API_ADC_GetValue(API_ADC2, API_ADC_CH5);
+
+/*OLED测试*/
+		OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
+		OLED_Update();
 	}
 }
