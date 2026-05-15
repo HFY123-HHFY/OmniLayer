@@ -2,6 +2,7 @@
 #include "OLED.h"
 #include "exti.h"
 #include "MPU6050_Int.h"
+#include <stddef.h>
 
 /*
  * Enroll 注册层：
@@ -95,7 +96,10 @@ static const API_EXTI_Config_t s_mpuExtiTable[] =
 void Enroll_MPU6050_Register(void)
 {
 	API_EXTI_Register(s_mpuExtiTable, 1U);
-	API_EXTI_RegisterIrqHandler(s_mpuExtiTable[0].id, MPU6050_EXTI_Callback);
+	// 多路注册示例：可注册多个回调
+	API_EXTI_AddIrqHandler(s_mpuExtiTable[0].id, (API_EXTI_IrqHandler_t)MPU6050_EXTI_Callback, NULL);
+	// 你可以继续注册其他外设的回调到同一 id
+	// API_EXTI_AddIrqHandler(s_mpuExtiTable[0].id, Other_EXTI_Callback, userPtr);
 	API_EXTI_Init(s_mpuExtiTable[0].id, API_EXTI_TRIGGER_RISING, 0U, 2U);
 }
 

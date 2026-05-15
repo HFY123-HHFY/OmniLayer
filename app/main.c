@@ -25,6 +25,9 @@
 
 int main(void)
 {
+
+	uint8_t temp = 0;
+
 /* 板子注册层初始化 */
 	Enroll_LED_Init(LED_LOW); 				/* LED 资源注册 */
 	Enroll_KEY_Init();						/*  KEY 资源注册   */
@@ -52,14 +55,15 @@ int main(void)
 /*BSP硬件抽象层初始化*/
 	// OLED_Init(OLED_IF_SPI);		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
 	MPU_Init();
-	mpu_dmp_init();
+	temp = mpu_dmp_init();
 	Delay_ms(10U); /* 等待 MPU6050 稳定 */
+	usart_printf(USART1, "temp= %d\r\n", temp);
 
 	while (1)
 	{
 /* LED和延时测试 */
 		// LED_Control(LED1, LED_HIGH);
-		// Delay_ms(20U);
+		// Delay_ms(500U);
 		// LED_Control(LED1, LED_LOW);
 		// Delay_ms(500U);
 
@@ -82,11 +86,15 @@ int main(void)
 		// OLED_Update();
 
 /* MPU6050测试 */
-		mpu_angle();
+		// mpu_angle();
+		Delay_ms(20U);
+		mpu_dmp_get_data(&Pitch, &Roll, &Yaw);
+		// MPU_Get_Gyroscope(&gyrox,&gyroy,&gyroz);  // 读取角速度
 		if (print_task_flag != 0U)
 		{
 			print_task_flag = 0U;
 			usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
+			// usart_printf(USART1, "GyroX=%d GyroY=%d GyroZ=%d\r\n", gyrox, gyroy, gyroz);
 		}
 	}
 }

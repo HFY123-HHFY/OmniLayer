@@ -31,7 +31,7 @@ void MPU6050_EXTI_Init(void *port, uint16_t pin, SYS_EXTI_Trigger_t trigger,
 	mpuExtiConfig.port = port;
 	mpuExtiConfig.pin = pin;
 	API_EXTI_Register(&mpuExtiConfig, 1U);
-	API_EXTI_RegisterIrqHandler(mpuExtiConfig.id, MPU6050_EXTI_Callback);
+	// API_EXTI_RegisterIrqHandler 已废弃，改用多路注册 API_EXTI_AddIrqHandler
 	API_EXTI_Init(mpuExtiConfig.id, (API_EXTI_Trigger_t)trigger, preemptPriority, subPriority);
 }
 
@@ -50,9 +50,11 @@ void MPU6050_EXTI_IRQHandlerGroup(uint8_t startLine, uint8_t endLine)
 	API_EXTI_HandleIrqByLineGroup(startLine, endLine);
 }
 
-void MPU6050_EXTI_Callback(API_EXTI_Id_t id)
+/* MPU6050 外部中断回调函数 */
+void MPU6050_EXTI_Callback(API_EXTI_Id_t id, void *userData)
 {
 	(void)id;
+	(void)userData;
 	mpu_flag = 1U;
 }
 

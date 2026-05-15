@@ -1,8 +1,10 @@
 #include "exti.h"
+#include <stdlib.h>
 #include "sys.h"
 
 #if (ENROLL_MCU_TARGET == ENROLL_MCU_F103)
 #include "f103_exti.h"
+#include <stdlib.h>
 #elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
 #include "f407_exti.h"
 #elif (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
@@ -13,11 +15,13 @@
 #error "Unsupported ENROLL_MCU_TARGET for API EXTI backend."
 #endif
 
+
 #define API_EXTI_MAX_ID  (16U)
 
 static const API_EXTI_Config_t *s_extiTable;
 static uint8_t s_extiCount;
-static API_EXTI_IrqHandler_t s_extiIrqHandlers[API_EXTI_MAX_ID];
+// 多路回调链表头
+static API_EXTI_IrqHandlerNode_t *s_extiIrqHandlerList[API_EXTI_MAX_ID] = {0};
 
 static const API_EXTI_Config_t *API_EXTI_FindConfigById(API_EXTI_Id_t id)
 {
@@ -77,22 +81,15 @@ static uint8_t API_EXTI_CoreIsPendingAndClear(void *port, uint32_t pin)
 
 static void API_EXTI_DispatchConfig(const API_EXTI_Config_t *config)
 {
-	API_EXTI_IrqHandler_t handler;
-
 	if (config == 0)
-	{
 		return;
-	}
-
 	if (API_EXTI_CoreIsPendingAndClear(config->port, config->pin) == 0U)
-	{
 		return;
-	}
-
-	handler = s_extiIrqHandlers[config->id];
-	if (handler != 0)
-	{
-		handler(config->id);
+	API_EXTI_IrqHandlerNode_t *node = s_extiIrqHandlerList[config->id];
+	while (node) {
+		if (node->handler)
+			node->handler(config->id, node->userData);
+		node = node->next;
 	}
 }
 
@@ -102,14 +99,50 @@ void API_EXTI_Register(const API_EXTI_Config_t *configTable, uint8_t count)
 	s_extiCount = count;
 }
 
-void API_EXTI_RegisterIrqHandler(API_EXTI_Id_t id, API_EXTI_IrqHandler_t handler)
-{
-	if (id >= API_EXTI_MAX_ID)
-	{
-		return;
-	}
 
-	s_extiIrqHandlers[id] = handler;
+// 多路注册
+int API_EXTI_AddIrqHandler(API_EXTI_Id_t id, API_EXTI_IrqHandler_t handler, void *userData)
+{
+	if (id >= API_EXTI_MAX_ID || handler == 0)
+		return -1;
+	API_EXTI_IrqHandlerNode_t *node = (API_EXTI_IrqHandlerNode_t*)malloc(sizeof(API_EXTI_IrqHandlerNode_t));
+	if (!node) return -2;
+	node->handler = handler;
+	node->userData = userData;
+	node->next = s_extiIrqHandlerList[id];
+	s_extiIrqHandlerList[id] = node;
+	return 0;
+}
+
+// 注销指定回调
+int API_EXTI_RemoveIrqHandler(API_EXTI_Id_t id, API_EXTI_IrqHandler_t handler, void *userData)
+{
+	if (id >= API_EXTI_MAX_ID || handler == 0)
+		return -1;
+	API_EXTI_IrqHandlerNode_t **pp = &s_extiIrqHandlerList[id];
+	while (*pp) {
+		if ((*pp)->handler == handler && (*pp)->userData == userData) {
+			API_EXTI_IrqHandlerNode_t *toDel = *pp;
+			*pp = toDel->next;
+			free(toDel);
+			return 0;
+		}
+		pp = &((*pp)->next);
+	}
+	return -2;
+}
+
+// 清空所有回调
+void API_EXTI_ClearIrqHandlers(API_EXTI_Id_t id)
+{
+	if (id >= API_EXTI_MAX_ID) return;
+	API_EXTI_IrqHandlerNode_t *node = s_extiIrqHandlerList[id];
+	while (node) {
+		API_EXTI_IrqHandlerNode_t *next = node->next;
+		free(node);
+		node = next;
+	}
+	s_extiIrqHandlerList[id] = 0;
 }
 
 void API_EXTI_Init(API_EXTI_Id_t id, API_EXTI_Trigger_t trigger,

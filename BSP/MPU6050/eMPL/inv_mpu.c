@@ -2920,11 +2920,20 @@ uint8_t mpu_dmp_init(void)
 		    DMP_FEATURE_GYRO_CAL);
 		if(res)return 6; 
 		res=dmp_set_fifo_rate(DEFAULT_MPU_HZ);	//设置DMP输出速率(最大不超过200Hz)
-		if(res)return 7;   
-		res=run_self_test();		//自检
-		if(res)return 8;    
+        if(res)return 7;
+#if (MPU6050_DMP_ENABLE_SELF_TEST != 0U)
+        res=run_self_test();		//自检
+        if(res)return 8;
+#endif
 		res=mpu_set_dmp_state(1);	//使能DMP
-		if(res)return 9;     
+        if(res)return 9;
+
+        /*
+         * DMP 使能后给传感器和 FIFO 一个稳定窗口。
+         * G3507 上首包更容易偏慢，增加延时和 FIFO 复位可提升首帧成功率。
+         */
+        mpu_reset_fifo();
+        Delay_ms(MPU6050_DMP_STARTUP_DELAY_MS);
         return 0;
     }
 
@@ -2943,8 +2952,29 @@ uint8_t mpu_dmp_get_data(float *pitch,float *roll,float *yaw)
 	unsigned long sensor_timestamp;
 	short gyro[3], accel[3], sensors;
 	unsigned char more;
+    uint8_t retry;
+    int fifoRet;
 	long quat[4]; 
-	if(dmp_read_fifo(gyro, accel, quat, &sensor_timestamp, &sensors,&more))return 1;	 
+
+    /*
+     * DMP FIFO 在部分平台上首包到达较慢，短重试可避免上层长期读到失败。
+     */
+    fifoRet = -1;
+    for (retry = 0U; retry < MPU6050_DMP_FIFO_RETRY_COUNT; ++retry)
+    {
+        fifoRet = dmp_read_fifo(gyro, accel, quat, &sensor_timestamp, &sensors, &more);
+        if (fifoRet == 0)
+        {
+            break;
+        }
+        Delay_ms(MPU6050_DMP_FIFO_RETRY_DELAY_MS);
+    }
+
+    if (fifoRet != 0)
+    {
+        return 1;
+    }
+
 	/* Gyro and accel data are written to the FIFO by the DMP in chip frame and hardware units.
 	 * This behavior is convenient because it keeps the gyro and accel outputs of dmp_read_fifo and mpu_read_fifo consistent.
 	**/

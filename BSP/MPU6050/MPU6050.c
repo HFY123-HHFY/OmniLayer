@@ -22,6 +22,12 @@ static void MPU_Apply_Mount_Transform(int16_t *x, int16_t *y, int16_t *z)
 	*z = (int16_t)(-*z);
 }
 
+static void MPU_SelectI2CBus(void)
+{
+	MyI2C_SelectBus(MPU6050_I2C_BUS);
+	MyI2C_SetSpeed(MPU6050_I2C_SPEED);
+}
+
 /* 初始化 MPU6050
  * 返回值: 0 成功, 1 失败
  */
@@ -160,6 +166,8 @@ uint8_t MPU_Write_Len(uint8_t addr, uint8_t reg, uint8_t len, uint8_t *buf)
 {
 	uint8_t i;
 
+	MPU_SelectI2CBus();
+
 	MyI2C_Start();
 	MyI2C_SendByte((uint8_t)((addr << 1) | 0U));
 	if (MyI2C_Wait_Ack())
@@ -188,6 +196,8 @@ uint8_t MPU_Write_Len(uint8_t addr, uint8_t reg, uint8_t len, uint8_t *buf)
 /* I2C 连续读 */
 uint8_t MPU_Read_Len(uint8_t addr, uint8_t reg, uint8_t len, uint8_t *buf)
 {
+	MPU_SelectI2CBus();
+
 	MyI2C_Start();
 	MyI2C_SendByte((uint8_t)((addr << 1) | 0U));
 	if (MyI2C_Wait_Ack())
@@ -224,6 +234,8 @@ uint8_t MPU_Read_Len(uint8_t addr, uint8_t reg, uint8_t len, uint8_t *buf)
 /* I2C 写一个字节 */
 uint8_t MPU_Write_Byte(uint8_t reg, uint8_t data)
 {
+	MPU_SelectI2CBus();
+
 	MyI2C_Start();
 	MyI2C_SendByte((uint8_t)((MPU_ADDR << 1) | 0U));
 	if (MyI2C_Wait_Ack())
@@ -250,6 +262,8 @@ uint8_t MPU_Write_Byte(uint8_t reg, uint8_t data)
 uint8_t MPU_Read_Byte(uint8_t reg)
 {
 	uint8_t res;
+
+	MPU_SelectI2CBus();
 
 	MyI2C_Start();
 	MyI2C_SendByte((uint8_t)((MPU_ADDR << 1) | 0U));

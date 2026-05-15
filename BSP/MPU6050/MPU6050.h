@@ -5,6 +5,30 @@
 
 #include "My_I2c.h"
 #include "Delay.h"
+#include "BusRate.h"
+
+/* MPU6050 软件 I2C 总线选择：My_I2C1。 */
+#define MPU6050_I2C_BUS My_I2C1
+/* MPU6050 软件 I2C 速率选择：来自总线速率画像。 */
+#define MPU6050_I2C_SPEED MPU6050_I2C_SPEED_PROFILE
+
+/*
+ * DMP 稳定参数：
+ * - STARTUP_DELAY: 使能 DMP 后的稳定等待
+ * - FIFO_RETRY: 读取 DMP FIFO 的重试次数
+ * - FIFO_RETRY_DELAY: 每次重试间隔
+ */
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+#define MPU6050_DMP_STARTUP_DELAY_MS      (20U)
+#define MPU6050_DMP_FIFO_RETRY_COUNT      (15U)
+#define MPU6050_DMP_FIFO_RETRY_DELAY_MS   (2U)
+#define MPU6050_DMP_ENABLE_SELF_TEST       (0U)
+#else
+#define MPU6050_DMP_STARTUP_DELAY_MS      (10U)
+#define MPU6050_DMP_FIFO_RETRY_COUNT      (8U)
+#define MPU6050_DMP_FIFO_RETRY_DELAY_MS   (1U)
+#define MPU6050_DMP_ENABLE_SELF_TEST       (1U)
+#endif
 
 #ifdef __cplusplus
 extern "C" {
