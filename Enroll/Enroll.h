@@ -20,7 +20,7 @@
  * 全局宏重定义 ENROLL_MCU_TARGET。
  */
 #ifndef ENROLL_MCU_TARGET
-#define ENROLL_MCU_TARGET  ENROLL_MCU_G3507
+#define ENROLL_MCU_TARGET  ENROLL_MCU_F407
 #endif
 
 #include "LED.h"
@@ -79,6 +79,9 @@ void Enroll_SPI_Register(void);
 /* OLED 注册：注册 SPI 模式下的 DC/RES 板级控制引脚。 */
 void Enroll_OLED_Register(void);
 
+/* 根据板级映射注册 MPU6050 外部中断。 */
+void Enroll_MPU6050_Register(void);
+
 /* PWM 注册并初始化：按板级映射绑定 API 与 Core。 */
 void Enroll_PWM_Init(API_PWM_Tim_t timId, uint16_t arr, uint16_t psc);
 
@@ -93,6 +96,7 @@ void Enroll_ADC_Init(API_ADC_Id_t id);
 #endif
 
 #endif /* __ENROLL_H */
+
 
 
 

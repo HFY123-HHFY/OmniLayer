@@ -224,11 +224,14 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "G3507")
         ${CMAKE_SOURCE_DIR}/app
         ${CMAKE_SOURCE_DIR}/app/My_I2c
         ${CMAKE_SOURCE_DIR}/app/My_SPI
+        ${CMAKE_SOURCE_DIR}/app/My_Usart
         ${CMAKE_SOURCE_DIR}/API/inc
         ${CMAKE_SOURCE_DIR}/Enroll
         ${CMAKE_SOURCE_DIR}/BSP/LED
         ${CMAKE_SOURCE_DIR}/BSP/KEY
         ${CMAKE_SOURCE_DIR}/BSP/OLED
+        ${CMAKE_SOURCE_DIR}/BSP/MPU6050
+        ${CMAKE_SOURCE_DIR}/BSP/MPU6050/eMPL
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/inc
         ${CMAKE_SOURCE_DIR}/SYSTEM
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_M0G3507/source
@@ -251,6 +254,10 @@ if(RESOLVED_MCU_TARGET STREQUAL "G3507")
         ${CMAKE_SOURCE_DIR}/BSP/KEY/KEY.c
         ${CMAKE_SOURCE_DIR}/BSP/OLED/OLED.c
         ${CMAKE_SOURCE_DIR}/BSP/OLED/OLED_Data.c
+        ${CMAKE_SOURCE_DIR}/BSP/MPU6050/MPU6050.c
+        ${CMAKE_SOURCE_DIR}/BSP/MPU6050/MPU6050_Int.c
+        ${CMAKE_SOURCE_DIR}/BSP/MPU6050/eMPL/inv_mpu.c
+        ${CMAKE_SOURCE_DIR}/BSP/MPU6050/eMPL/inv_mpu_dmp_motion_driver.c
         ${CMAKE_SOURCE_DIR}/Enroll/Enroll.c
         ${CMAKE_SOURCE_DIR}/API/src/adc.c
         ${CMAKE_SOURCE_DIR}/API/src/gpio.c

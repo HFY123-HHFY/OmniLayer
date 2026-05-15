@@ -20,9 +20,17 @@
 #include "LED.h"
 #include "KEY.h"
 #include "OLED.h"
+#include "MPU6050.h"
+#include "MPU6050_Int.h"
 
 int main(void)
 {
+
+	float Pitch = 0.0f;
+	float Roll = 0.0f;
+	float Yaw = 0.0f;
+
+
 /* 板子注册层初始化 */
 	Enroll_LED_Init(LED_LOW); 				/* LED 资源注册 */
 	Enroll_KEY_Init();						/*  KEY 资源注册   */
@@ -34,8 +42,9 @@ int main(void)
 	Enroll_ADC_Init(API_ADC1); /* ADC0资源注册 */
 
 	Enroll_I2C_Register();					/*  I2C 资源注册   */
+	Enroll_MPU6050_Register();				/* MPU6050 INT 资源注册 */
 	Enroll_SPI_Register();					/*  SPI 资源注册   */
-	Enroll_OLED_Register();				/* OLED SPI 控制脚注册 */
+	Enroll_OLED_Register();					/* OLED SPI 控制脚注册 */
 
 /*API层 MCU片内外设初始化*/	
 	API_TIM_Init(API_TIM1, 1U); /* 定时器初始化：API_TIM1，每 1ms 触发一次更新中断 */
@@ -44,16 +53,19 @@ int main(void)
 	MyI2C_Init();							/* 软件 I2C 初始化 */
 	App_I2C_ScanOnce();						/* 开机执行一次 I2C 扫描 */
 	MySPI_Init();							/* 软件 SPI 初始化 */
-	App_SPI_TestOnce();						/* 开机执行一次 SPI 测试 */
+	// App_SPI_TestOnce();						/* 开机执行一次 SPI 测试 */
  
 /*BSP硬件抽象层初始化*/
-	OLED_Init(OLED_IF_SPI);		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
+	// OLED_Init(OLED_IF_SPI);		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
+	MPU_Init();
+	mpu_dmp_init();
+	Delay_ms(10U); /* 等待 MPU6050 稳定 */
 
 	while (1)
 	{
 /* LED和延时测试 */
 		// LED_Control(LED1, LED_HIGH);
-		// Delay_ms(500U);
+		// Delay_ms(20U);
 		// LED_Control(LED1, LED_LOW);
 		// Delay_ms(500U);
 
@@ -72,7 +84,15 @@ int main(void)
 		// uint16_t adc5 = API_ADC_GetValue(API_ADC2, API_ADC_CH5);
 
 /*OLED测试*/
-		OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
-		OLED_Update();
+		// OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
+		// OLED_Update();
+
+/* MPU6050测试 */
+		mpu_dmp_get_data(&Pitch, &Roll, &Yaw);
+		if (print_task_flag != 0U)
+		{
+			print_task_flag = 0U;
+			usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
+		}
 	}
 }

@@ -2,8 +2,9 @@
 #define __MPU6050_H
 
 #include <stdint.h>
+
 #include "My_I2c.h"
-#include "BusRate.h"
+#include "Delay.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -73,10 +74,6 @@ extern "C" {
 
 /* AD0 接地时地址为 0x68，接高时为 0x69 */
 #define MPU_ADDR                0x68
-
-/* MPU6050 绑定的软件 I2C 总线与速率。 */
-#define MPU6050_I2C_BUS   My_I2C1
-#define MPU6050_I2C_SPEED MPU6050_I2C_SPEED_PROFILE
 
 uint8_t MPU_Init(void);
 

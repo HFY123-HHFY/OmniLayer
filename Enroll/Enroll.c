@@ -85,6 +85,12 @@ void Enroll_OLED_Register(void)
 	OLED_RegisterSpiCtrl(s_oledSpiCtrlTable, HW_OLED_SPI_CTRL_COUNT);
 }
 
+void Enroll_MPU6050_Register(void)
+{
+	/* 当前先不启用外部中断链路，统一保留空注册入口。 */
+	(void)0;
+}
+
 /* ENROLL_PWM_ITEM 负责把板级 PWM 宏映射展开成 API 配置项。 */
 #define ENROLL_PWM_ITEM(timId, channel, coreTimId, coreChannel, port, pin) \
 	{ timId, channel, coreTimId, coreChannel, port, pin },

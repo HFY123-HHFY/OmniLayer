@@ -1387,7 +1387,6 @@ int mpu_set_compass_sample_rate(unsigned short rate)
     st.chip_cfg.compass_sample_rate = st.chip_cfg.sample_rate / (div + 1);
     return 0;
 #else
-    (void)rate;
     return -1;
 #endif
 }
@@ -2518,8 +2517,6 @@ int mpu_get_compass_reg(short *data, unsigned long *timestamp)
         get_ms(timestamp);
     return 0;
 #else
-    (void)data;
-    (void)timestamp;
     return -1;
 #endif
 }
@@ -2535,7 +2532,6 @@ int mpu_get_compass_fsr(unsigned short *fsr)
     fsr[0] = st.hw->compass_fsr;
     return 0;
 #else
-    (void)fsr;
     return -1;
 #endif
 }
@@ -2753,7 +2749,7 @@ int mpu_lp_motion_interrupt(unsigned short thresh, unsigned char time,
 #endif
     } else {
         /* Don't "restore" the previous state if no state has been saved. */
-        unsigned int ii;
+        int ii;
         char *cache_ptr = (char*)&st.chip_cfg.cache;
         for (ii = 0; ii < sizeof(st.chip_cfg.cache); ii++) {
             if (cache_ptr[ii] != 0)

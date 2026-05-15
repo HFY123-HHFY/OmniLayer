@@ -122,12 +122,6 @@ cmake --build --preset Debug
 - `OpenOCD/F407_OpenOCD.cfg`
 - `OpenOCD/G3507_OpenOCD.cfg`
 
-## 🆕 MSPM0G3507 兼容进展
-
-- 已新增 TI MSPM0G3507 的 Core 层适配（GPIO/TIM/USART 等）。
-- 已加入 G3507 专用构建预设与烧录链路（CMake + OpenOCD）。
-- 已统一串口/定时器的注册分发机制，使多平台行为一致。
-
 ## 🚌 软件总线（I2C / SPI）
 
 - 支持软件 I2C 与软件 SPI 的统一管理。

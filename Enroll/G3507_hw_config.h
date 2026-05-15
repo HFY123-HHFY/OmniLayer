@@ -130,6 +130,11 @@
 #define HW_OLED_SPI_CTRL_MAP(X) \
 	X(HW_OLED_DC_PORT, HW_OLED_DC_PIN, HW_OLED_RES_PORT, HW_OLED_RES_PIN)
 
+/* MPU6050 INT 板级映射：PB4，对应 IOMUX_PINCM17。 */
+#define HW_MPU6050_INT_PORT  GPIOB
+#define HW_MPU6050_INT_PIN   DL_GPIO_PIN_4
+#define HW_MPU6050_INT_IOMUX IOMUX_PINCM17
+
 #define HW_LED_COUNT    1U
 /* 当前板子上注册了 1 个按键 */
 #define HW_KEY_COUNT    1U
@@ -148,5 +153,7 @@
 #define HW_SPI_COUNT  1U
 /* 当前板子上注册了 1 组 OLED SPI 控制引脚 */
 #define HW_OLED_SPI_CTRL_COUNT  1U
+/* 当前板子上注册了 1 路 MPU6050 INT 引脚 */
+#define HW_MPU6050_COUNT 1U
 
 #endif /* __G3507_HW_CONFIG_H */
