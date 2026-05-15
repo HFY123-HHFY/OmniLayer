@@ -1,5 +1,7 @@
 #include "Enroll.h"
 #include "OLED.h"
+#include "exti.h"
+#include "MPU6050_Int.h"
 
 /*
  * Enroll 注册层：
@@ -85,10 +87,16 @@ void Enroll_OLED_Register(void)
 	OLED_RegisterSpiCtrl(s_oledSpiCtrlTable, HW_OLED_SPI_CTRL_COUNT);
 }
 
+static const API_EXTI_Config_t s_mpuExtiTable[] =
+{
+	{ 0U, HW_MPU6050_INT_PORT, HW_MPU6050_INT_PIN }
+};
+
 void Enroll_MPU6050_Register(void)
 {
-	/* 当前先不启用外部中断链路，统一保留空注册入口。 */
-	(void)0;
+	API_EXTI_Register(s_mpuExtiTable, 1U);
+	API_EXTI_RegisterIrqHandler(s_mpuExtiTable[0].id, MPU6050_EXTI_Callback);
+	API_EXTI_Init(s_mpuExtiTable[0].id, API_EXTI_TRIGGER_RISING, 0U, 2U);
 }
 
 /* ENROLL_PWM_ITEM 负责把板级 PWM 宏映射展开成 API 配置项。 */

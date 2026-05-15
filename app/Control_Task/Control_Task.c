@@ -4,7 +4,6 @@
 #include "usart.h"
 #include "My_Usart/My_Usart.h"
 // #include "Control/Control.h"
-// #include "MPU6050_Int.h"
 
 /* 程序运行的时间戳（s） */
 uint32_t Timer_Bsp_t = 0;
@@ -75,13 +74,3 @@ void Control_Task_USART_Callback(API_USART_Id_t id)
 	}
 }
 
-/*
-	MPU6050 外部中断服务函数
- */
-// void EXTI9_5_IRQHandler(void)
-// {
-// 	if (SYS_EXTI_IRQHandlerGroup(5U, 9U) != 0U)
-// 	{
-// 		mpu_flag = 1U;
-// 	}
-// }

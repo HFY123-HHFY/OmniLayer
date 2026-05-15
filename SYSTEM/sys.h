@@ -15,18 +15,15 @@ typedef enum
 	SYS_EXTI_TRIGGER_FALLING = 0x02U // 下降沿触发
 } SYS_EXTI_Trigger_t;
 
+#define SYS_EXTI_INVALID_IRQN (0xFFFFFFFFUL)
+
 /* 系统层初始化：保留为系统入口，当前不做默认中断注册。 */
 void SYS_Init(void);
 
-/* 注册一条 EXTI 线并配置触发沿/优先级。 */
-void SYS_EXTI_Register(void *port, uint32_t pin, SYS_EXTI_Trigger_t trigger,
-	uint8_t preemptPriority, uint8_t subPriority);
-
-/*
- * 处理某个 EXTI 线组（例如 5~9）：
- * 返回 1 表示本次确实处理到注册线中断，返回 0 表示未命中。
- */
-uint8_t SYS_EXTI_IRQHandlerGroup(uint8_t startLine, uint8_t endLine);
+/* EXTI 公共辅助：线号计算、IRQ 映射、线组判断。 */
+uint8_t SYS_EXTI_GetLineIndex(uint32_t pin);
+uint32_t SYS_EXTI_GetIrqn(void *port, uint32_t pin);
+uint8_t SYS_EXTI_LineInGroup(uint32_t pin, uint8_t startLine, uint8_t endLine);
 
 #ifdef __cplusplus
 }

@@ -26,7 +26,13 @@ uint8_t mpu_flag = 0U;
 void MPU6050_EXTI_Init(void *port, uint16_t pin, SYS_EXTI_Trigger_t trigger,
 	uint8_t preemptPriority, uint8_t subPriority)
 {
-	SYS_EXTI_Register(port, pin, trigger, preemptPriority, subPriority);
+	static API_EXTI_Config_t mpuExtiConfig = { 0U, 0, 0U };
+
+	mpuExtiConfig.port = port;
+	mpuExtiConfig.pin = pin;
+	API_EXTI_Register(&mpuExtiConfig, 1U);
+	API_EXTI_RegisterIrqHandler(mpuExtiConfig.id, MPU6050_EXTI_Callback);
+	API_EXTI_Init(mpuExtiConfig.id, (API_EXTI_Trigger_t)trigger, preemptPriority, subPriority);
 }
 
 // 按板级映射默认策略初始化 MPU6050 EXTI。
@@ -41,7 +47,13 @@ void MPU6050_EXTI_InitBoard(void *port, uint16_t pin)
 
 void MPU6050_EXTI_IRQHandlerGroup(uint8_t startLine, uint8_t endLine)
 {
-	(void)SYS_EXTI_IRQHandlerGroup(startLine, endLine);
+	API_EXTI_HandleIrqByLineGroup(startLine, endLine);
+}
+
+void MPU6050_EXTI_Callback(API_EXTI_Id_t id)
+{
+	(void)id;
+	mpu_flag = 1U;
 }
 
 /* 获取 MPU6050 角度信息 */

@@ -260,13 +260,15 @@ if(RESOLVED_MCU_TARGET STREQUAL "G3507")
         ${CMAKE_SOURCE_DIR}/BSP/MPU6050/eMPL/inv_mpu_dmp_motion_driver.c
         ${CMAKE_SOURCE_DIR}/Enroll/Enroll.c
         ${CMAKE_SOURCE_DIR}/API/src/adc.c
+        ${CMAKE_SOURCE_DIR}/API/src/exti.c
         ${CMAKE_SOURCE_DIR}/API/src/gpio.c
         ${CMAKE_SOURCE_DIR}/API/src/pwm.c
         ${CMAKE_SOURCE_DIR}/API/src/tim.c
         ${CMAKE_SOURCE_DIR}/API/src/usart.c
+        ${CMAKE_SOURCE_DIR}/SYSTEM/sys.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_adc.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/G3507_delay.c
-        ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/G3507_sys.c
+        ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_exti.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_gpio.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_pwm.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_tim.c

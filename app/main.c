@@ -25,12 +25,6 @@
 
 int main(void)
 {
-
-	float Pitch = 0.0f;
-	float Roll = 0.0f;
-	float Yaw = 0.0f;
-
-
 /* 板子注册层初始化 */
 	Enroll_LED_Init(LED_LOW); 				/* LED 资源注册 */
 	Enroll_KEY_Init();						/*  KEY 资源注册   */
@@ -88,7 +82,7 @@ int main(void)
 		// OLED_Update();
 
 /* MPU6050测试 */
-		mpu_dmp_get_data(&Pitch, &Roll, &Yaw);
+		mpu_angle();
 		if (print_task_flag != 0U)
 		{
 			print_task_flag = 0U;
