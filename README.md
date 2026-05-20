@@ -1,8 +1,8 @@
 # OmniLayer
 
-一个面向多 MCU 与多开发范式的嵌入式工程框架，使用 CMake + GCC + OpenOCD 统一构建、烧录和维护流程。
+一个面向多 MCU 与多开发范式的嵌入式工程分层开发架构框架，使用 CMake + GCC + OpenOCD 统一构建、烧录和维护流程。
 
-当前支持/覆盖方向：STM32F103、STM32F407，以及 TI MSPM0G3507。
+当前支持/覆盖方向：STM32F103、STM32F407、TI MSPM0G3507。
 
 ## 🚀 项目定位
 

@@ -60,6 +60,14 @@ REGION_ALIAS("REGION_TEXT_RAM", SRAM);
 REGION_ALIAS("REGION_ARM_EXIDX", FLASH);
 REGION_ALIAS("REGION_ARM_EXTAB", FLASH);
 
+PHDRS
+{
+    text PT_LOAD FLAGS(5); /* R + X */
+    data PT_LOAD FLAGS(6); /* R + W */
+    bcr  PT_LOAD FLAGS(4); /* R */
+    bsl  PT_LOAD FLAGS(4); /* R */
+}
+
 /* Define output sections */
 SECTIONS
 {
@@ -69,14 +77,14 @@ SECTIONS
 
     .intvecs (_intvecs_base_address) : AT (_intvecs_base_address) {
         KEEP (*(.intvecs))
-    } > REGION_TEXT
+    } > REGION_TEXT :text
 
     PROVIDE (_vtable_base_address =
         DEFINED(_vtable_base_address) ? _vtable_base_address : 0x20200000);
 
     .vtable (_vtable_base_address) (NOLOAD) : AT (_vtable_base_address) {
         KEEP (*(.vtable))
-    } > REGION_DATA
+    } > REGION_DATA :data
 
    .text : {
         CREATE_OBJECT_SYMBOLS
@@ -92,7 +100,7 @@ SECTIONS
         . = ALIGN(0x8);
         KEEP (*(.fini*))
         . = ALIGN(0x8);
-    } > REGION_TEXT AT> REGION_TEXT
+    } > REGION_TEXT AT> REGION_TEXT :text
 
     .ramfunc : {
         __ramfunct_load__ = LOADADDR (.ramfunc);
@@ -100,20 +108,20 @@ SECTIONS
        *(.ramfunc)
        . = ALIGN(0x8);
        __ramfunct_end__ = .;
-    } > REGION_TEXT_RAM AT> REGION_TEXT
+    } > REGION_TEXT_RAM AT> REGION_TEXT :text
 
     .rodata : {
         *(.rodata)
         . = ALIGN(0x8);
         *(.rodata.*)
         . = ALIGN(0x8);
-    } > REGION_TEXT AT> REGION_TEXT
+    } > REGION_TEXT AT> REGION_TEXT :text
 
     .preinit_array : {
         PROVIDE_HIDDEN (__preinit_array_start = .);
         KEEP (*(.preinit_array*));
         PROVIDE_HIDDEN (__preinit_array_end = .);
-    } > REGION_PREINIT_ARRAY AT> REGION_TEXT
+    } > REGION_PREINIT_ARRAY AT> REGION_TEXT :text
 
     .init_array : {
         . = ALIGN(0x8);
@@ -121,7 +129,7 @@ SECTIONS
         KEEP (*(SORT(.init_array.*)))
         KEEP (*(.init_array*))
         PROVIDE_HIDDEN (__init_array_end = .);
-    } > REGION_INIT_ARRAY AT> REGION_TEXT
+    } > REGION_INIT_ARRAY AT> REGION_TEXT :text
 
     .fini_array : {
         . = ALIGN(0x8);
@@ -130,19 +138,19 @@ SECTIONS
         KEEP (*(.fini_array*))
         PROVIDE_HIDDEN (__fini_array_end = .);
     	. = ALIGN(0x8);
-    } > REGION_FINI_ARRAY AT> REGION_TEXT
+    } > REGION_FINI_ARRAY AT> REGION_TEXT :text
 
     .ARM.exidx : {
         __exidx_start = .;
         *(.ARM.exidx* .gnu.linkonce.armexidx.*)
         __exidx_end = .;
-    } > REGION_ARM_EXIDX AT> REGION_ARM_EXIDX
+    } > REGION_ARM_EXIDX AT> REGION_ARM_EXIDX :text
 
     .ARM.extab : {
         . = ALIGN(0x8);
         KEEP (*(.ARM.extab* .gnu.linkonce.armextab.*))
          . = ALIGN(0x8);
-    } > REGION_ARM_EXTAB AT> REGION_ARM_EXTAB
+    } > REGION_ARM_EXTAB AT> REGION_ARM_EXTAB :text
 
     __etext = .;
 
@@ -153,7 +161,7 @@ SECTIONS
         KEEP (*(.data*))
         . = ALIGN (8);
         __data_end__ = .;
-    } > REGION_DATA AT> REGION_TEXT
+    } > REGION_DATA AT> REGION_TEXT :data
 
     .bss : {
         __bss_start__ = .;
@@ -163,13 +171,13 @@ SECTIONS
         *(COMMON)
         . = ALIGN (8);
         __bss_end__ = .;
-    } > REGION_BSS AT> REGION_BSS
+    } > REGION_BSS AT> REGION_BSS :data
 
     .noinit : {
         /* place all symbols in input sections that start with .noinit */
         KEEP(*(*.noinit*))
         . = ALIGN (8);
-    } > REGION_NOINIT AT> REGION_NOINIT
+    } > REGION_NOINIT AT> REGION_NOINIT :data
 
     .heap : {
         __heap_start__ = .;
@@ -179,22 +187,22 @@ SECTIONS
         KEEP (*(.heap))
         __heap_end__ = .;
         __HeapLimit = __heap_end__;
-    } > REGION_HEAP AT> REGION_HEAP
+    } > REGION_HEAP AT> REGION_HEAP :data
 
     .stack (NOLOAD) : ALIGN(0x8) {
         _stack = .;
         KEEP(*(.stack))
-    } > REGION_STACK AT> REGION_STACK
+    } > REGION_STACK AT> REGION_STACK :data
 
     .BCRConfig :
     {
         KEEP(*(.BCRConfig))
-    } > BCR_CONFIG
+    } > BCR_CONFIG :bcr
 
     .BSLConfig :
     {
         KEEP(*(.BSLConfig))
-    } > BSL_CONFIG
+    } > BSL_CONFIG :bsl
 
     __StackTop = ORIGIN(REGION_STACK) + LENGTH(REGION_STACK);
     PROVIDE(__stack = __StackTop);

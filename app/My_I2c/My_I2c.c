@@ -13,21 +13,82 @@ static uint8_t s_i2cCount;
 static volatile MyI2C_BusId_t s_activeBusId = My_I2C1;
 static volatile I2C_SpeedTypeDef s_i2cSpeed = I2C_SPEED_100K;
 
+typedef enum
+{
+	MYI2C_LINE_MODE_UNKNOWN = 0,
+	MYI2C_LINE_MODE_OUTPUT_LOW,
+	MYI2C_LINE_MODE_INPUT_PULLUP
+} MyI2C_LineMode_t;
+
+typedef struct
+{
+	uint8_t valid;
+	MyI2C_LineMode_t sclMode;
+	MyI2C_LineMode_t sdaMode;
+} MyI2C_LineState_t;
+
+static MyI2C_LineState_t s_lineState[My_I2C_MAX];
+
+static MyI2C_LineState_t *MyI2C_GetLineStateById(MyI2C_BusId_t busId)
+{
+	if (((uint8_t)busId) < ((uint8_t)My_I2C_MAX))
+	{
+		return &s_lineState[(uint8_t)busId];
+	}
+
+	return 0;
+}
+
 /*
  * I2C 开漏等效驱动：
  * - 输出 0：配置为输出并拉低
  * - 输出 1：配置为上拉输入，释放总线
  */
-static void MyI2C_DriveLine(void *port, uint32_t pin, uint8_t level)
+static void MyI2C_DriveLine(const MyI2C_Config_t *config, uint8_t isScl, uint8_t level)
 {
-	if (level != 0U)
+	MyI2C_LineMode_t targetMode;
+	MyI2C_LineMode_t *lineMode;
+	MyI2C_LineState_t *state;
+	uint32_t pin;
+
+	if (config == 0)
 	{
-		API_GPIO_InitInputPullUp(port, pin);
+		return;
+	}
+
+	state = MyI2C_GetLineStateById((MyI2C_BusId_t)config->id);
+	lineMode = 0;
+	if (state != 0)
+	{
+		lineMode = (isScl != 0U) ? &state->sclMode : &state->sdaMode;
+	}
+
+	pin = (isScl != 0U) ? config->sclPin : config->sdaPin;
+	targetMode = (level != 0U) ? MYI2C_LINE_MODE_INPUT_PULLUP : MYI2C_LINE_MODE_OUTPUT_LOW;
+
+	if ((lineMode != 0) && (*lineMode == targetMode))
+	{
+		if (targetMode == MYI2C_LINE_MODE_OUTPUT_LOW)
+		{
+			API_GPIO_Write(config->port, pin, 0U);
+		}
+		return;
+	}
+
+	if (targetMode == MYI2C_LINE_MODE_INPUT_PULLUP)
+	{
+		API_GPIO_InitInputPullUp(config->port, pin);
 	}
 	else
 	{
-		API_GPIO_InitOutput(port, pin);
-		API_GPIO_Write(port, pin, 0U);
+		API_GPIO_InitOutput(config->port, pin);
+		API_GPIO_Write(config->port, pin, 0U);
+	}
+
+	if (lineMode != 0)
+	{
+		*lineMode = targetMode;
+		state->valid = 1U;
 	}
 }
 
@@ -100,8 +161,17 @@ static const MyI2C_Config_t *MyI2C_GetConfig(void)
  */
 void MyI2C_Register(const MyI2C_Config_t *configTable, uint8_t count)
 {
+	uint8_t i;
+
 	s_i2cTable = configTable;
 	s_i2cCount = count;
+
+	for (i = 0U; i < (uint8_t)My_I2C_MAX; ++i)
+	{
+		s_lineState[i].valid = 0U;
+		s_lineState[i].sclMode = MYI2C_LINE_MODE_UNKNOWN;
+		s_lineState[i].sdaMode = MYI2C_LINE_MODE_UNKNOWN;
+	}
 
 	if ((configTable != 0) && (count > 0U))
 	{
@@ -168,8 +238,8 @@ void MyI2C_Init(void)
 	{
 		config = &s_i2cTable[i];
 		/* I2C 空闲态：SCL=1，SDA=1（释放两条线） */
-		MyI2C_DriveLine(config->port, config->sclPin, 1U);
-		MyI2C_DriveLine(config->port, config->sdaPin, 1U);
+		MyI2C_DriveLine(config, 1U, 1U);
+		MyI2C_DriveLine(config, 0U, 1U);
 	}
 }
 
@@ -187,7 +257,7 @@ void MyI2C_W_SCL(uint8_t BitValue) // 写SCL
 		return;
 	}
 
-	MyI2C_DriveLine(config->port, config->sclPin, BitValue);
+	MyI2C_DriveLine(config, 1U, BitValue);
 	MyI2C_DelayByBaseUs(5U);
 }
 
@@ -205,7 +275,7 @@ void MyI2C_W_SDA(uint8_t BitValue) // 写SDA
 		return;
 	}
 
-	MyI2C_DriveLine(config->port, config->sdaPin, BitValue);
+	MyI2C_DriveLine(config, 0U, BitValue);
 	MyI2C_DelayByBaseUs(5U);
 }
 
@@ -241,7 +311,7 @@ void MyI2C_Set_SDA_Input(void) // 设置SDA为输入模式
 		return;
 	}
 
-	API_GPIO_InitInputPullUp(config->port, config->sdaPin);
+	MyI2C_DriveLine(config, 0U, 1U);
 }
 
 /*
@@ -258,7 +328,7 @@ void MyI2C_Set_SDA_Output(void) // 设置SDA为输出模式
 		return;
 	}
 
-	API_GPIO_InitOutput(config->port, config->sdaPin);
+	MyI2C_DriveLine(config, 0U, 0U);
 }
 
 /*

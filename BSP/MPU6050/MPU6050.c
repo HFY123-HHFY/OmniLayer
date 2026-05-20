@@ -4,23 +4,30 @@
  * MPU6050 驱动代码
  */
 
+
 /* 坐标系修正: 与 DMP 的 gyro_orientation 保持一致（背面安装，绕 X 轴翻转180度） */
 
-/*
-正面默认是这样的：
+#ifndef MPU6050_MOUNT_DIR
+#define MPU6050_MOUNT_DIR 0
+#endif
+
+#if (MPU6050_MOUNT_DIR == 0)
+// 正面安装
+static void MPU_Apply_Mount_Transform(int16_t *x, int16_t *y, int16_t *z)
 {
-    (void)x;
+	(void)x;
 	*y = (int16_t)(*y);
 	*z = (int16_t)(*z);
 }
-*/
-
+#else
+// 背面安装
 static void MPU_Apply_Mount_Transform(int16_t *x, int16_t *y, int16_t *z)
 {
 	(void)x;
 	*y = (int16_t)(-*y);
 	*z = (int16_t)(-*z);
 }
+#endif
 
 static void MPU_SelectI2CBus(void)
 {

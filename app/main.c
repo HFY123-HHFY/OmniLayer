@@ -25,9 +25,6 @@
 
 int main(void)
 {
-
-	uint8_t temp = 0;
-
 /* 板子注册层初始化 */
 	Enroll_LED_Init(LED_LOW); 				/* LED 资源注册 */
 	Enroll_KEY_Init();						/*  KEY 资源注册   */
@@ -36,11 +33,12 @@ int main(void)
 	Enroll_TIM_RegisterIrqHandler(Control_Task_TIM_Callback); 		/* 定时器中断回调注册 */
 	/* PWM资源注册: G3507  TIM1 -> 10kHz 400，8  | 103 TIM2 -> 1kHz 100，720 | 407 TIM1 -> 50Hz 4000，840*/
 	// Enroll_PWM_Init(API_PWM_TIM1, 400U - 1U, 8U - 1U);
-	Enroll_ADC_Init(API_ADC1); /* ADC0资源注册 */
+	Enroll_ADC_Init(API_ADC1); /* ADC资源注册 */
 
 	Enroll_I2C_Register();					/*  I2C 资源注册   */
+	Enroll_SPI_Register();				/*  SPI 资源注册   */
+
 	Enroll_MPU6050_Register();				/* MPU6050 INT 资源注册 */
-	Enroll_SPI_Register();					/*  SPI 资源注册   */
 	Enroll_OLED_Register();					/* OLED SPI 控制脚注册 */
 
 /*API层 MCU片内外设初始化*/	
@@ -48,24 +46,23 @@ int main(void)
 
 /* 通信协议初始化 */
 	MyI2C_Init();							/* 软件 I2C 初始化 */
+	// MySPI_Init();						/* 软件 SPI 初始化 */
 	App_I2C_ScanOnce();						/* 开机执行一次 I2C 扫描 */
-	MySPI_Init();							/* 软件 SPI 初始化 */
-	// App_SPI_TestOnce();						/* 开机执行一次 SPI 测试 */
+	// App_SPI_TestOnce();					/* 开机执行一次 SPI 测试 */
  
 /*BSP硬件抽象层初始化*/
-	// OLED_Init(OLED_IF_SPI);		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
+	OLED_Init(OLED_IF_I2C);		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
 	MPU_Init();
-	temp = mpu_dmp_init();
-	Delay_ms(10U); /* 等待 MPU6050 稳定 */
-	usart_printf(USART1, "temp= %d\r\n", temp);
+	// uint8_t mpu6050_dma_int = mpu_dmp_init();
+	// usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
 
 	while (1)
 	{
 /* LED和延时测试 */
 		// LED_Control(LED1, LED_HIGH);
-		// Delay_ms(500U);
+		// Delay_ms(100U);
 		// LED_Control(LED1, LED_LOW);
-		// Delay_ms(500U);
+		// Delay_ms(100U);
 
 /* KEY测试 Key 0变成1 */
 		// key_Get();
@@ -82,13 +79,13 @@ int main(void)
 		// uint16_t adc5 = API_ADC_GetValue(API_ADC2, API_ADC_CH5);
 
 /*OLED测试*/
-		// OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
-		// OLED_Update();
+		OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
+		OLED_Update();
 
 /* MPU6050测试 */
-		// mpu_angle();
-		Delay_ms(20U);
-		mpu_dmp_get_data(&Pitch, &Roll, &Yaw);
+		mpu_angle();
+		// Delay_ms(20U);
+		// mpu_dmp_get_data(&Pitch, &Roll, &Yaw);
 		// MPU_Get_Gyroscope(&gyrox,&gyroy,&gyroz);  // 读取角速度
 		if (print_task_flag != 0U)
 		{

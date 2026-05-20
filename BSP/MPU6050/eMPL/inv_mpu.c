@@ -1387,6 +1387,7 @@ int mpu_set_compass_sample_rate(unsigned short rate)
     st.chip_cfg.compass_sample_rate = st.chip_cfg.sample_rate / (div + 1);
     return 0;
 #else
+    (void)rate;
     return -1;
 #endif
 }
@@ -2517,6 +2518,8 @@ int mpu_get_compass_reg(short *data, unsigned long *timestamp)
         get_ms(timestamp);
     return 0;
 #else
+    (void)data;
+    (void)timestamp;
     return -1;
 #endif
 }
@@ -2532,6 +2535,7 @@ int mpu_get_compass_fsr(unsigned short *fsr)
     fsr[0] = st.hw->compass_fsr;
     return 0;
 #else
+    (void)fsr;
     return -1;
 #endif
 }
@@ -2751,7 +2755,7 @@ int mpu_lp_motion_interrupt(unsigned short thresh, unsigned char time,
         /* Don't "restore" the previous state if no state has been saved. */
         int ii;
         char *cache_ptr = (char*)&st.chip_cfg.cache;
-        for (ii = 0; ii < sizeof(st.chip_cfg.cache); ii++) {
+        for (ii = 0; ii < (int)sizeof(st.chip_cfg.cache); ii++) {
             if (cache_ptr[ii] != 0)
                 goto lp_int_restore;
         }
@@ -2787,34 +2791,32 @@ lp_int_restore:
     st.chip_cfg.int_motion_only = 0;
     return 0;
 }
-//////////////////////////////////////////////////////////////////////////////////
-//添加的代码部分
-//////////////////////////////////////////////////////////////////////////////////	  
-//ALIENTEK STM32F407开发板
+
 //MPU6050 DMP 驱动代码	   
 //正点原子@ALIENTEK
 //技术论坛:www.openedv.com
 //创建日期:2014/5/9
 //版本：V1.0 
 //Copyright(C) 广州市星翼电子科技有限公司 2014-2024
-//All rights reserved									  
-////////////////////////////////////////////////////////////////////////////////// 
 
 //q30格式,long转float时的除数.
 #define q30  1073741824.0f
 
-//陀螺仪方向设置，因为背面安装，Y轴和Z轴反向（或根据实际倒装情况调整，这里以X轴翻转180度为例）
-/*
-正面默认是这样的：
-{
-    1, 0, 0,
-    0, 1, 0,
-    0, 0, 1};
-*/
+#ifndef MPU6050_MOUNT_DIR
+#define MPU6050_MOUNT_DIR 0
+#endif
 
+#if (MPU6050_MOUNT_DIR == 0)
+// 正面安装
+static signed char gyro_orientation[9] = { 1, 0, 0,
+                                           0, 1, 0,
+                                           0, 0, 1};
+#else
+// 背面安装
 static signed char gyro_orientation[9] = { 1, 0, 0,
                                            0,-1, 0,
                                            0, 0,-1};
+#endif
 //MPU6050自测试
 //返回值:0,正常
 //    其他,失败
@@ -2936,7 +2938,6 @@ uint8_t mpu_dmp_init(void)
         Delay_ms(MPU6050_DMP_STARTUP_DELAY_MS);
         return 0;
     }
-
     /* mpu_init 失败时必须返回错误，避免上层误判 DMP 初始化成功 */
     return 10;
 }
