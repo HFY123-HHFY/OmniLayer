@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 /*
- * Enroll（注册层）职责说明：
+ * Enroll 层职责：
  * 1) 读取板级 hw_config 映射表；
  * 2) 把逻辑外设（LED/USART/ADC...）注册到 API/BSP；
  * 3) 对 App 暴露统一入口，避免 App 直接依赖具体 MCU 细节。
@@ -23,9 +23,7 @@
 #define ENROLL_MCU_G3507  2U
 #endif
 
-/*
- * 全局宏重定义 ENROLL_MCU_TARGET。
- */
+/* 若外部未定义目标 MCU，则默认使用 G3507。 */
 #ifndef ENROLL_MCU_TARGET
 #define ENROLL_MCU_TARGET  ENROLL_MCU_G3507
 #endif
@@ -36,6 +34,7 @@
  * - 因此以下头文件保留在 .h（不能简单下沉到 .c）。
  */
 #include "LED.h"      /* LED_Id_t / LED_Level_t */
+#include "KEY.h"      /* KEY 模块初始化接口 */
 #include "gpio.h"     /* ENROLL_GPIO_xxx 宏映射到 API_GPIO_xxx */
 #include "My_I2c.h"   /* 板级 I2C 映射宏可能使用 My_I2C 枚举 */
 #include "pwm.h"      /* API_PWM_Tim_t */
@@ -66,8 +65,8 @@
 extern "C" {
 #endif
 
-/* Enroll 层只负责“登记”和“对外转发接口”。 */
-void Enroll_LED_Init(LED_Level_t initLevel);
+/* Enroll 层只负责资源登记，不负责初始化。 */
+void Enroll_LED_Register(void);
 
 /*
  * 设计说明：
@@ -77,12 +76,12 @@ void Enroll_LED_Init(LED_Level_t initLevel);
  */
 void Enroll_LED_Control(LED_Id_t id, LED_Level_t level);
 
-/* 串口注册并初始化：按板级映射绑定 API 与 Core。 */
-void Enroll_USART_Init(API_USART_Id_t id, uint32_t baudRate);
+/* 串口资源注册：按板级映射绑定 API 与 Core。 */
+void Enroll_USART_Register(void);
 void Enroll_USART_RegisterIrqHandler(API_USART_IrqHandler_t handler);
 
-/* 按键注册并初始化：按板级映射绑定 API 与 Core。 */
-void Enroll_KEY_Init(void);
+/* 按键资源注册：登记 KEY 映射表。 */
+void Enroll_KEY_Register(void);
 
 /* 软件 I2C 注册：按板级映射绑定两根线到 bit-bang 驱动。 */
 void Enroll_I2C_Register(void);
@@ -96,14 +95,17 @@ void Enroll_OLED_Register(void);
 /* 根据板级映射注册 MPU6050 外部中断与回调。 */
 void Enroll_MPU6050_Register(void);
 
-/* PWM 注册并初始化：按板级映射绑定 API 与 Core。 */
-void Enroll_PWM_Init(API_PWM_Tim_t timId, uint16_t arr, uint16_t psc);
+/* PWM 资源注册：按板级映射绑定 API 与 Core。 */
+void Enroll_PWM_Register(void);
 
-/* 定时器注册并绑定统一中断回调。 */
+/* 定时器资源注册。 */
+void Enroll_TIM_Register(void);
+
+/* 定时器中断回调注册。 */
 void Enroll_TIM_RegisterIrqHandler(API_TIM_IrqHandler_t handler);
 
-/* ADC 注册并初始化：按板级映射绑定 API 与 Core。 */
-void Enroll_ADC_Init(API_ADC_Id_t id);
+/* ADC 资源注册：按板级映射绑定 API 与 Core。 */
+void Enroll_ADC_Register(void);
 
 #ifdef __cplusplus
 }
