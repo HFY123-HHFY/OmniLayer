@@ -1,13 +1,15 @@
 #include "Enroll.h"
-#include "OLED.h"
-#include "exti.h"
-#include "MPU6050_Int.h"
+
+#include "OLED.h"         /* OLED_SpiCtrlConfig_t, OLED_RegisterSpiCtrl */
+#include "exti.h"         /* API_EXTI_Config_t, API_EXTI_xxx */
+#include "MPU6050_Int.h"  /* MPU6050_EXTI_Callback */
 #include <stddef.h>
 
 /*
- * Enroll 注册层：
- * 1) 读取 hw_config.h 中的板级映射
- * 2) 对上层只暴露初始化和控制入口
+ * Enroll.c 仅放“注册实现”与“门面转发”：
+ * - 通过 HW_xxx_MAP 宏展开各外设配置表；
+ * - 调用 API/BSP 的 Register/Init 函数完成绑定；
+ * - 不直接实现外设控制逻辑。
  */
 
 /*
@@ -58,6 +60,7 @@ static const MyI2C_Config_t s_i2cTable[] =
 
 #undef ENROLL_I2C_ITEM
 
+/* ENROLL_SPI_ITEM 负责把板级 SPI 宏映射展开成软件 SPI 配置项。 */
 #define ENROLL_SPI_ITEM(id, csPort, csPin, sckPort, sckPin, mosiPort, mosiPin, misoPort, misoPin) \
 	{ id, csPort, csPin, sckPort, sckPin, mosiPort, mosiPin, misoPort, misoPin },
 
@@ -68,11 +71,13 @@ static const MySPI_Config_t s_spiTable[] =
 
 #undef ENROLL_SPI_ITEM
 
+/* 注册软件 SPI 资源表。 */
 void Enroll_SPI_Register(void)
 {
 	MySPI_Register(s_spiTable, HW_SPI_COUNT);
 }
 
+/* ENROLL_OLED_SPI_CTRL_ITEM 负责展开 OLED 的 DC/RES 控制引脚映射。 */
 #define ENROLL_OLED_SPI_CTRL_ITEM(dcPort, dcPin, resPort, resPin) \
 	{ dcPort, dcPin, resPort, resPin },
 
@@ -83,23 +88,30 @@ static const OLED_SpiCtrlConfig_t s_oledSpiCtrlTable[] =
 
 #undef ENROLL_OLED_SPI_CTRL_ITEM
 
+/* 注册 OLED 在 SPI 模式下使用的控制引脚映射。 */
 void Enroll_OLED_Register(void)
 {
 	OLED_RegisterSpiCtrl(s_oledSpiCtrlTable, HW_OLED_SPI_CTRL_COUNT);
 }
 
+/* MPU6050 INT 使用的 EXTI 注册表。 */
 static const API_EXTI_Config_t s_mpuExtiTable[] =
 {
 	{ 0U, HW_MPU6050_INT_PORT, HW_MPU6050_INT_PIN }
 };
 
+/*
+ * 注册 MPU6050 EXTI：
+ * 1) 注册 id->port/pin 映射
+ * 2) 绑定 MPU6050 的中断回调
+ * 3) 配置触发沿与中断优先级
+ */
 void Enroll_MPU6050_Register(void)
 {
 	API_EXTI_Register(s_mpuExtiTable, 1U);
-	// 多路注册示例：可注册多个回调
+	/* 多路注册示例：同一 id 可继续追加其他回调。 */
 	API_EXTI_AddIrqHandler(s_mpuExtiTable[0].id, (API_EXTI_IrqHandler_t)MPU6050_EXTI_Callback, NULL);
-	// 你可以继续注册其他外设的回调到同一 id
-	// API_EXTI_AddIrqHandler(s_mpuExtiTable[0].id, Other_EXTI_Callback, userPtr);
+	/* API_EXTI_AddIrqHandler(s_mpuExtiTable[0].id, Other_EXTI_Callback, userPtr); */
 	API_EXTI_Init(s_mpuExtiTable[0].id, API_EXTI_TRIGGER_RISING, 0U, 2U);
 }
 
@@ -176,11 +188,13 @@ void Enroll_KEY_Init(void)
 	KEY_Init();
 }
 
+/* 仅注册 I2C 资源，不在此处做总线初始化时序。 */
 void Enroll_I2C_Register(void)
 {
 	MyI2C_Register(s_i2cTable, HW_I2C_COUNT);
 }
 
+/* 注册 PWM 资源并初始化指定逻辑定时器。 */
 void Enroll_PWM_Init(API_PWM_Tim_t timId, uint16_t arr, uint16_t psc)
 {
 	API_PWM_Register(s_pwmTable, HW_PWM_COUNT);

@@ -3,6 +3,13 @@
 
 #include <stdint.h>
 
+/*
+ * Enroll（注册层）职责说明：
+ * 1) 读取板级 hw_config 映射表；
+ * 2) 把逻辑外设（LED/USART/ADC...）注册到 API/BSP；
+ * 3) 对 App 暴露统一入口，避免 App 直接依赖具体 MCU 细节。
+ */
+
 /* MCU 目标常量：放在注册层头文件，便于统一查看与管理。 */
 #ifndef ENROLL_MCU_F103
 #define ENROLL_MCU_F103   0U
@@ -20,16 +27,21 @@
  * 全局宏重定义 ENROLL_MCU_TARGET。
  */
 #ifndef ENROLL_MCU_TARGET
-#define ENROLL_MCU_TARGET  ENROLL_MCU_F103
+#define ENROLL_MCU_TARGET  ENROLL_MCU_G3507
 #endif
 
-#include "LED.h"
-#include "gpio.h"
-#include "My_I2c.h"
-#include "pwm.h"
-#include "usart.h"
-#include "tim.h"
-#include "adc.h"
+/*
+ * 头文件依赖规则：
+ * - Enroll.h 是对外接口头，凡是出现在函数声明中的类型，必须在这里可见。
+ * - 因此以下头文件保留在 .h（不能简单下沉到 .c）。
+ */
+#include "LED.h"      /* LED_Id_t / LED_Level_t */
+#include "gpio.h"     /* ENROLL_GPIO_xxx 宏映射到 API_GPIO_xxx */
+#include "My_I2c.h"   /* 板级 I2C 映射宏可能使用 My_I2C 枚举 */
+#include "pwm.h"      /* API_PWM_Tim_t */
+#include "usart.h"    /* API_USART_Id_t / API_USART_IrqHandler_t */
+#include "tim.h"      /* API_TIM_IrqHandler_t */
+#include "adc.h"      /* API_ADC_Id_t */
 
 /*
  * 条件编译选择不同 MCU 的 hw_config。
@@ -54,13 +66,15 @@
 extern "C" {
 #endif
 
-/*
- * Enroll 层只负责"登记"和"对外转发接口"。
- * 这里的 LED 接口会把板级硬件映射和 Core 的 GPIO 驱动连接起来。
- */
+/* Enroll 层只负责“登记”和“对外转发接口”。 */
 void Enroll_LED_Init(LED_Level_t initLevel);
 
-/* 把 app/main 的 LED 控制请求转发给 BSP。 */
+/*
+ * 设计说明：
+ * - 真正控制 LED 的实现仍在 LED 模块（LED_Control）。
+ * - Enroll_LED_Control 是门面转发，目的是让 App 仅依赖 Enroll，
+ *   不直接耦合到底层 BSP 模块。
+ */
 void Enroll_LED_Control(LED_Id_t id, LED_Level_t level);
 
 /* 串口注册并初始化：按板级映射绑定 API 与 Core。 */
@@ -79,7 +93,7 @@ void Enroll_SPI_Register(void);
 /* OLED 注册：注册 SPI 模式下的 DC/RES 板级控制引脚。 */
 void Enroll_OLED_Register(void);
 
-/* 根据板级映射注册 MPU6050 外部中断。 */
+/* 根据板级映射注册 MPU6050 外部中断与回调。 */
 void Enroll_MPU6050_Register(void);
 
 /* PWM 注册并初始化：按板级映射绑定 API 与 Core。 */
@@ -96,14 +110,3 @@ void Enroll_ADC_Init(API_ADC_Id_t id);
 #endif
 
 #endif /* __ENROLL_H */
-
-
-
-
-
-
-
-
-
-
-

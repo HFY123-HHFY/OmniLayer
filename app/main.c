@@ -53,16 +53,16 @@ int main(void)
 /*BSP硬件抽象层初始化*/
 	OLED_Init(OLED_IF_I2C);		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
 	MPU_Init();
-	uint8_t mpu6050_dma_int = mpu_dmp_init();
-	usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
+	// uint8_t mpu6050_dma_int = mpu_dmp_init();
+	// usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
 
 	while (1)
 	{
 /* LED和延时测试 */
-		// LED_Control(LED1, LED_HIGH);
-		// Delay_ms(100U);
-		// LED_Control(LED1, LED_LOW);
-		// Delay_ms(100U);
+		LED_Control(LED1, LED_HIGH);
+		Delay_ms(500U);
+		LED_Control(LED1, LED_LOW);
+		Delay_ms(500U);
 
 /* KEY测试 Key 0变成1 */
 		// key_Get();
