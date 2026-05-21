@@ -39,10 +39,25 @@ endif()
 
 message(STATUS "Resolved MCU target: ${RESOLVED_MCU_TARGET}")
 
+###############################################################
+# F103 平台专属配置与源文件
+# - 仅在 STM32F103 构建时生效
+# - 包含 F103 专属 BSP、头文件目录、MCU 源文件
+###############################################################
 if(RESOLVED_MCU_TARGET STREQUAL "F103")
     set(ENROLL_MCU_TARGET_VALUE 0)
+###############################################################
+# F407 平台专属配置与源文件
+# - 仅在 STM32F407 构建时生效
+# - 包含 F407 专属 BSP、头文件目录、MCU 源文件
+###############################################################
 elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
     set(ENROLL_MCU_TARGET_VALUE 1)
+###############################################################
+# MSPM0G3507 平台专属配置与源文件
+# - 仅在 MSPM0G3507 构建时生效
+# - 包含 G3507 专属头文件目录、MCU 源文件
+###############################################################
 elseif(RESOLVED_MCU_TARGET STREQUAL "G3507")
     set(ENROLL_MCU_TARGET_VALUE 2)
 else()
@@ -51,23 +66,24 @@ endif()
 
 # ============================== 维护说明 ==============================
 #
-# 1) 新增/删除 .c 文件：
-#    - 按模块归类，修改 APP_LAYER_SOURCES / ENROLL_LAYER_SOURCES /
-#      BSP_LAYER_SOURCES / MCU_SOURCES 中对应列表。
-#    - 最终会汇总到 TARGET_SOURCES，因此只要列表里有就会参与编译。
+# 1) APP、API、SYS、ENROLL 层为三平台通用，只需维护一份源文件列表（见下方变量）。
+#    - 新增/删除 .c 文件，直接在 APP_LAYER_SOURCES、API_LAYER_SOURCES、SYS_LAYER_SOURCES、ENROLL_LAYER_SOURCES 里增删。
+#    - 这几层所有 MCU 都会自动引用，无需分平台重复写。
 #
-# 2) 新增/删除头文件目录：
-#    - 修改 MCU_INCLUDE_DIRS（不同 MCU 分支分别维护）。
-#    - 仅新增 .h 文件（目录不变）通常不需要改 CMake。
+# 2) BSP 层（BSP_LAYER_SOURCES）按“公共 + 每个 MCU 独立追加”维护。
+#    - 公共驱动放 BSP_LAYER_SOURCES。
+#    - 各 MCU 专属驱动放各自分支中的 list(APPEND BSP_LAYER_SOURCES ...)。
 #
-# 3) F103/F407 差异文件：
-#    - 放在 if(RESOLVED_MCU_TARGET STREQUAL "F103") / "F407" 各自分支。
-#    - 避免把仅某一芯片可用的驱动误加到另一分支。
+# 3) 头文件目录按“通用 + 平台专属”维护：
+#    - 通用目录放 COMMON_INCLUDE_DIRS / BSP_COMMON_INCLUDE_DIRS。
+#    - 平台差异目录仅在各 MCU 分支追加。
 #
-# 4) 改完后验证：
+# 4) MCU_SOURCES 只放各自平台专属代码。
+#
+# 5) 改完后验证：
 #    - 重新 Configure/Build；若报“undefined reference”通常是漏加 .c 文件。
 #    - 若报“header not found”通常是漏加头文件目录到 MCU_INCLUDE_DIRS。
-# ======================================================================
+# =====================================================================
 
 # 应用层（app）：业务入口与任务调度。
 set(APP_LAYER_SOURCES
@@ -101,20 +117,44 @@ set(ENROLL_LAYER_SOURCES
     ${CMAKE_SOURCE_DIR}/Enroll/Enroll.c
 )
 
+# 通用头文件目录：三平台共享。
+set(COMMON_INCLUDE_DIRS
+    ${CMAKE_SOURCE_DIR}/app
+    ${CMAKE_SOURCE_DIR}/app/Control_Task
+    ${CMAKE_SOURCE_DIR}/app/Control
+    ${CMAKE_SOURCE_DIR}/app/My_Usart
+    ${CMAKE_SOURCE_DIR}/app/My_I2c
+    ${CMAKE_SOURCE_DIR}/app/My_SPI
+    ${CMAKE_SOURCE_DIR}/app/PID
+    ${CMAKE_SOURCE_DIR}/app/Filter
+    ${CMAKE_SOURCE_DIR}/API
+    ${CMAKE_SOURCE_DIR}/API/inc
+    ${CMAKE_SOURCE_DIR}/Enroll
+    ${CMAKE_SOURCE_DIR}/SYSTEM
+)
+
+# 通用 BSP 头文件目录：所有平台都会用到的公共外设。
+set(BSP_COMMON_INCLUDE_DIRS
+    ${CMAKE_SOURCE_DIR}/BSP/LED
+    ${CMAKE_SOURCE_DIR}/BSP/KEY
+    ${CMAKE_SOURCE_DIR}/BSP/OLED
+    ${CMAKE_SOURCE_DIR}/BSP/MPU6050
+    ${CMAKE_SOURCE_DIR}/BSP/MPU6050/eMPL
+)
+
 # 板级支持层（BSP）：对传感器/执行器做硬件抽象。
 set(BSP_LAYER_SOURCES
     ${CMAKE_SOURCE_DIR}/BSP/LED/LED.c
     ${CMAKE_SOURCE_DIR}/BSP/KEY/KEY.c
-    ${CMAKE_SOURCE_DIR}/BSP/BMP280/BMP280.c
-    ${CMAKE_SOURCE_DIR}/BSP/NRF24L01/NRF24L01.c
     ${CMAKE_SOURCE_DIR}/BSP/OLED/OLED.c
     ${CMAKE_SOURCE_DIR}/BSP/OLED/OLED_Data.c
-    ${CMAKE_SOURCE_DIR}/BSP/QMC5883P/QMC5883P.c
     ${CMAKE_SOURCE_DIR}/BSP/MPU6050/MPU6050.c
     ${CMAKE_SOURCE_DIR}/BSP/MPU6050/MPU6050_Int.c
     ${CMAKE_SOURCE_DIR}/BSP/MPU6050/eMPL/inv_mpu.c
     ${CMAKE_SOURCE_DIR}/BSP/MPU6050/eMPL/inv_mpu_dmp_motion_driver.c
 )
+# 说明：可选传感器不在这里做合并条件，改为各 MCU 分支独立维护。
+
 
 if(RESOLVED_MCU_TARGET STREQUAL "F103")
     set(TARGET_NAME OmniLayer_F103)
@@ -123,36 +163,21 @@ if(RESOLVED_MCU_TARGET STREQUAL "F103")
     set(OPENOCD_ERASE_CMD "stm32f1x mass_erase 0")
     set(MCU_CPU_FLAGS -mcpu=cortex-m3 -mthumb)
     set(MCU_FPU_FLAGS)
-    set(MCU_DEFINITIONS
-        STM32F10X_MD
+    set(MCU_DEFINITIONS STM32F10X_MD)
+    # F103 专属 BSP（独立维护，不与其他 MCU 合并）
+    list(APPEND BSP_LAYER_SOURCES
+        ${CMAKE_SOURCE_DIR}/BSP/NRF24L01/NRF24L01.c
     )
+    # F103 专属头文件目录和源文件
     set(MCU_INCLUDE_DIRS
-        # 头文件搜索路径：新增目录在这里加，删除目录在这里移除。
-        ${CMAKE_SOURCE_DIR}/app
-        ${CMAKE_SOURCE_DIR}/app/Control_Task
-        ${CMAKE_SOURCE_DIR}/app/Control
-        ${CMAKE_SOURCE_DIR}/app/My_Usart
-        ${CMAKE_SOURCE_DIR}/app/My_I2c
-        ${CMAKE_SOURCE_DIR}/app/My_SPI
-        ${CMAKE_SOURCE_DIR}/app/PID
-        ${CMAKE_SOURCE_DIR}/app/Filter
-        ${CMAKE_SOURCE_DIR}/API
-        ${CMAKE_SOURCE_DIR}/API/inc
-        ${CMAKE_SOURCE_DIR}/Enroll
-        ${CMAKE_SOURCE_DIR}/BSP/LED
-        ${CMAKE_SOURCE_DIR}/BSP/KEY
-        ${CMAKE_SOURCE_DIR}/BSP/BMP280
+        ${COMMON_INCLUDE_DIRS}
+        ${BSP_COMMON_INCLUDE_DIRS}
         ${CMAKE_SOURCE_DIR}/BSP/NRF24L01
-        ${CMAKE_SOURCE_DIR}/BSP/OLED
-        ${CMAKE_SOURCE_DIR}/BSP/QMC5883P
-        ${CMAKE_SOURCE_DIR}/BSP/MPU6050
-        ${CMAKE_SOURCE_DIR}/BSP/MPU6050/eMPL
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/inc
-        ${CMAKE_SOURCE_DIR}/SYSTEM
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F1/Start
     )
+    # F103 专属 MCU 驱动实现
     set(MCU_SOURCES
-        # F103 专属源码：新增/删除 .c 文件在这里改。
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/f103_delay.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/f103_sys.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_adc.c
@@ -170,36 +195,25 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
     set(OPENOCD_ERASE_CMD "stm32f4x mass_erase 0")
     set(MCU_CPU_FLAGS -mcpu=cortex-m4 -mthumb)
     set(MCU_FPU_FLAGS -mfpu=fpv4-sp-d16 -mfloat-abi=hard)
-    set(MCU_DEFINITIONS
-        STM32F40_41xxx
+    set(MCU_DEFINITIONS STM32F40_41xxx)
+    # F407 专属 BSP（独立维护，不与其他 MCU 合并）
+    list(APPEND BSP_LAYER_SOURCES
+        ${CMAKE_SOURCE_DIR}/BSP/BMP280/BMP280.c
+        ${CMAKE_SOURCE_DIR}/BSP/NRF24L01/NRF24L01.c
+        ${CMAKE_SOURCE_DIR}/BSP/QMC5883P/QMC5883P.c
     )
+    # F407 专属头文件目录和源文件
     set(MCU_INCLUDE_DIRS
-        # 头文件搜索路径：新增目录在这里加，删除目录在这里移除。
-        ${CMAKE_SOURCE_DIR}/app
-        ${CMAKE_SOURCE_DIR}/app/Control_Task
-        ${CMAKE_SOURCE_DIR}/app/Control
-        ${CMAKE_SOURCE_DIR}/app/My_Usart
-        ${CMAKE_SOURCE_DIR}/app/My_I2c
-        ${CMAKE_SOURCE_DIR}/app/My_SPI
-        ${CMAKE_SOURCE_DIR}/app/PID
-        ${CMAKE_SOURCE_DIR}/app/Filter
-        ${CMAKE_SOURCE_DIR}/API
-        ${CMAKE_SOURCE_DIR}/API/inc
-        ${CMAKE_SOURCE_DIR}/Enroll
-        ${CMAKE_SOURCE_DIR}/BSP/LED
-        ${CMAKE_SOURCE_DIR}/BSP/KEY
+        ${COMMON_INCLUDE_DIRS}
+        ${BSP_COMMON_INCLUDE_DIRS}
         ${CMAKE_SOURCE_DIR}/BSP/BMP280
         ${CMAKE_SOURCE_DIR}/BSP/NRF24L01
-        ${CMAKE_SOURCE_DIR}/BSP/OLED
         ${CMAKE_SOURCE_DIR}/BSP/QMC5883P
-        ${CMAKE_SOURCE_DIR}/BSP/MPU6050
-        ${CMAKE_SOURCE_DIR}/BSP/MPU6050/eMPL
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/inc
-        ${CMAKE_SOURCE_DIR}/SYSTEM
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start
     )
+    # F407 专属 MCU 驱动实现
     set(MCU_SOURCES
-        # F407 专属源码：新增/删除 .c 文件在这里改。
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/f407_delay.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/f407_sys.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_adc.c
@@ -210,7 +224,6 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start/system_stm32f4xx.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start/startup_stm32f407vetx_gcc.c
     )
-
 elseif(RESOLVED_MCU_TARGET STREQUAL "G3507")
     set(TARGET_NAME OmniLayer_MSPM0G3507)
     set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/cmake/mspm0g3507.lds)
@@ -218,57 +231,20 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "G3507")
     set(OPENOCD_ERASE_CMD "mspm0 mass_erase 0")
     set(MCU_CPU_FLAGS -mcpu=cortex-m0plus -mthumb)
     set(MCU_FPU_FLAGS)
-    set(MCU_DEFINITIONS
-        __MSPM0G3507__
-    )
+    set(MCU_DEFINITIONS __MSPM0G3507__)
+    # G3507 专属头文件目录和源文件
     set(MCU_INCLUDE_DIRS
-        ${CMAKE_SOURCE_DIR}/app
-        ${CMAKE_SOURCE_DIR}/app/My_I2c
-        ${CMAKE_SOURCE_DIR}/app/My_SPI
-        ${CMAKE_SOURCE_DIR}/app/My_Usart
-        ${CMAKE_SOURCE_DIR}/API/inc
-        ${CMAKE_SOURCE_DIR}/Enroll
-        ${CMAKE_SOURCE_DIR}/BSP/LED
-        ${CMAKE_SOURCE_DIR}/BSP/KEY
-        ${CMAKE_SOURCE_DIR}/BSP/OLED
-        ${CMAKE_SOURCE_DIR}/BSP/MPU6050
-        ${CMAKE_SOURCE_DIR}/BSP/MPU6050/eMPL
+        ${COMMON_INCLUDE_DIRS}
+        ${BSP_COMMON_INCLUDE_DIRS}
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/inc
-        ${CMAKE_SOURCE_DIR}/SYSTEM
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_M0G3507/source
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_M0G3507/source/ti/devices/msp/m0p
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_M0G3507/source/third_party/CMSIS/Core/Include
     )
-else()
-    message(FATAL_ERROR "Unsupported MCU target: ${RESOLVED_MCU_TARGET}")
-endif()
-
-# G3507 使用最小化源文件集，不包含 STM32 专属层。
-if(RESOLVED_MCU_TARGET STREQUAL "G3507")
-    set(TARGET_SOURCES
-        ${CMAKE_SOURCE_DIR}/app/main.c
-        ${CMAKE_SOURCE_DIR}/app/Control_Task/Control_Task.c
-        ${CMAKE_SOURCE_DIR}/app/My_I2c/My_I2c.c
-        ${CMAKE_SOURCE_DIR}/app/My_SPI/My_SPI.c
-        ${CMAKE_SOURCE_DIR}/app/My_Usart/My_Usart.c
-        ${CMAKE_SOURCE_DIR}/BSP/LED/LED.c
-        ${CMAKE_SOURCE_DIR}/BSP/KEY/KEY.c
-        ${CMAKE_SOURCE_DIR}/BSP/OLED/OLED.c
-        ${CMAKE_SOURCE_DIR}/BSP/OLED/OLED_Data.c
-        ${CMAKE_SOURCE_DIR}/BSP/MPU6050/MPU6050.c
-        ${CMAKE_SOURCE_DIR}/BSP/MPU6050/MPU6050_Int.c
-        ${CMAKE_SOURCE_DIR}/BSP/MPU6050/eMPL/inv_mpu.c
-        ${CMAKE_SOURCE_DIR}/BSP/MPU6050/eMPL/inv_mpu_dmp_motion_driver.c
-        ${CMAKE_SOURCE_DIR}/Enroll/Enroll.c
-        ${CMAKE_SOURCE_DIR}/API/src/adc.c
-        ${CMAKE_SOURCE_DIR}/API/src/exti.c
-        ${CMAKE_SOURCE_DIR}/API/src/gpio.c
-        ${CMAKE_SOURCE_DIR}/API/src/pwm.c
-        ${CMAKE_SOURCE_DIR}/API/src/tim.c
-        ${CMAKE_SOURCE_DIR}/API/src/usart.c
-        ${CMAKE_SOURCE_DIR}/SYSTEM/sys.c
-        ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_adc.c
+    # G3507 专属 MCU 驱动实现
+    set(MCU_SOURCES
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/G3507_delay.c
+        ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_adc.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_exti.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_gpio.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_pwm.c
@@ -280,22 +256,48 @@ if(RESOLVED_MCU_TARGET STREQUAL "G3507")
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_M0G3507/source/ti/driverlib/dl_uart.c
     )
 else()
-    set(TARGET_SOURCES
-        ${APP_LAYER_SOURCES}
-        ${SYS_LAYER_SOURCES}
-        ${API_LAYER_SOURCES}
-        ${ENROLL_LAYER_SOURCES}
-        ${BSP_LAYER_SOURCES}
-        ${MCU_SOURCES}
-    )
+    message(FATAL_ERROR "Unsupported MCU target: ${RESOLVED_MCU_TARGET}")
 endif()
 
+
+
+###############################################################
+# 汇总所有层的源文件，形成最终构建目标源文件列表
+# - APP/API/SYS/ENROLL/BSP/MCU 层全部拼接
+# - 便于统一管理和后续维护
+###############################################################
+set(TARGET_SOURCES
+    ${APP_LAYER_SOURCES}
+    ${SYS_LAYER_SOURCES}
+    ${API_LAYER_SOURCES}
+    ${ENROLL_LAYER_SOURCES}
+    ${BSP_LAYER_SOURCES}
+    ${MCU_SOURCES}
+)
+
+
+###############################################################
+# 构建最终可执行文件（固件 ELF）
+# - ${TARGET_NAME} 由平台分支决定
+# - ${TARGET_SOURCES} 为所有参与编译的源文件
+###############################################################
 add_executable(${TARGET_NAME} ${TARGET_SOURCES})
 
+
+###############################################################
+# 添加头文件搜索路径
+# - ${MCU_INCLUDE_DIRS} 已包含通用+平台专属目录
+###############################################################
 target_include_directories(${TARGET_NAME} PRIVATE
     ${MCU_INCLUDE_DIRS}
 )
 
+
+###############################################################
+# 添加编译宏定义
+# - ENROLL_MCU_TARGET 及各平台标志
+# - ${MCU_DEFINITIONS} 为平台专属宏
+###############################################################
 target_compile_definitions(${TARGET_NAME} PRIVATE
     ENROLL_MCU_F103=0
     ENROLL_MCU_F407=1
@@ -304,6 +306,11 @@ target_compile_definitions(${TARGET_NAME} PRIVATE
     ${MCU_DEFINITIONS}
 )
 
+
+###############################################################
+# 添加编译器选项
+# - CPU/FPU 架构、警告开关等
+###############################################################
 target_compile_options(${TARGET_NAME} PRIVATE
     ${MCU_CPU_FLAGS}
     ${MCU_FPU_FLAGS}
@@ -311,6 +318,11 @@ target_compile_options(${TARGET_NAME} PRIVATE
     -Wextra
 )
 
+
+###############################################################
+# 添加链接器选项
+# - 指定链接脚本、浮点格式、内存优化等
+###############################################################
 target_link_options(${TARGET_NAME} PRIVATE
     ${MCU_CPU_FLAGS}
     ${MCU_FPU_FLAGS}
@@ -324,12 +336,21 @@ target_link_options(${TARGET_NAME} PRIVATE
     -Wl,--print-memory-usage
 )
 
+
+###############################################################
+# 链接标准库
+# - m: 数学库
+# - c: 标准C库
+###############################################################
 target_link_libraries(${TARGET_NAME} PRIVATE
     m
     c
 )
 
-# 生成常用烧录文件格式。
+
+###############################################################
+# 生成常用烧录文件格式（hex/bin）及打印固件大小
+###############################################################
 add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
     COMMAND ${CMAKE_OBJCOPY} -O ihex   $<TARGET_FILE:${TARGET_NAME}> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET_NAME}.hex
     COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${TARGET_NAME}> ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TARGET_NAME}.bin
@@ -337,7 +358,12 @@ add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
     COMMENT "Generate .hex/.bin and print size"
 )
 
-# OpenOCD 烧录：按 MCU 选择对应配置文件。G3507 不做 verify（避免卡顿）。
+
+###############################################################
+# OpenOCD 烧录/擦除目标
+# - flash: 烧录固件，G3507 跳过 verify 加速
+# - erase: 全片擦除
+###############################################################
 add_custom_target(flash
     COMMAND openocd -f ${OPENOCD_CFG} -c "program $<TARGET_FILE:${TARGET_NAME}> $<IF:$<STREQUAL:${RESOLVED_MCU_TARGET},G3507>,,verify> reset exit"
     DEPENDS ${TARGET_NAME}
