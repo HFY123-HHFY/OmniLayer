@@ -1,9 +1,12 @@
 #include "LED.h"
+#include "Delay.h"
 
 /* s_ledConfigTable: 已注册 LED 配置表，由 Enroll 层通过 LED_Register 注入。 */
 static const LED_Config_t *s_ledConfigTable;
 /* s_ledConfigCount: 当前配置表中有效 LED 数量。 */
 static uint8_t s_ledConfigCount;
+/* s_ledLevelShadow: LED 逻辑电平软件镜像，用于支持翻转操作。 */
+static LED_Level_t s_ledLevelShadow[LED_ID_MAX + 1U];
 
 /* 归一化电平输入，保证只返回 LED_HIGH 或 LED_LOW。 */
 static LED_Level_t LED_NormalizeLevel(LED_Level_t level)
@@ -38,9 +41,15 @@ static const LED_Config_t *LED_FindConfig(LED_Id_t id)
  */
 void LED_Register(const LED_Config_t *configTable, uint8_t count)
 {
+	uint8_t index;
+
 	/* 先清空注册状态，避免旧表被继续使用。 */
 	s_ledConfigTable = 0;
 	s_ledConfigCount = 0U;
+	for (index = 0U; index <= LED_ID_MAX; ++index)
+	{
+		s_ledLevelShadow[index] = LED_LOW;
+	}
 
 	if ((configTable == 0) || (count == 0U))
 	{
@@ -85,6 +94,7 @@ void LED_Init(LED_Level_t initLevel)
 		/* 按传入的 LED_HIGH / LED_LOW 统一设置初始化电平。 */
 		config->gpioInit(config->port, config->pin);
 		config->gpioWrite(config->port, config->pin, normalizedInitLevel);
+		s_ledLevelShadow[(uint8_t)config->id] = normalizedInitLevel;
 	}
 }
 
@@ -101,5 +111,21 @@ void LED_Control(LED_Id_t id, LED_Level_t level)
 	}
 
 	/* 电平控制 */
-	config->gpioWrite(config->port, config->pin, LED_NormalizeLevel(level));
+	level = LED_NormalizeLevel(level);
+	config->gpioWrite(config->port, config->pin, level);
+	s_ledLevelShadow[(uint8_t)config->id] = level;
+}
+
+/* LED_Turn：执行一次高低闪烁（高/低各阻塞 periodMs 毫秒）。 */
+void LED_Turn(LED_Id_t id, uint32_t periodMs)
+{
+	if (periodMs == 0U)
+	{
+		return;
+	}
+
+	LED_Control(id, LED_HIGH);
+	Delay_ms(periodMs);
+	LED_Control(id, LED_LOW);
+	Delay_ms(periodMs);
 }

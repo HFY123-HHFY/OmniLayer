@@ -1,15 +1,15 @@
 #ifndef __103_HW_CONFIG_H
 #define __103_HW_CONFIG_H
 
-#include "LED.h"
-#include "KEY.h"
-#include "My_I2c.h"
-#include "My_SPI.h"
+#include "f103_gpio.h"
 #include "usart.h"
 #include "tim.h"
 #include "pwm.h"
 #include "adc.h"
-#include "f103_gpio.h"
+#include "My_I2c.h"
+#include "My_SPI.h"
+#include "LED.h"
+#include "KEY.h"
 
 /*
  * 103_hw_config.h 板级硬件映射宏

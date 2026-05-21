@@ -22,6 +22,9 @@ typedef enum
 	LED3 = 2U
 } LED_Id_t;
 
+/* LED 逻辑编号上限（用于内部状态数组大小计算）。 */
+#define LED_ID_MAX  ((uint8_t)LED3)
+
 typedef enum
 {
 	/* 输出低电平。 */
@@ -54,6 +57,14 @@ void LED_Register(const LED_Config_t *configTable, uint8_t count);
 void LED_Init(LED_Level_t initLevel);
 /* BSP 层控制：给指定 LED 写高/低电平。 */
 void LED_Control(LED_Id_t id, LED_Level_t level);
+
+/*
+ * BSP 层单次翻转闪烁：
+ * - 高电平保持 periodMs 毫秒；
+ * - 低电平保持 periodMs 毫秒；
+ * - 单次执行后返回，便于在主循环中反复调用。
+ */
+void LED_Turn(LED_Id_t id, uint32_t periodMs);
 
 #ifdef __cplusplus
 }

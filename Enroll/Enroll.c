@@ -116,18 +116,22 @@ static const API_EXTI_Config_t s_mpuExtiTable[] =
 };
 
 /****************************** API资源注册层 ************************/
-/* PWM 初始化：登记资源表后初始化目标定时器。 */
-void Enroll_PWM_Init(API_PWM_Tim_t timId, uint16_t arr, uint16_t psc)
+/* PWM 注册：登记板级 PWM 资源表。 */
+void Enroll_PWM_Register(void)
 {
 	API_PWM_Register(s_pwmTable, HW_PWM_COUNT);
-	API_PWM_Init(timId, arr, psc);
 }
 
-/* ADC 初始化：登记资源表后初始化目标 ADC。 */
-void Enroll_ADC_Init(API_ADC_Id_t id)
+/* ADC 注册：登记板级 ADC 资源表。 */
+void Enroll_ADC_Register(void)
 {
 	API_ADC_Register(s_adcTable, HW_ADC_COUNT);
-	API_ADC_Init(id);
+}
+
+/* TIM 注册：登记板级 TIM 资源表。 */
+void Enroll_TIM_Register(void)
+{
+	API_TIM_Register(s_timTable, HW_TIM_COUNT);
 }
 
 /* TIM 中断回调注册：遍历所有板级定时器。 */
@@ -135,18 +139,16 @@ void Enroll_TIM_RegisterIrqHandler(API_TIM_IrqHandler_t handler)
 {
 	uint8_t i;
 
-	API_TIM_Register(s_timTable, HW_TIM_COUNT);
 	for (i = 0U; i < HW_TIM_COUNT; ++i)
 	{
 		API_TIM_RegisterIrqHandler(s_timTable[i].id, handler);
 	}
 }
 
-/* USART 初始化：先登记资源，再初始化目标串口。 */
-void Enroll_USART_Init(API_USART_Id_t id, uint32_t baudRate)
+/* USART 注册：登记板级 USART 资源表。 */
+void Enroll_USART_Register(void)
 {
 	API_USART_Register(s_usartTable, HW_USART_COUNT);
-	API_USART_Init(id, baudRate);
 }
 
 /* USART 中断回调注册：遍历所有板级 USART。 */
@@ -154,7 +156,6 @@ void Enroll_USART_RegisterIrqHandler(API_USART_IrqHandler_t handler)
 {
 	uint8_t i;
 
-	API_USART_Register(s_usartTable, HW_USART_COUNT);
 	for (i = 0U; i < HW_USART_COUNT; ++i)
 	{
 		API_USART_RegisterIrqHandler(s_usartTable[i].id, handler);
@@ -175,27 +176,16 @@ void Enroll_SPI_Register(void)
 }
 
 /***************** BSP层资源注册层 *********************/
-/*
- * Enroll_LED_Init：
- * 登记 LED 资源表后，再按指定电平完成初始化。
- */
-void Enroll_LED_Init(LED_Level_t initLevel)
+/* LED 注册：登记板级 LED 资源表。 */
+void Enroll_LED_Register(void)
 {
 	LED_Register(s_ledTable, HW_LED_COUNT);
-	LED_Init(initLevel);
 }
 
-/* LED 门面控制：把控制请求转发给 BSP 的 LED 模块。 */
-void Enroll_LED_Control(LED_Id_t id, LED_Level_t level)
-{
-	LED_Control(id, level);
-}
-
-/* KEY 初始化：登记资源表后初始化按键模块。 */
-void Enroll_KEY_Init(void)
+/* KEY 注册：登记板级 KEY 资源表。 */
+void Enroll_KEY_Register(void)
 {
 	KEY_Register(s_keyTable, HW_KEY_COUNT);
-	KEY_Init();
 }
 
 /* OLED 注册：登记 SPI 模式下的 DC/RES 控制引脚。 */
