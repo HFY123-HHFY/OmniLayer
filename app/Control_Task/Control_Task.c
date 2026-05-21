@@ -8,7 +8,7 @@
 /* 程序运行的时间戳（s） */
 uint32_t Timer_Bsp_t = 0;
 
-/* printf节拍-50ms */
+/* printf节拍 */
 volatile uint8_t print_task_flag = 0;
 
 /* 串口1接收数据 */
@@ -21,7 +21,7 @@ uint32_t USART_1_RX = 0;
 void Control_Task_TIM_Callback(API_TIM_Id_t id)
 {
 	static uint16_t time_t = 0U; /* 程序运行时间计数 */
-	static uint8_t printf_50ms = 0U; /* 50ms printf 节拍计数 */
+	static uint8_t printf_tick = 0U; /* printf 节拍计数 */
 	static uint8_t pid_2ms_tick = 0U; /* 2ms PID 节拍计数 */
 
 	if (id != API_TIM1)
@@ -31,7 +31,7 @@ void Control_Task_TIM_Callback(API_TIM_Id_t id)
 
 	Key_Tick(); /* 按键扫描函数，更新按键状态和事件 */
 
-	printf_50ms++;
+	printf_tick++;
 	time_t++;
 	pid_2ms_tick++;
 
@@ -41,9 +41,9 @@ void Control_Task_TIM_Callback(API_TIM_Id_t id)
 		// pid_task_flag = 1U;
 	}
 
-	if (printf_50ms >= 50U)
+	if (printf_tick >= 20U)
 	{
-		printf_50ms = 0U;
+		printf_tick = 0U;
 		print_task_flag = 1U;
 	}
 

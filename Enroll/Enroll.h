@@ -20,7 +20,7 @@
  * 全局宏重定义 ENROLL_MCU_TARGET。
  */
 #ifndef ENROLL_MCU_TARGET
-#define ENROLL_MCU_TARGET  ENROLL_MCU_G3507
+#define ENROLL_MCU_TARGET  ENROLL_MCU_F103
 #endif
 
 #include "LED.h"
@@ -96,10 +96,6 @@ void Enroll_ADC_Init(API_ADC_Id_t id);
 #endif
 
 #endif /* __ENROLL_H */
-
-
-
-
 
 
 

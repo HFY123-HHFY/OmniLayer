@@ -53,8 +53,8 @@ int main(void)
 /*BSP硬件抽象层初始化*/
 	OLED_Init(OLED_IF_I2C);		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
 	MPU_Init();
-	// uint8_t mpu6050_dma_int = mpu_dmp_init();
-	// usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
+	uint8_t mpu6050_dma_int = mpu_dmp_init();
+	usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
 
 	while (1)
 	{
@@ -80,6 +80,9 @@ int main(void)
 
 /*OLED测试*/
 		OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
+		OLED_Printf(0, 16, OLED_8X16, "Pitch: %.1f", Pitch);
+		OLED_Printf(0, 32, OLED_8X16, "Roll: %.1f", Roll);
+		OLED_Printf(0, 48, OLED_8X16, "Yaw: %.1f", Yaw);
 		OLED_Update();
 
 /* MPU6050测试 */
