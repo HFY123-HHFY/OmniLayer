@@ -10,7 +10,36 @@
 static const MySPI_Config_t *s_spiTable;
 static uint8_t s_spiCount;
 static volatile MySPI_BusId_t s_activeBusId = My_SPI1;
+static const MySPI_Config_t *s_activeConfig;
 static volatile SPI_SpeedTypeDef s_spiSpeed = SPI_SPEED_500K;
+
+typedef enum
+{
+	MYSPI_LINE_MODE_UNKNOWN = 0,
+	MYSPI_LINE_MODE_OUTPUT,
+	MYSPI_LINE_MODE_INPUT_PULLUP
+} MySPI_LineMode_t;
+
+typedef struct
+{
+	uint8_t valid;
+	MySPI_LineMode_t csMode;
+	MySPI_LineMode_t sckMode;
+	MySPI_LineMode_t mosiMode;
+	MySPI_LineMode_t misoMode;
+} MySPI_LineState_t;
+
+static MySPI_LineState_t s_lineState[My_SPI_MAX];
+
+static MySPI_LineState_t *MySPI_GetLineStateById(MySPI_BusId_t busId)
+{
+	if (((uint8_t)busId) < ((uint8_t)My_SPI_MAX))
+	{
+		return &s_lineState[(uint8_t)busId];
+	}
+
+	return 0;
+}
 
 /*
  * 按当前 SPI 速率档位插入一个基础延时。
@@ -66,7 +95,77 @@ static const MySPI_Config_t *MySPI_GetConfigById(MySPI_BusId_t busId)
 
 static const MySPI_Config_t *MySPI_GetConfig(void)
 {
+	if (s_activeConfig != 0)
+	{
+		return s_activeConfig;
+	}
+
 	return MySPI_GetConfigById(s_activeBusId);
+}
+
+/*
+ * 按目标模式配置 GPIO：
+ * - 仅在模式变化时调用底层 Init 接口，减少重复初始化开销。
+ */
+static void MySPI_EnsureLineMode(const MySPI_Config_t *config, uint8_t lineIndex, MySPI_LineMode_t targetMode)
+{
+	MySPI_LineState_t *state;
+	MySPI_LineMode_t *lineMode;
+	void *port;
+	uint32_t pin;
+
+	if (config == 0)
+	{
+		return;
+	}
+
+	state = MySPI_GetLineStateById((MySPI_BusId_t)config->id);
+	if (state == 0)
+	{
+		return;
+	}
+
+	if (lineIndex == 0U)
+	{
+		lineMode = &state->csMode;
+		port = config->csPort;
+		pin = config->csPin;
+	}
+	else if (lineIndex == 1U)
+	{
+		lineMode = &state->sckMode;
+		port = config->sckPort;
+		pin = config->sckPin;
+	}
+	else if (lineIndex == 2U)
+	{
+		lineMode = &state->mosiMode;
+		port = config->mosiPort;
+		pin = config->mosiPin;
+	}
+	else
+	{
+		lineMode = &state->misoMode;
+		port = config->misoPort;
+		pin = config->misoPin;
+	}
+
+	if ((*lineMode == targetMode) && (state->valid != 0U))
+	{
+		return;
+	}
+
+	if (targetMode == MYSPI_LINE_MODE_OUTPUT)
+	{
+		API_GPIO_InitOutput(port, pin);
+	}
+	else
+	{
+		API_GPIO_InitInputPullUp(port, pin);
+	}
+
+	*lineMode = targetMode;
+	state->valid = 1U;
 }
 
 /*
@@ -75,11 +174,25 @@ static const MySPI_Config_t *MySPI_GetConfig(void)
  */
 void MySPI_Register(const MySPI_Config_t *configTable, uint8_t count)
 {
+	uint8_t i;
+
 	s_spiTable = configTable;
 	s_spiCount = count;
+	s_activeConfig = 0;
+
+	for (i = 0U; i < (uint8_t)My_SPI_MAX; ++i)
+	{
+		s_lineState[i].valid = 0U;
+		s_lineState[i].csMode = MYSPI_LINE_MODE_UNKNOWN;
+		s_lineState[i].sckMode = MYSPI_LINE_MODE_UNKNOWN;
+		s_lineState[i].mosiMode = MYSPI_LINE_MODE_UNKNOWN;
+		s_lineState[i].misoMode = MYSPI_LINE_MODE_UNKNOWN;
+	}
+
 	if ((configTable != 0) && (count > 0U))
 	{
 		s_activeBusId = (MySPI_BusId_t)configTable[0].id;
+		s_activeConfig = &configTable[0];
 	}
 	else
 	{
@@ -90,9 +203,13 @@ void MySPI_Register(const MySPI_Config_t *configTable, uint8_t count)
 
 void MySPI_SelectBus(MySPI_BusId_t busId)
 {
-	if (MySPI_GetConfigById(busId) != 0)
+	const MySPI_Config_t *config;
+
+	config = MySPI_GetConfigById(busId);
+	if (config != 0)
 	{
 		s_activeBusId = busId;
+		s_activeConfig = config;
 	}
 }
 
@@ -204,10 +321,10 @@ void MySPI_Init(void)
 	for (i = 0U; i < s_spiCount; i++)
 	{
 		config = &s_spiTable[i];
-		API_GPIO_InitOutput(config->csPort, config->csPin);
-		API_GPIO_InitOutput(config->sckPort, config->sckPin);
-		API_GPIO_InitOutput(config->mosiPort, config->mosiPin);
-		API_GPIO_InitInputPullUp(config->misoPort, config->misoPin);
+		MySPI_EnsureLineMode(config, 0U, MYSPI_LINE_MODE_OUTPUT);
+		MySPI_EnsureLineMode(config, 1U, MYSPI_LINE_MODE_OUTPUT);
+		MySPI_EnsureLineMode(config, 2U, MYSPI_LINE_MODE_OUTPUT);
+		MySPI_EnsureLineMode(config, 3U, MYSPI_LINE_MODE_INPUT_PULLUP);
 		API_GPIO_Write(config->csPort, config->csPin, 1U);
 		API_GPIO_Write(config->sckPort, config->sckPin, 0U);
 	}

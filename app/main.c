@@ -57,11 +57,11 @@ int main(void)
 	// MySPI_Init();						/* 软件 SPI 初始化 */
 	App_I2C_ScanOnce();						/* 开机执行一次 I2C 扫描 */
 	// App_SPI_TestOnce();					/* 开机执行一次 SPI 测试 */
- 
+
 /*BSP硬件抽象层初始化*/
 	LED_Init(LED_LOW); // 初始化LED-低电平
 	KEY_Init(); // 初始化按键
-	OLED_Init(OLED_IF_I2C);		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
+	OLED_Init(OLED_IF_SPI);		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
 	MPU_Init();
 	uint8_t mpu6050_dma_int = mpu_dmp_init();
 	usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
@@ -73,7 +73,7 @@ int main(void)
 		// Delay_ms(500U);
 		// LED_Control(LED1, LED_LOW);
 		// Delay_ms(500U);
-		// LED_Turn(LED1, 500); /* LED1 翻转闪烁，周期 1000ms */
+		// LED_Turn(LED1, 500); /* LED1 翻转闪烁，周期 500ms */
 
 /* KEY测试 Key 0变成1 */
 		// key_Get();
@@ -101,10 +101,12 @@ int main(void)
 		// Delay_ms(20U);
 		// mpu_dmp_get_data(&Pitch, &Roll, &Yaw);
 		// MPU_Get_Gyroscope(&gyrox,&gyroy,&gyroz);  // 读取角速度
+
+/* 串口数据打印 */
 		if (print_task_flag != 0U)
 		{
 			print_task_flag = 0U;
-			usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
+			// usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
 			// usart_printf(USART1, "GyroX=%d GyroY=%d GyroZ=%d\r\n", gyrox, gyroy, gyroz);
 		}
 	}
