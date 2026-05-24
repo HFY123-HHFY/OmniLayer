@@ -49,6 +49,9 @@ typedef enum
 	I2C_SPEED_400K
 } I2C_SpeedTypeDef;
 
+/* 统一 ACK 等待超时轮次，三平台共用。 */
+#define MYI2C_ACK_TIMEOUT_COUNT (16U)
+
 /* 注册板级 I2C 配置表。 */
 void MyI2C_Register(const MyI2C_Config_t *configTable, uint8_t count);
 /* 选择当前操作的软件 I2C 总线。 */

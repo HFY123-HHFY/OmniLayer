@@ -22,7 +22,10 @@ static uint32_t G3507_GetMclkHz(void)
 
 	if (DL_SYSCTL_getMCLKSource() == DL_SYSCTL_MCLK_SOURCE_HSCLK)
 	{
-		/* 目前工程未切 HSCLK，保守按 32MHz 处理。 */
+		if (DL_SYSCTL_getHSCLKSource() == DL_SYSCTL_HSCLK_SOURCE_SYSPLL)
+		{
+			return 80000000UL;
+		}
 		return 32000000UL;
 	}
 

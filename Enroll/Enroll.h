@@ -25,7 +25,7 @@
 
 /* 默认MCU */
 #ifndef ENROLL_MCU_TARGET
-#define ENROLL_MCU_TARGET  ENROLL_MCU_F103
+#define ENROLL_MCU_TARGET  ENROLL_MCU_G3507
 #endif
 
 /*
@@ -94,6 +94,9 @@ void Enroll_MPU6050_Register(void);
 #endif
 
 #endif /* __ENROLL_H */
+
+
+
 
 
 

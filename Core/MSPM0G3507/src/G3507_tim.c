@@ -1,10 +1,11 @@
 #include "G3507_tim.h"
 
+#include "sys.h"
+
 #include "ti/driverlib/dl_timerg.h"
 #include "ti/devices/msp/m0p/mspm0g350x.h"
 
 #define G3507_TIM_TICK_HZ             (1000000UL)
-#define G3507_TIM_PRESCALE            (31U)
 #define G3507_TIM_ISR_MASK            (DL_TIMERG_INTERRUPT_ZERO_EVENT)
 
 typedef struct
@@ -62,6 +63,7 @@ void G3507_TIM_PeriodicInit(uint8_t timId, uint32_t periodMs)
 	G3507_TIM_Map_t map;
 	DL_TimerG_ClockConfig clockConfig;
 	DL_TimerG_TimerConfig timerConfig;
+	uint32_t busClkHz;
 	uint32_t periodTicks;
 
 	if (periodMs == 0U)
@@ -86,10 +88,36 @@ void G3507_TIM_PeriodicInit(uint8_t timId, uint32_t periodMs)
 
 	clockConfig.clockSel = DL_TIMER_CLOCK_BUSCLK;
 	clockConfig.divideRatio = DL_TIMER_CLOCK_DIVIDE_1;
-	clockConfig.prescale = (uint8_t)G3507_TIM_PRESCALE;
+	busClkHz = SYS_GetBusClkHz();
+	if (busClkHz == 0UL)
+	{
+		busClkHz = 32000000UL;
+	}
+
+	if (busClkHz < G3507_TIM_TICK_HZ)
+	{
+		clockConfig.prescale = 0U;
+		periodTicks = periodMs * (busClkHz / 1000UL);
+	}
+	else
+	{
+		uint32_t prescale;
+		prescale = (busClkHz / G3507_TIM_TICK_HZ);
+		if (prescale == 0UL)
+		{
+			prescale = 1UL;
+		}
+		if (prescale > 256UL)
+		{
+			prescale = 256UL;
+		}
+
+		clockConfig.prescale = (uint8_t)(prescale - 1UL);
+		periodTicks = (periodMs * (G3507_TIM_TICK_HZ / 1000UL));
+	}
+
 	DL_TimerG_setClockConfig(map.regs, &clockConfig);
 
-	periodTicks = (periodMs * (G3507_TIM_TICK_HZ / 1000UL));
 	if (periodTicks == 0UL)
 	{
 		periodTicks = 1UL;

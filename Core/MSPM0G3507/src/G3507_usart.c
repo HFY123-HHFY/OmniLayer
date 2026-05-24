@@ -1,7 +1,8 @@
 #include "G3507_usart.h"
 
+#include "sys.h"
+
 #include "ti/driverlib/dl_gpio.h"
-#include "ti/driverlib/m0p/dl_sysctl.h"
 #include "ti/driverlib/dl_uart_main.h"
 #include "ti/devices/msp/m0p/mspm0g350x.h"
 
@@ -39,55 +40,12 @@ static G3507_USART_Map_t G3507_USART_GetMap(uint8_t usartId)
 	return map;
 }
 
-/* 与 Delay 层保持一致，按当前时钟树估算 MCLK。 */
-static uint32_t G3507_USART_GetMclkHz(void)
-{
-	uint32_t sourceHz;
-	uint32_t divider;
-
-	if (DL_SYSCTL_getMCLKSource() == DL_SYSCTL_MCLK_SOURCE_LFCLK)
-	{
-		return 32768UL;
-	}
-
-	if (DL_SYSCTL_getMCLKSource() == DL_SYSCTL_MCLK_SOURCE_HSCLK)
-	{
-		return 32000000UL;
-	}
-
-	if (DL_SYSCTL_getCurrentSYSOSCFreq() == DL_SYSCTL_SYSOSC_FREQ_4M)
-	{
-		sourceHz = 4000000UL;
-	}
-	else
-	{
-		sourceHz = 32000000UL;
-	}
-
-	divider = (uint32_t)DL_SYSCTL_getMCLKDivider();
-	if (divider == (uint32_t)DL_SYSCTL_MCLK_DIVIDER_DISABLE)
-	{
-		divider = 1UL;
-	}
-	else
-	{
-		divider += 1UL;
-	}
-
-	if (divider == 0UL)
-	{
-		divider = 1UL;
-	}
-
-	return (sourceHz / divider);
-}
-
 void G3507_USART_Init(uint8_t usartId, uint32_t baudRate)
 {
 	G3507_USART_Map_t map;
 	DL_UART_Main_ClockConfig clockConfig;
 	DL_UART_Main_Config uartConfig;
-	uint32_t mclkHz;
+	uint32_t busClkHz;
 
 	map = G3507_USART_GetMap(usartId);
 	if ((map.regs == 0) || (baudRate == 0UL))
@@ -118,8 +76,12 @@ void G3507_USART_Init(uint8_t usartId, uint32_t baudRate)
 	uartConfig.stopBits = DL_UART_MAIN_STOP_BITS_ONE;
 	DL_UART_Main_init(map.regs, &uartConfig);
 
-	mclkHz = G3507_USART_GetMclkHz();
-	DL_UART_Main_configBaudRate(map.regs, mclkHz, baudRate);
+	busClkHz = SYS_GetBusClkHz();
+	if (busClkHz == 0UL)
+	{
+		busClkHz = 32000000UL;
+	}
+	DL_UART_Main_configBaudRate(map.regs, busClkHz, baudRate);
 
 	DL_UART_Main_enableInterrupt(map.regs, DL_UART_MAIN_INTERRUPT_RX);
 	DL_UART_Main_enable(map.regs);

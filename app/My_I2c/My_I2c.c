@@ -16,7 +16,7 @@ static volatile I2C_SpeedTypeDef s_i2cSpeed = I2C_SPEED_100K;
 typedef enum
 {
 	MYI2C_LINE_MODE_UNKNOWN = 0,
-	MYI2C_LINE_MODE_OUTPUT_LOW,
+	MYI2C_LINE_MODE_OUTPUT_DRIVE,
 	MYI2C_LINE_MODE_INPUT_PULLUP
 } MyI2C_LineMode_t;
 
@@ -64,32 +64,24 @@ static void MyI2C_DriveLine(const MyI2C_Config_t *config, uint8_t isScl, uint8_t
 	}
 
 	pin = (isScl != 0U) ? config->sclPin : config->sdaPin;
-	targetMode = (level != 0U) ? MYI2C_LINE_MODE_INPUT_PULLUP : MYI2C_LINE_MODE_OUTPUT_LOW;
 
-	if ((lineMode != 0) && (*lineMode == targetMode))
-	{
-		if (targetMode == MYI2C_LINE_MODE_OUTPUT_LOW)
-		{
-			API_GPIO_Write(config->port, pin, 0U);
-		}
-		return;
-	}
-
-	if (targetMode == MYI2C_LINE_MODE_INPUT_PULLUP)
-	{
-		API_GPIO_InitInputPullUp(config->port, pin);
-	}
-	else
+	/*
+	 * 统一快速路径：发送阶段 SCL/SDA 使用输出模式驱动高低电平，
+	 * 仅在读 ACK/读数据时切 SDA 为输入上拉，避免每个 bit 都重配 GPIO 模式。
+	 */
+	targetMode = MYI2C_LINE_MODE_OUTPUT_DRIVE;
+	if ((lineMode == 0) || (*lineMode != targetMode))
 	{
 		API_GPIO_InitOutput(config->port, pin);
-		API_GPIO_Write(config->port, pin, 0U);
 	}
+	API_GPIO_Write(config->port, pin, (level != 0U) ? 1U : 0U);
 
 	if (lineMode != 0)
 	{
 		*lineMode = targetMode;
 		state->valid = 1U;
 	}
+	return;
 }
 
 /*
@@ -304,6 +296,7 @@ uint8_t MyI2C_R_SDA(void) // 读SDA
 void MyI2C_Set_SDA_Input(void) // 设置SDA为输入模式
 {
 	const MyI2C_Config_t *config;
+	MyI2C_LineState_t *state;
 
 	config = MyI2C_GetConfig();
 	if (config == 0)
@@ -311,7 +304,14 @@ void MyI2C_Set_SDA_Input(void) // 设置SDA为输入模式
 		return;
 	}
 
-	MyI2C_DriveLine(config, 0U, 1U);
+	API_GPIO_InitInputPullUp(config->port, config->sdaPin);
+
+	state = MyI2C_GetLineStateById((MyI2C_BusId_t)config->id);
+	if (state != 0)
+	{
+		state->sdaMode = MYI2C_LINE_MODE_INPUT_PULLUP;
+		state->valid = 1U;
+	}
 }
 
 /*
@@ -368,16 +368,15 @@ void MyI2C_Stop(void) // I2C停止
  */
 uint8_t MyI2C_Wait_Ack(void) // 等待应答信号到来
 {
-	uint8_t ErrTime = 0;
+	uint16_t ErrTime = 0U;
 	MyI2C_Set_SDA_Input();
-	MyI2C_W_SDA(1);
 	MyI2C_DelayByBaseUs(1U);
 	MyI2C_W_SCL(1);
 	MyI2C_DelayByBaseUs(1U);
 	while (MyI2C_R_SDA())
 	{
 		ErrTime++;
-		if (ErrTime > 250)
+		if (ErrTime > MYI2C_ACK_TIMEOUT_COUNT)
 		{
 			MyI2C_Stop();
 			return 1; // 超时未响应
