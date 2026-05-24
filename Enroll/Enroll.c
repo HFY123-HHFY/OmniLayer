@@ -115,7 +115,7 @@ static const API_EXTI_Config_t s_mpuExtiTable[] =
 	{ 0U, HW_MPU6050_INT_PORT, HW_MPU6050_INT_PIN }
 };
 
-#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+#if (HW_TB6612_COUNT > 0U)
 #define ENROLL_TB6612_ITEM(ain1Port, ain1Pin, ain2Port, ain2Pin, bin1Port, bin1Pin, bin2Port, bin2Pin) \
 	{ ain1Port, ain1Pin, ain2Port, ain2Pin, bin1Port, bin1Pin, bin2Port, bin2Pin },
 
@@ -222,9 +222,9 @@ void Enroll_MPU6050_Register(void)
 
 void Enroll_TB6612_Register(void)
 {
-	#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+	#if (HW_TB6612_COUNT > 0U)
 	TB6612_Register(s_tb6612Table, HW_TB6612_COUNT);
 	#else
-	/* 非 G3507 平台当前未接入 TB6612。 */
+	/* 当前板级未接入 TB6612，保留空实现以维持统一调用流程。 */
 	#endif
 }

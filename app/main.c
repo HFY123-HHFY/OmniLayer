@@ -23,7 +23,7 @@
 #include "OLED.h"
 #include "MPU6050.h"
 #include "MPU6050_Int.h"
-#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+#if (HW_TB6612_COUNT > 0U)
 #include "TB6612.h"
 #endif
 
@@ -51,9 +51,6 @@ int main(void)
 
 /* 初始化层：初始化相关外设，启动硬件功能 */
 	API_USART_Init(API_USART1, 115200U); // 初始化 USART1，波特率 115200
-	#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
-	TB6612_Init();
-	#endif
 	/* PWM 初始化示例:
 	 * G3507: API_PWM_TIM1 -> 10kHz, ARR=400-1, PSC=8-1
 	 * F103 : API_PWM_TIM2 -> 1kHz,  ARR=100-1, PSC=720-1
@@ -76,7 +73,9 @@ int main(void)
 	MPU_Init();
 	uint8_t mpu6050_dma_int = mpu_dmp_init();
 	usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
+	#if (HW_TB6612_COUNT > 0U)
 	TB6612_Init(); /* TB6612 电机驱动初始化 */
+	#endif
 
 	while (1)
 	{

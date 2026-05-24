@@ -137,6 +137,9 @@ LED1 绿 LED2 红 LED3 蓝
 #define HW_MPU6050_INT_PORT             GPIOE
 #define HW_MPU6050_INT_PIN              GPIO_Pin_7
 
+/* TB6612 板级映射占位：当前 F407 未接入，保留接口以便后续扩展。 */
+#define HW_TB6612_MAP(X)
+
 /* 当前板子上注册了 3 个 LED */
 #define HW_LED_COUNT  3U
 
@@ -165,5 +168,7 @@ LED1 绿 LED2 红 LED3 蓝
 #define HW_OLED_SPI_CTRL_COUNT  1U
 /* 当前板子上注册了 1 组 NRF24L01 控制引脚 */
 #define HW_NRF24L01_CTRL_COUNT  1U
+/* 当前板子上未注册 TB6612 电机驱动 */
+#define HW_TB6612_COUNT 0U
 
 #endif /* __407_HW_CONFIG_H */
