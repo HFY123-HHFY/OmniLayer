@@ -23,6 +23,7 @@ void SYS_Init(void);
 /* 时钟查询接口（主要供 G3507 运行时校验）。 */
 uint32_t SYS_GetMclkHz(void);
 uint32_t SYS_GetBusClkHz(void);
+uint32_t SYS_GetResetCause(void);
 
 /* EXTI 公共辅助：线号计算、IRQ 映射、线组判断。 */
 uint8_t SYS_EXTI_GetLineIndex(uint32_t pin);

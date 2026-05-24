@@ -67,13 +67,17 @@ int main(void)
 	OLED_Init(OLED_IF_I2C);		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
 	MPU_Init();
 	uint8_t mpu6050_dma_int = mpu_dmp_init();
-	usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
+	usart_printf(USART1, "mpu6050_dma_int= %d\r\n rst=0x%02lx mclk=%lu busclk=%lu\r\n",
+		mpu6050_dma_int,
+		SYS_GetResetCause(),
+		SYS_GetMclkHz(),
+		SYS_GetBusClkHz());
 
 	while (1)
 	{
-		static uint8_t oled_refresh_div = 0U;
+		// static uint8_t oled_refresh_div = 0U;
 /* LED和延时测试 */
-		// LED_Control(LED1, LED_HIGH);
+		LED_Control(LED1, LED_HIGH);
 		// Delay_ms(500U);
 		// LED_Control(LED1, LED_LOW);
 		// Delay_ms(500U);
@@ -95,7 +99,7 @@ int main(void)
 
 /* MPU6050测试 */
 		mpu_angle();
-		// Delay_ms(20U);
+		// Delay_ms(10U);
 		// mpu_dmp_get_data(&Pitch, &Roll, &Yaw);
 		// MPU_Get_Gyroscope(&gyrox,&gyroy,&gyroz);  // 读取角速度
 
@@ -103,22 +107,22 @@ int main(void)
 		if (print_task_flag != 0U)
 		{
 			print_task_flag = 0U;
-			usart_printf(USART1, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
-			// usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
+			// usart_printf(USART1, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
+			usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
 			// usart_printf(USART1, "GyroX=%d GyroY=%d GyroZ=%d\r\n", gyrox, gyroy, gyroz);
 		}
 
-		/* OLED测试：按节拍刷新，避免主循环全速全屏刷新。 */
-		oled_refresh_div++;
-		if (oled_refresh_div >= 10U)
-		{
-			oled_refresh_div = 0U;
-			OLED_ClearArea(0, 0, 128, 64);
-			OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
-			OLED_Printf(0, 16, OLED_8X16, "Pitch: %.1f", Pitch);
-			OLED_Printf(0, 32, OLED_8X16, "Roll: %.1f", Roll);
-			OLED_Printf(0, 48, OLED_8X16, "Yaw: %.1f", Yaw);
-			OLED_Update();
-		}
+/* OLED测试 */
+		// oled_refresh_div++;
+		// if (oled_refresh_div >= 10U)
+		// {
+		// 	oled_refresh_div = 0U;
+		// 	OLED_ClearArea(0, 0, 128, 64);
+		// 	OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
+		// 	OLED_Printf(0, 16, OLED_8X16, "Pitch: %.1f", Pitch);
+		// 	OLED_Printf(0, 32, OLED_8X16, "Roll: %.1f", Roll);
+		// 	OLED_Printf(0, 48, OLED_8X16, "Yaw: %.1f", Yaw);
+		// 	OLED_Update();
+		// }
 	}
 }

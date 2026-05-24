@@ -2,12 +2,162 @@
 
 #if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
 #include "ti/devices/msp/m0p/mspm0g350x.h"
+#include "ti/driverlib/dl_common.h"
+#include "ti/driverlib/m0p/dl_core.h"
 #include "ti/driverlib/m0p/dl_sysctl.h"
 
 /* G3507 时钟策略：默认启用 SYSPLL 提升到 80MHz。 */
 #ifndef G3507_ENABLE_PLL80
 #define G3507_ENABLE_PLL80 (1U)
 #endif
+
+#define G3507_STARTUP_SETTLE_CYCLES_FAST   (80000UL)
+#define G3507_STARTUP_SETTLE_CYCLES_COLD   (400000UL)
+#define G3507_POWER_GOOD_TIMEOUT           (800000UL)
+#define G3507_PLL_LOCK_TIMEOUT             (1200000UL)
+#define G3507_HSCLK_SWITCH_TIMEOUT         (600000UL)
+
+static void G3507_BusyWaitCycles(volatile uint32_t cycles)
+{
+	while (cycles > 0UL)
+	{
+		__NOP();
+		cycles--;
+	}
+}
+
+static void G3507_WaitPowerGood(void)
+{
+	uint32_t timeout;
+	uint32_t status;
+
+	timeout = G3507_POWER_GOOD_TIMEOUT;
+	while (timeout > 0UL)
+	{
+		status = DL_SYSCTL_getStatus();
+		if ((status & (DL_SYSCTL_STATUS_PMU_IFREF_GOOD | DL_SYSCTL_STATUS_VBOOST_GOOD)) ==
+			(DL_SYSCTL_STATUS_PMU_IFREF_GOOD | DL_SYSCTL_STATUS_VBOOST_GOOD))
+		{
+			break;
+		}
+		timeout--;
+	}
+}
+
+static uint8_t G3507_WaitClockStatus(uint32_t mask, uint32_t expectValue, uint32_t timeout)
+{
+	while (timeout > 0UL)
+	{
+		if ((DL_SYSCTL_getClockStatus() & mask) == expectValue)
+		{
+			return 1U;
+		}
+		timeout--;
+	}
+
+	return 0U;
+}
+
+static uint8_t G3507_ConfigSysPll80WithTimeout(void)
+{
+	DL_SYSCTL_SYSPLLConfig pllConfig;
+	uint32_t ctlTemp;
+
+	pllConfig.rDivClk2x = 3U;
+	pllConfig.rDivClk1 = 0U;
+	pllConfig.rDivClk0 = 0U;
+	pllConfig.enableCLK2x = DL_SYSCTL_SYSPLL_CLK2X_ENABLE;
+	pllConfig.enableCLK1 = DL_SYSCTL_SYSPLL_CLK1_DISABLE;
+	pllConfig.enableCLK0 = DL_SYSCTL_SYSPLL_CLK0_DISABLE;
+	pllConfig.sysPLLMCLK = DL_SYSCTL_SYSPLL_MCLK_CLK2X;
+	pllConfig.sysPLLRef = DL_SYSCTL_SYSPLL_REF_SYSOSC;
+	pllConfig.qDiv = 4U;
+	pllConfig.pDiv = DL_SYSCTL_SYSPLL_PDIV_1;
+	pllConfig.inputFreq = DL_SYSCTL_SYSPLL_INPUT_FREQ_32_48_MHZ;
+
+	DL_SYSCTL_disableSYSPLL();
+	if (G3507_WaitClockStatus(SYSCTL_CLKSTATUS_SYSPLLOFF_MASK,
+		DL_SYSCTL_CLK_STATUS_SYSPLL_OFF,
+		G3507_PLL_LOCK_TIMEOUT) == 0U)
+	{
+		return 0U;
+	}
+
+	DL_Common_updateReg(&SYSCTL->SOCLOCK.SYSPLLCFG0,
+		(uint32_t)pllConfig.sysPLLRef,
+		SYSCTL_SYSPLLCFG0_SYSPLLREF_MASK);
+
+	DL_Common_updateReg(&SYSCTL->SOCLOCK.SYSPLLCFG1,
+		(uint32_t)pllConfig.pDiv,
+		SYSCTL_SYSPLLCFG1_PDIV_MASK);
+
+	ctlTemp = DL_CORE_getInstructionConfig();
+	DL_CORE_configInstruction(DL_CORE_PREFETCH_ENABLED,
+		DL_CORE_CACHE_DISABLED,
+		DL_CORE_LITERAL_CACHE_ENABLED);
+
+	SYSCTL->SOCLOCK.SYSPLLPARAM0 = *(volatile uint32_t *)((uint32_t)pllConfig.inputFreq);
+	SYSCTL->SOCLOCK.SYSPLLPARAM1 = *(volatile uint32_t *)((uint32_t)pllConfig.inputFreq + 4UL);
+
+	CPUSS->CTL = ctlTemp;
+
+	DL_Common_updateReg(&SYSCTL->SOCLOCK.SYSPLLCFG1,
+		((pllConfig.qDiv << SYSCTL_SYSPLLCFG1_QDIV_OFS) & SYSCTL_SYSPLLCFG1_QDIV_MASK),
+		SYSCTL_SYSPLLCFG1_QDIV_MASK);
+
+	DL_Common_updateReg(&SYSCTL->SOCLOCK.SYSPLLCFG0,
+		(((pllConfig.rDivClk2x << SYSCTL_SYSPLLCFG0_RDIVCLK2X_OFS) & SYSCTL_SYSPLLCFG0_RDIVCLK2X_MASK) |
+		((pllConfig.rDivClk1 << SYSCTL_SYSPLLCFG0_RDIVCLK1_OFS) & SYSCTL_SYSPLLCFG0_RDIVCLK1_MASK) |
+		((pllConfig.rDivClk0 << SYSCTL_SYSPLLCFG0_RDIVCLK0_OFS) & SYSCTL_SYSPLLCFG0_RDIVCLK0_MASK) |
+		pllConfig.enableCLK2x |
+		pllConfig.enableCLK1 |
+		pllConfig.enableCLK0 |
+		(uint32_t)pllConfig.sysPLLMCLK),
+		(SYSCTL_SYSPLLCFG0_RDIVCLK2X_MASK |
+		SYSCTL_SYSPLLCFG0_RDIVCLK1_MASK |
+		SYSCTL_SYSPLLCFG0_RDIVCLK0_MASK |
+		SYSCTL_SYSPLLCFG0_ENABLECLK2X_MASK |
+		SYSCTL_SYSPLLCFG0_ENABLECLK1_MASK |
+		SYSCTL_SYSPLLCFG0_ENABLECLK0_MASK |
+		SYSCTL_SYSPLLCFG0_MCLK2XVCO_MASK));
+
+	DL_SYSCTL_enableSYSPLL();
+	if (G3507_WaitClockStatus(SYSCTL_CLKSTATUS_SYSPLLGOOD_MASK,
+		DL_SYSCTL_CLK_STATUS_SYSPLL_GOOD,
+		G3507_PLL_LOCK_TIMEOUT) == 0U)
+	{
+		return 0U;
+	}
+
+	return 1U;
+}
+
+static uint8_t G3507_SwitchMclkToSysPll80(void)
+{
+	uint32_t timeout;
+
+	DL_SYSCTL_setHSCLKSource(DL_SYSCTL_HSCLK_SOURCE_SYSPLL);
+	if (G3507_WaitClockStatus(SYSCTL_CLKSTATUS_HSCLKGOOD_MASK,
+		DL_SYSCTL_CLK_STATUS_HSCLK_GOOD,
+		G3507_HSCLK_SWITCH_TIMEOUT) == 0U)
+	{
+		return 0U;
+	}
+
+	SYSCTL->SOCLOCK.MCLKCFG |= SYSCTL_MCLKCFG_USEHSCLK_ENABLE;
+
+	timeout = G3507_HSCLK_SWITCH_TIMEOUT;
+	while (timeout > 0UL)
+	{
+		if (DL_SYSCTL_getMCLKSource() == DL_SYSCTL_MCLK_SOURCE_HSCLK)
+		{
+			return 1U;
+		}
+		timeout--;
+	}
+
+	return 0U;
+}
 #endif
 
 /* EXTI 线到 NVIC 中断通道映射。 */
@@ -38,11 +188,29 @@ void SYS_Init(void)
 {
 	#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
 	static uint8_t s_clockInited = 0U;
+	DL_SYSCTL_RESET_CAUSE resetCause;
 
 	if (s_clockInited != 0U)
 	{
 		return;
 	}
+
+	resetCause = DL_SYSCTL_getResetCause();
+	if ((resetCause == DL_SYSCTL_RESET_CAUSE_POR_HW_FAILURE) ||
+		(resetCause == DL_SYSCTL_RESET_CAUSE_POR_EXTERNAL_NRST) ||
+		(resetCause == DL_SYSCTL_RESET_CAUSE_POR_SW_TRIGGERED) ||
+		(resetCause == DL_SYSCTL_RESET_CAUSE_BOR_SUPPLY_FAILURE) ||
+		(resetCause == DL_SYSCTL_RESET_CAUSE_BOR_WAKE_FROM_SHUTDOWN))
+	{
+		/* 冷上电路径给模拟电源和内部基准更多稳定时间。 */
+		G3507_BusyWaitCycles(G3507_STARTUP_SETTLE_CYCLES_COLD);
+	}
+	else
+	{
+		G3507_BusyWaitCycles(G3507_STARTUP_SETTLE_CYCLES_FAST);
+	}
+
+	G3507_WaitPowerGood();
 
 	/*
 	 * G3507 时钟策略：
@@ -56,31 +224,19 @@ void SYS_Init(void)
 
 	#if (G3507_ENABLE_PLL80 != 0U)
 	{
-		DL_SYSCTL_SYSPLLConfig pllConfig;
-
 		/* MCLK 使用 HSCLK/SYSPLL 时，需要手动设置 Flash wait state。 */
 		DL_SYSCTL_setFlashWaitState(DL_SYSCTL_FLASH_WAIT_STATE_2);
 
-		/*
-		 * 目标：MCLK=80MHz
-		 * - SYSOSC=32MHz 作为 PLL 参考
-		 * - QDIV=4 (有效乘数=5) => VCO = 32 * 5 = 160MHz
-		 * - 选用 CLK2X 并 rDivClk2x=3 (÷4) => 320 / 4 = 80MHz
-		 */
-		pllConfig.rDivClk2x = 3U;
-		pllConfig.rDivClk1 = 0U;
-		pllConfig.rDivClk0 = 0U;
-		pllConfig.enableCLK2x = DL_SYSCTL_SYSPLL_CLK2X_ENABLE;
-		pllConfig.enableCLK1 = DL_SYSCTL_SYSPLL_CLK1_DISABLE;
-		pllConfig.enableCLK0 = DL_SYSCTL_SYSPLL_CLK0_DISABLE;
-		pllConfig.sysPLLMCLK = DL_SYSCTL_SYSPLL_MCLK_CLK2X;
-		pllConfig.sysPLLRef = DL_SYSCTL_SYSPLL_REF_SYSOSC;
-		pllConfig.qDiv = 4U;
-		pllConfig.pDiv = DL_SYSCTL_SYSPLL_PDIV_1;
-		pllConfig.inputFreq = DL_SYSCTL_SYSPLL_INPUT_FREQ_32_48_MHZ;
+		if ((G3507_ConfigSysPll80WithTimeout() == 0U) ||
+			(G3507_SwitchMclkToSysPll80() == 0U))
+		{
+			/* 强制策略：80MHz 初始化失败则立即系统复位重试，不回退 32MHz。 */
+			DL_SYSCTL_resetDevice(DL_SYSCTL_RESET_SYSRST);
+			while (1)
+			{
+			}
+		}
 
-		DL_SYSCTL_configSYSPLL(&pllConfig);
-		DL_SYSCTL_switchMCLKfromSYSOSCtoHSCLK(DL_SYSCTL_HSCLK_SOURCE_SYSPLL);
 		DL_SYSCTL_setULPCLKDivider(DL_SYSCTL_ULPCLK_DIV_2);
 	}
 	#endif
@@ -164,6 +320,15 @@ uint32_t SYS_GetBusClkHz(void)
 		return (mclkHz / 3UL);
 	}
 	return mclkHz;
+	#else
+	return 0UL;
+	#endif
+}
+
+uint32_t SYS_GetResetCause(void)
+{
+	#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+	return (uint32_t)DL_SYSCTL_getResetCause();
 	#else
 	return 0UL;
 	#endif
