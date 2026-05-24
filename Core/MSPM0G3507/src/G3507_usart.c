@@ -1,6 +1,6 @@
 #include "G3507_usart.h"
 
-#include "sys.h"
+#include "G3507_sys.h"
 
 #include "ti/driverlib/dl_gpio.h"
 #include "ti/driverlib/dl_uart_main.h"
@@ -76,7 +76,7 @@ void G3507_USART_Init(uint8_t usartId, uint32_t baudRate)
 	uartConfig.stopBits = DL_UART_MAIN_STOP_BITS_ONE;
 	DL_UART_Main_init(map.regs, &uartConfig);
 
-	busClkHz = SYS_GetBusClkHz();
+	busClkHz = G3507_SYS_GetBusClkHz();
 	if (busClkHz == 0UL)
 	{
 		busClkHz = 32000000UL;

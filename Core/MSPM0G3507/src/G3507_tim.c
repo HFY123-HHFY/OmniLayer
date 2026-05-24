@@ -1,6 +1,6 @@
 #include "G3507_tim.h"
 
-#include "sys.h"
+#include "G3507_sys.h"
 
 #include "ti/driverlib/dl_timerg.h"
 #include "ti/devices/msp/m0p/mspm0g350x.h"
@@ -88,7 +88,7 @@ void G3507_TIM_PeriodicInit(uint8_t timId, uint32_t periodMs)
 
 	clockConfig.clockSel = DL_TIMER_CLOCK_BUSCLK;
 	clockConfig.divideRatio = DL_TIMER_CLOCK_DIVIDE_1;
-	busClkHz = SYS_GetBusClkHz();
+	busClkHz = G3507_SYS_GetBusClkHz();
 	if (busClkHz == 0UL)
 	{
 		busClkHz = 32000000UL;

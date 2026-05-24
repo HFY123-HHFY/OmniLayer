@@ -41,7 +41,7 @@ void Control_Task_TIM_Callback(API_TIM_Id_t id)
 		// pid_task_flag = 1U;
 	}
 
-	if (printf_tick >= 20U)
+	if (printf_tick >= 50U)
 	{
 		printf_tick = 0U;
 		print_task_flag = 1U;

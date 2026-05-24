@@ -244,6 +244,7 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "G3507")
     # G3507 专属 MCU 驱动实现
     set(MCU_SOURCES
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/G3507_delay.c
+        ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/G3507_sys.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_adc.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_exti.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_gpio.c
