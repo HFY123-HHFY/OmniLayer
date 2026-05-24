@@ -26,6 +26,9 @@
 #include "OLED.h"
 #include "exti.h"
 #include "MPU6050_Int.h"
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+#include "TB6612.h"
+#endif
 
 #include <stddef.h>
 

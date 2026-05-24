@@ -115,6 +115,17 @@ static const API_EXTI_Config_t s_mpuExtiTable[] =
 	{ 0U, HW_MPU6050_INT_PORT, HW_MPU6050_INT_PIN }
 };
 
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+#define ENROLL_TB6612_ITEM(ain1Port, ain1Pin, ain2Port, ain2Pin, bin1Port, bin1Pin, bin2Port, bin2Pin) \
+	{ ain1Port, ain1Pin, ain2Port, ain2Pin, bin1Port, bin1Pin, bin2Port, bin2Pin },
+
+static const TB6612_Config_t s_tb6612Table[] =
+{
+	HW_TB6612_MAP(ENROLL_TB6612_ITEM)
+};
+#undef ENROLL_TB6612_ITEM
+#endif
+
 /****************************** API资源注册层 ************************/
 /* PWM 注册：登记板级 PWM 资源表。 */
 void Enroll_PWM_Register(void)
@@ -207,4 +218,13 @@ void Enroll_MPU6050_Register(void)
 	API_EXTI_AddIrqHandler(s_mpuExtiTable[0].id, (API_EXTI_IrqHandler_t)MPU6050_EXTI_Callback, NULL);
 	/* API_EXTI_AddIrqHandler(s_mpuExtiTable[0].id, Other_EXTI_Callback, userPtr); */
 	API_EXTI_Init(s_mpuExtiTable[0].id, API_EXTI_TRIGGER_RISING, 0U, 2U);
+}
+
+void Enroll_TB6612_Register(void)
+{
+	#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+	TB6612_Register(s_tb6612Table, HW_TB6612_COUNT);
+	#else
+	/* 非 G3507 平台当前未接入 TB6612。 */
+	#endif
 }

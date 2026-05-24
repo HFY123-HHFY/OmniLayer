@@ -5,6 +5,7 @@
 #include "KEY.h"
 #include "My_I2c.h"
 #include "My_SPI.h"
+#include "TB6612.h"
 #include "pwm.h"
 #include "usart.h"
 #include "tim.h"
@@ -135,6 +136,22 @@
 #define HW_MPU6050_INT_PIN   DL_GPIO_PIN_4
 #define HW_MPU6050_INT_IOMUX IOMUX_PINCM17
 
+/* TB6612 板级映射：PWMA=PA16(TIMA1 CCP1), PWMB=PA17(TIMA1 CCP0), AIN1=PA14, AIN2=PA15, BIN1=PA12, BIN2=PA13。 */
+#define HW_TB6612_AIN1_PORT   GPIOA
+#define HW_TB6612_AIN1_PIN    DL_GPIO_PIN_14
+#define HW_TB6612_AIN2_PORT   GPIOA
+#define HW_TB6612_AIN2_PIN    DL_GPIO_PIN_15
+#define HW_TB6612_BIN1_PORT   GPIOA
+#define HW_TB6612_BIN1_PIN    DL_GPIO_PIN_12
+#define HW_TB6612_BIN2_PORT   GPIOA
+#define HW_TB6612_BIN2_PIN    DL_GPIO_PIN_13
+
+#define HW_TB6612_MAP(X) \
+    X(HW_TB6612_AIN1_PORT, HW_TB6612_AIN1_PIN, \
+      HW_TB6612_AIN2_PORT, HW_TB6612_AIN2_PIN, \
+      HW_TB6612_BIN1_PORT, HW_TB6612_BIN1_PIN, \
+      HW_TB6612_BIN2_PORT, HW_TB6612_BIN2_PIN)
+
 #define HW_LED_COUNT    1U
 /* 当前板子上注册了 1 个按键 */
 #define HW_KEY_COUNT    1U
@@ -155,5 +172,7 @@
 #define HW_OLED_SPI_CTRL_COUNT  1U
 /* 当前板子上注册了 1 路 MPU6050 INT 引脚 */
 #define HW_MPU6050_COUNT 1U
+/* 当前板子上注册了 1 路 TB6612 电机驱动 */
+#define HW_TB6612_COUNT 1U
 
 #endif /* __G3507_HW_CONFIG_H */

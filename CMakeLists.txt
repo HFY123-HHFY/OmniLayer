@@ -232,10 +232,15 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "G3507")
     set(MCU_CPU_FLAGS -mcpu=cortex-m0plus -mthumb)
     set(MCU_FPU_FLAGS)
     set(MCU_DEFINITIONS __MSPM0G3507__)
+    # G3507 专属 BSP（独立维护，不与其他 MCU 合并）
+    list(APPEND BSP_LAYER_SOURCES
+        ${CMAKE_SOURCE_DIR}/BSP/TB6612/TB6612.c
+    )
     # G3507 专属头文件目录和源文件
     set(MCU_INCLUDE_DIRS
         ${COMMON_INCLUDE_DIRS}
         ${BSP_COMMON_INCLUDE_DIRS}
+        ${CMAKE_SOURCE_DIR}/BSP/TB6612
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/inc
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_M0G3507/source
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_M0G3507/source/ti/devices/msp/m0p
