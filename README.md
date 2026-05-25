@@ -71,11 +71,11 @@ OmniLayer/
 │  ├─ Drivers_STM32F4/
 │  └─ Drivers_MSPM0G3507/
 ├─ Enroll/                     # 硬件资源注册与板级映射（103/407/G3507_hw_config）
-├─ Middlewares/                # 中间件（FreeRTOS、USB 等）
+├─ Middlewares/                # 中间件（FreeRTOS、USB协议 等）
 ├─ OpenOCD/                    # 下载配置（F103/F407/G3507）
 ├─ SYSTEM/                     # 系统级初始化（时钟/中断/系统配置）
 ├─ MDK_ARM/                    # Keil 工程（保留兼容开发习惯）
-├─ build/                      # 构建输出目录（Debug/F103/F407...）
+├─ build/                      # 构建输出目录（Debug/F103/F407/G3507...）
 ├─ CMakeLists.txt              # 统一构建入口
 ├─ CMakePresets.json           # 构建预设
 └─ gcc-arm-none-eabi.cmake     # GCC ARM 交叉编译工具链

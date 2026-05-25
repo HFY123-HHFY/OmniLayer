@@ -17,7 +17,7 @@ typedef enum
 
 #define SYS_EXTI_INVALID_IRQN (0xFFFFFFFFUL)
 
-/* 系统层初始化：保留为系统入口，当前不做默认中断注册。 */
+/* 系统层初始化 */
 void SYS_Init(void);
 
 /* EXTI 公共辅助：线号计算、IRQ 映射、线组判断。 */

@@ -158,6 +158,7 @@ static uint8_t G3507_SwitchMclkToSysPll80(void)
 	return 0U;
 }
 
+/* 初始化系统时钟 - 设置G3507主频为80MHz 且保证断电在上电能自动复位启动程序 */
 void G3507_SYS_Init(void)
 {
 	static uint8_t s_clockInited = 0U;
