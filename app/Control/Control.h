@@ -18,10 +18,6 @@ extern "C" {
 /* PID 输出加载到电机前的总限幅。 */
 #define MOTOR_MIX_LIMIT (2047.0f)
 
-/* PID 主开关：1 开，0 关。 */
-extern uint8_t pid_flag;
-/* PID 计算开关：1 允许计算，0 跳过计算。 */
-extern uint8_t pid_enabled;
 /* PID 任务节拍标志：由定时中断置位。 */
 extern uint8_t pid_task_flag;
 
@@ -29,13 +25,11 @@ extern uint8_t pid_task_flag;
 extern float Target_Pitch;
 extern float Target_Roll;
 extern float Target_Yaw;
-extern float Target_Alt;
 
-/* 外环 PID：角度/高度。 */
+/* 外环 PID：角度。 */
 extern PID_TypeDef pid_pitch;
 extern PID_TypeDef pid_roll;
 extern PID_TypeDef pid_yaw;
-extern PID_TypeDef pid_alt;
 
 /* 内环 PID：角速度。 */
 extern PID_TypeDef pid_rate_pitch;

@@ -3,7 +3,7 @@
 #include "tim.h"
 #include "usart.h"
 #include "My_Usart/My_Usart.h"
-// #include "Control/Control.h"
+#include "Control/Control.h"
 
 /* 程序运行的时间戳（s） */
 uint32_t Timer_Bsp_t = 0;
@@ -38,7 +38,7 @@ void Control_Task_TIM_Callback(API_TIM_Id_t id)
 	if (pid_2ms_tick >= 2U)
 	{
 		pid_2ms_tick = 0U;
-		// pid_task_flag = 1U;
+		pid_task_flag = 1U;
 	}
 
 	if (printf_tick >= 50U)

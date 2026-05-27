@@ -13,12 +13,12 @@ extern "C" {
 /*
  * PID 模式：
  * 1) 位置式：输出为当前时刻绝对控制量
- * 2) 增量式：输出为增量累加，适合部分执行器
+ * 2) 增量式：输出为增量累加
  */
 typedef enum
 {
-	PID_MODE_POSITION = 0,
-	PID_MODE_INCREMENTAL = 1
+	PID_MODE_POSITION = 0, /* 位置式 PID */
+	PID_MODE_INCREMENTAL = 1 /* 增量式 PID */
 } PID_Mode_t;
 
 /*
@@ -88,13 +88,10 @@ typedef struct
  */
 float Limit_Output(float value, float max);
 
-/*
- * 初始化 PID（含默认安全参数）。
- * 用法示例：
- *   PID_TypeDef pid_pitch;
- *   PID_Init(&pid_pitch, 2.0f, 0.1f, 0.02f);
- */
-void PID_Init(PID_TypeDef* pid, float kp, float ki, float kd);
+/* 初始化 PID（参数 + 采样周期 + 运行态清零）。 */
+void PID_Init(PID_TypeDef* pid);
+/* PID 限幅初始化：Integral_max / Out_max。 */
+void PID_Init_WithLimit(PID_TypeDef* pid,float Integral_max, float Out_max);
 
 /*
  * 复位 PID 内部状态（不改 kp/ki/kd 与配置）。
@@ -113,27 +110,26 @@ void PID_Enable(PID_TypeDef* pid, uint8_t enable);
  */
 void PID_SetMode(PID_TypeDef* pid, PID_Mode_t mode);
 
-/* 设置目标值。 */
+/* 设置目标值 */
 void PID_SetTarget(PID_TypeDef* pid, float target);
 /* 设置误差死区。 */
 void PID_SetDeadband(PID_TypeDef* pid, float deadband);
-/* 设置默认采样周期(s)。 */
+/* 设置默认采样周期(s) */
 void PID_SetSampleTime(PID_TypeDef* pid, float dt);
 /* 设置输出限幅。 */
 void PID_SetOutputLimit(PID_TypeDef* pid, float out_max);
-/* 设置积分限幅。 */
+/* 设置积分限幅 */
 void PID_SetIntegralLimit(PID_TypeDef* pid, float integral_max);
-/* 设置积分分离阈值。 */
+/* 设置积分分离阈值 */
 void PID_SetIntegralSeparation(PID_TypeDef* pid, float threshold);
-/* 设置微分低通系数 alpha。 */
+/* 设置微分低通系数 alpha */
 void PID_SetDerivativeLPF(PID_TypeDef* pid, float alpha);
-/* 设置抗积分饱和开关。 */
+/* 设置抗积分饱和开关 */
 void PID_SetAntiWindup(PID_TypeDef* pid, uint8_t enable);
-
-/*
- * 设置 kp/ki/kd。
- */
+/* 设置 kp/ki/kd */
 void Set_PID(PID_TypeDef* pid, float kp, float ki, float kd);
+/* 设置PID参数和目标值 */
+void PID_ConfigAll(PID_TypeDef* pid,float kp,float ki,float kd,float target);
 
 /*
  * 使用 pid->dt 进行一次 PID 计算。

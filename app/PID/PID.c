@@ -32,18 +32,18 @@ float Limit_Output(float value, float max)
 
 /*
  * PID 初始化。
- * 该函数会把运行态清零，并给出一组保守默认值，避免未初始化使用。
+ * 
  */
-void PID_Init(PID_TypeDef* pid, float kp, float ki, float kd)
+void PID_Init(PID_TypeDef* pid)
 {
 	if (pid == 0)
 	{
 		return;
 	}
 
-	pid->kp = kp;
-	pid->ki = ki;
-	pid->kd = kd;
+	pid->kp = 0.0f;
+	pid->ki = 0.0f;
+	pid->kd = 0.0f;
 
 	pid->Target = 0.0f;
 	pid->Actual = 0.0f;
@@ -58,18 +58,27 @@ void PID_Init(PID_TypeDef* pid, float kp, float ki, float kd)
 	pid->error2 = 0.0f;
 	pid->error_sum = 0.0f;
 
-	pid->Integral_max = 1000.0f;
-	pid->Out_max = 2047.0f;
+	pid->dt = 0.002f; /* 默认采样周期 */
+	pid->deadband = 0.2f; /* 死区 */
+	pid->integral_separation = 0.0f; /* 积分分离阈值 */
+	pid->d_lpf_alpha = 0.35f; /* 微分低通滤波系数 */
+	pid->d_filter_state = 0.0f; /* 微分低通滤波内部状态 */
 
-	pid->dt = 0.001f;
-	pid->deadband = 0.0f;
-	pid->integral_separation = 0.0f;
-	pid->d_lpf_alpha = 1.0f;
-	pid->d_filter_state = 0.0f;
+	pid->enable = PID_ENABLE;  /* 设置PID使能开关 */
+	pid->anti_windup = PID_ENABLE; /* 设置抗积分饱和开关 */
+	pid->mode = (uint8_t)PID_MODE_POSITION; /* 设置PID模式 - 位置式 PID */
+}
 
-	pid->enable = PID_ENABLE;
-	pid->anti_windup = PID_ENABLE;
-	pid->mode = (uint8_t)PID_MODE_POSITION;
+/* PID 限幅初始化 */
+void PID_Init_WithLimit(PID_TypeDef* pid,float Integral_max, float Out_max)
+{
+	if (pid == 0)
+	{
+		return;
+	}
+
+	pid->Integral_max = pid_abs(Integral_max);
+	pid->Out_max = pid_abs(Out_max);
 }
 
 /*
@@ -137,7 +146,7 @@ void PID_SetTarget(PID_TypeDef* pid, float target)
 	pid->Target = target;
 }
 
-/* 设置死区阈值。 */
+/* 设置死区阈值为deadband */
 void PID_SetDeadband(PID_TypeDef* pid, float deadband)
 {
 	if (pid == 0)
@@ -147,7 +156,7 @@ void PID_SetDeadband(PID_TypeDef* pid, float deadband)
 	pid->deadband = (deadband >= 0.0f) ? deadband : -deadband;
 }
 
-/* 设置采样周期。 */
+/* 设置采样周期 */
 void PID_SetSampleTime(PID_TypeDef* pid, float dt)
 {
 	if (pid == 0)
@@ -190,7 +199,7 @@ void PID_SetIntegralSeparation(PID_TypeDef* pid, float threshold)
 	pid->integral_separation = pid_abs(threshold);
 }
 
-/* 设置微分低通系数。 */
+/* 设置微分低通系数 范围0-1 越小滤波越强（响应变慢）常用0.1~0.5 平滑微分信号 */
 void PID_SetDerivativeLPF(PID_TypeDef* pid, float alpha)
 {
 	if (pid == 0)
@@ -210,7 +219,7 @@ void PID_SetDerivativeLPF(PID_TypeDef* pid, float alpha)
 	pid->d_lpf_alpha = alpha;
 }
 
-/* 设置抗积分饱和开关。 */
+/* 设置抗积分饱和开关 根据执行器是否饱和来决定是否继续积分 */
 void PID_SetAntiWindup(PID_TypeDef* pid, uint8_t enable)
 {
 	if (pid == 0)
@@ -233,6 +242,20 @@ void Set_PID(PID_TypeDef* pid, float kp, float ki, float kd)
 	pid->kd = kd;
 }
 
+/* 设置PID参数和目标值 */
+void PID_ConfigAll(PID_TypeDef* pid,float kp,float ki,float kd,float target)
+{
+	if (pid == 0)
+	{
+		return;
+	}
+
+	pid->kp = kp;
+	pid->ki = ki;
+	pid->kd = kd;
+	pid->Target = target;
+}
+
 /*
  * 位置式 PID 计算。
  * 特性：
@@ -244,10 +267,9 @@ void Set_PID(PID_TypeDef* pid, float kp, float ki, float kd)
  */
 static float pid_calc_position(PID_TypeDef* pid, float actual, float dt)
 {
-	/* error: 当前误差；derivative_raw: 原始微分；output_unsat: 未限幅输出。 */
-	float error;
-	float derivative_raw;
-	float output_unsat;
+	float error; //当前误差
+	float derivative_raw; //原始微分
+	float output_unsat; //未限幅输出
 	/* limited_output: 执行限幅后的最终输出。 */
 	float limited_output;
 	/* should_integrate: 积分分离开关，1允许积分，0暂停积分。 */
@@ -318,16 +340,15 @@ static float pid_calc_position(PID_TypeDef* pid, float actual, float dt)
 }
 
 /*
- * 增量式 PID 计算。
- * 输出通过增量累加得到，常用于部分速度或电流环场景。
+ * 增量式 PID 计算。Δu(k) = Kp * (e(k)-e(k-1)) + Ki * e(k) * T + Kd * (e(k) - 2e(k-1) + e(k-2)) / T
+ * 输出：累加后的控制量 pid->output（绝对量）。
  */
 static float pid_calc_incremental(PID_TypeDef* pid, float actual, float dt)
 {
-	/* delta_u: 本次增量输出；ki_term: 本次积分增量。 */
-	float error;
-	float delta_u;
-	float derivative_inc;
-	float ki_term;
+	float error; //当前误差
+	float delta_u; //本次增量输出
+	float derivative_inc; //误差的二阶差分
+	float ki_term; //本次积分增量
 
 	/* 误差计算。 */
 	pid->Actual = actual;
@@ -349,11 +370,11 @@ static float pid_calc_incremental(PID_TypeDef* pid, float actual, float dt)
 	/* 增量合成：Δu = Kp*Δe + Ki*e*dt + Kd*Δde */
 	delta_u = (pid->kp * (error - pid->error0)) + ki_term + (pid->kd * pid->d_filter_state);
 
-	/* 输出累加并限幅。 */
+	/* 输出累加并限幅 */
 	pid->output += delta_u;
 	pid->output = Limit_Output(pid->output, pid->Out_max);
 
-	/* 记录分项量用于观测调试。 */
+	/* 记录分项量用于观测调试 */
 	pid->P_out = pid->kp * error;
 	pid->I_out += ki_term;
 	pid->I_out = Limit_Output(pid->I_out, pid->Integral_max);
@@ -410,7 +431,7 @@ float PID_Calc(PID_TypeDef* pid, float actual)
 	return PID_CalcDt(pid, actual, pid->dt);
 }
 
-/* 初始化串级 PID 对象。 */
+/* 初始化串级 PID 对象 */
 void PID_Cascade_Init(PID_Cascade_t* cascade, PID_TypeDef* outer, PID_TypeDef* inner)
 {
 	if (cascade == 0)

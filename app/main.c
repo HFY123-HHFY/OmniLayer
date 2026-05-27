@@ -23,6 +23,7 @@
 #include "OLED.h"
 #include "MPU6050.h"
 #include "MPU6050_Int.h"
+#include "Control.h"
 #if (HW_TB6612_COUNT > 0U)
 #include "TB6612.h"
 #endif
@@ -94,7 +95,6 @@ int main(void)
 		// usart_printf(USART1, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
 
 /* PWM测试 */
-		// API_PWM_Setcom(API_PWM_TIM1, API_PWM_CH1, 100U);
 		// API_PWM_Setcom(API_PWM_TIM1, API_PWM_CH2, 300U);
 
 /* ADC测试 */
