@@ -8,7 +8,7 @@
 #define TB6612_PWM_CH_A       (API_PWM_CH2)
 #define TB6612_PWM_CH_B       (API_PWM_CH1)
 
-/* TB6612 占空比上限（与当前 PWM 周期配置 0~999 对齐）。 */
+/* TB6612 占空比上限*/
 #define TB6612_MAX_DUTY       (400U)
 
 #define TB6612_WRITE(port, pin, level) API_GPIO_Write((port), (pin), (uint8_t)((level) ? 1U : 0U))

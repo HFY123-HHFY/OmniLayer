@@ -470,3 +470,53 @@ float PID_Cascade_Calc(PID_Cascade_t* cascade,
 	/* 第三步：内环计算最终执行器控制量。 */
 	return PID_CalcDt(cascade->inner, inner_actual, inner_dt);
 }
+
+/* 编码器速度环初始化。 */
+void PID_EncoderSpeed_Init(PID_EncoderSpeed_t* speed)
+{
+	if (speed == 0)
+	{
+		return;
+	}
+
+	PID_Init(&speed->left);
+	PID_Init(&speed->right);
+
+	PID_Init_WithLimit(&speed->left, 300.0f, 2000.0f);
+	PID_Init_WithLimit(&speed->right, 300.0f, 2000.0f);
+}
+
+/* 更新编码器速度环参数与目标。 */
+void PID_EncoderSpeed_Set(PID_EncoderSpeed_t* speed,
+				  float kp,
+				  float ki,
+				  float kd,
+				  float target)
+{
+	if (speed == 0)
+	{
+		return;
+	}
+
+	Set_PID(&speed->left, kp, ki, kd);
+	Set_PID(&speed->right, kp, ki, kd);
+
+	PID_SetTarget(&speed->left, target);
+	PID_SetTarget(&speed->right, target);
+}
+
+/* 编码器速度环控制计算。 */
+void PID_EncoderSpeed_Control(PID_EncoderSpeed_t* speed,
+				      float actual_left,
+				      float actual_right,
+				      float* out_left,
+				      float* out_right)
+{
+	if ((speed == 0) || (out_left == 0) || (out_right == 0))
+	{
+		return;
+	}
+
+	* out_left = PID_Calc(&speed->left, actual_left);
+	* out_right = PID_Calc(&speed->right, actual_right);
+}

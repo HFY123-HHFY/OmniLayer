@@ -47,12 +47,18 @@ void PID_Contorl_Init(void);
 /* 设置陀螺零偏（单位：原始 LSB）。 */
 void Set_Gyro_Bias(float bias_x, float bias_y, float bias_z);
 
+/* 速度环初始化。 */
+void PID_Speed_Init(void);
+
 /*
  * Pitch/Roll 串级 PID 控制。
- * typical call:
- *   PID_Pitch_Roll_Combined(Pitch, Roll);
- */
+*/
 void PID_Pitch_Roll_Combined(float actual_pitch, float actual_roll);
+
+/* 
+ * 速度环控制函数 
+*/
+void PID_Speed_Control(float actual_left, float actual_right);
 
 /*
  * 预留电机加载接口。

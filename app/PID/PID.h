@@ -52,7 +52,7 @@ typedef struct
 	float Integral_max;
 	float Out_max;
 
-	/* 默认采样周期(s) */
+	/* 算法时间步长(s)：I 项按 dt 积分，D 项按 dt 求导；应与控制调用周期一致 */
 	float dt;
 	/* 死区阈值，|error| <= deadband 时按 0 处理 */
 	float deadband;
@@ -81,6 +81,15 @@ typedef struct
 	PID_TypeDef* outer;
 	PID_TypeDef* inner;
 } PID_Cascade_t;
+
+/*
+ * 双编码器速度环：
+ */
+typedef struct
+{
+	PID_TypeDef left;
+	PID_TypeDef right;
+} PID_EncoderSpeed_t;
 
 /*
  * 通用对称限幅。
@@ -155,6 +164,23 @@ float PID_Cascade_Calc(PID_Cascade_t* cascade,
 					   float inner_actual,
 					   float outer_dt,
 					   float inner_dt);
+
+/* 编码器速度环初始化-左右轮共享同一组 kp/ki/kd 与限幅*/
+void PID_EncoderSpeed_Init(PID_EncoderSpeed_t* speed);
+
+/* 更新速度环参数与目标（目标单位由上层定义，如 rpm 或 ticks/s）。 */
+void PID_EncoderSpeed_Set(PID_EncoderSpeed_t* speed,
+				  float kp,
+				  float ki,
+				  float kd,
+				  float target);
+
+/* 速度环控制计算：输入左右实际速度，输出左右控制量。 */
+void PID_EncoderSpeed_Control(PID_EncoderSpeed_t* speed,
+				      float actual_left,
+				      float actual_right,
+				      float* out_left,
+				      float* out_right);
 
 #ifdef __cplusplus
 }

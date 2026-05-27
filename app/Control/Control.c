@@ -24,6 +24,9 @@ static uint8_t s_gyro_bias_ready = 0U;
 /* 控制回路周期：500Hz。 */
 #define CONTROL_DT_S (0.002f)
 
+/* 速度环 */
+PID_EncoderSpeed_t speed_loop;
+
 /* 外环 PID。 */
 PID_TypeDef pid_pitch;
 PID_TypeDef pid_roll;
@@ -80,6 +83,12 @@ void Motor_Test(void)
 	/* 预留 */
 }
 
+/* 速度环初始化。 */
+void PID_Speed_Init(void)
+{
+	PID_EncoderSpeed_Init(&speed_loop);
+}
+
 /* PID 参数初始化。 */
 void PID_Contorl_Init(void)
 {
@@ -124,7 +133,7 @@ void Set_Gyro_Bias(float bias_x, float bias_y, float bias_z)
 }
 
 /*
- * Pitch 和 Roll 合并双环控制函数。
+ * Pitch 和 Roll 合并双环控制串级PID函数
  * 入口参数：
  * actual_pitch: Pitch 实际角度
  * actual_roll : Roll 实际角度
@@ -177,6 +186,26 @@ void PID_Pitch_Roll_Combined(float actual_pitch, float actual_roll)
 	/* 保留到 PID 对象，方便串口/示波器观察。 */
 	pid_rate_pitch.output = pitch_rate_out;
 	pid_rate_roll.output = roll_rate_out;
+
+	/* 加载输出到电机：预留统一入口，后续混控。 */
+	Motor_Test();
+}
+
+/* 速度环控制函数 */
+void PID_Speed_Control(float actual_left, float actual_right)
+{
+
+	/* 只有节拍到来才执行一次 PID。 */
+	if (pid_task_flag != 1U)
+	{
+		return;
+	}
+	pid_task_flag = 0U;
+
+	float out_left = 0.0f;
+	float out_right = 0.0f;
+
+	PID_EncoderSpeed_Control(&speed_loop, actual_left, actual_right, &out_left, &out_right);
 
 	/* 加载输出到电机：预留统一入口，后续混控。 */
 	Motor_Test();
