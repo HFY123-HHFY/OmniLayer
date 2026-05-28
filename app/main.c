@@ -62,15 +62,15 @@ int main(void)
 	API_TIM_Init(API_TIM1, 1U); /* 定时器初始化：API_TIM1，每 1ms 触发一次更新中断 */
 
 /* 通信协议初始化 */
-	MyI2C_Init();							/* 软件 I2C 初始化 */
-	// MySPI_Init();						/* 软件 SPI 初始化 */
+	MyI2C_Init();						/* 软件 I2C 初始化 */
+	// MySPI_Init();					/* 软件 SPI 初始化 */
 	App_I2C_ScanOnce();					/* 开机执行一次 I2C 扫描 */
-	// App_SPI_TestOnce();					/* 开机执行一次 SPI 测试 */
+	// App_SPI_TestOnce();				/* 开机执行一次 SPI 测试 */
 
 /*BSP硬件抽象层初始化*/
 	LED_Init(LED_LOW); // 初始化LED-低电平
 	KEY_Init(); // 初始化按键
-	OLED_Init(OLED_IF_I2C);		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
+	OLED_Init(OLED_IF_I2C);		 /* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
 	MPU_Init();
 	uint8_t mpu6050_dma_int = mpu_dmp_init();
 	usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
