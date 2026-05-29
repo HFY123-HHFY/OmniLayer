@@ -45,6 +45,10 @@ MDK_ARM/**/.vscode/*.log
 MDK_ARM/**/.vscode/*.log.lock
 MDK_ARM/**/.vscode/keil-assistant.log
 
+# Large third-party source trees that should stay local only
+Middlewares/
+Drivers/Drivers_M0G3507/source/
+
 # OS temp files
 .DS_Store
 Thumbs.db

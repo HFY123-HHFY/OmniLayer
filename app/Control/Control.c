@@ -26,7 +26,6 @@ static uint8_t s_gyro_bias_ready = 0U;
 
 /* 速度环 */
 PID_EncoderSpeed_t speed_loop;
-
 /* 外环 PID。 */
 PID_TypeDef pid_pitch;
 PID_TypeDef pid_roll;
@@ -194,7 +193,6 @@ void PID_Pitch_Roll_Combined(float actual_pitch, float actual_roll)
 /* 速度环控制函数 */
 void PID_Speed_Control(float actual_left, float actual_right)
 {
-
 	/* 只有节拍到来才执行一次 PID。 */
 	if (pid_task_flag != 1U)
 	{

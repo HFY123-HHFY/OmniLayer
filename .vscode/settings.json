@@ -2,5 +2,22 @@
     "editor.fontFamily": "Consolas, 'Courier New', monospace",
     "editor.fontSize": 14,
     "editor.cursorSmoothCaretAnimation": "on",
-    "editor.cursorBlinking": "smooth"
+    "editor.cursorBlinking": "smooth",
+
+    // 隐藏大型本地源码目录，避免 VS Code 索引和扫描它们
+    "files.exclude": {
+        "Middlewares/FreeRTOS-LTS": true,
+        "Middlewares/ST/STM32_USB_Device_Library": true,
+        "Drivers/Drivers_M0G3507/source": true
+    },
+    "search.exclude": {
+        "Middlewares/FreeRTOS-LTS": true,
+        "Middlewares/ST/STM32_USB_Device_Library": true,
+        "Drivers/Drivers_M0G3507/source": true
+    },
+    "files.watcherExclude": {
+        "Middlewares/FreeRTOS-LTS": true,
+        "Middlewares/ST/STM32_USB_Device_Library": true,
+        "Drivers/Drivers_M0G3507/source": true
+    }
 }
