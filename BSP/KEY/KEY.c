@@ -92,7 +92,7 @@ uint8_t Key_GetState(void)
 		return 0U;
 	}
 
-	if (config->gpioRead(config->port, config->pin) == 0U)
+	if (config->gpioRead(config->port, config->pin) == 1U)
 	{
 		return 1; /* KEY1按下 */
 	}
@@ -136,5 +136,3 @@ void key_Get(void)
 		KeyNum = 0;
 	}
 }
-
-

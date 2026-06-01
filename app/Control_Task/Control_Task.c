@@ -13,6 +13,7 @@ volatile uint8_t print_task_flag = 0;
 
 /* 串口1接收数据 */
 uint32_t USART_1_RX = 0;
+uint32_t USART_2_RX = 0;
 
 /*
  * 定时器回调函数：
@@ -59,18 +60,18 @@ void Control_Task_USART_Callback(API_USART_Id_t id)
 {
 	uint32_t data;
 	uint8_t rxValid;
-
-	if (id != API_USART1)
-	{
-		return;
-	}
-
 	data = 0U;
 	rxValid = 0U;
 	usart_irq_dispatch_by_id(id, &data, &rxValid);
 	if (rxValid != 0U)
 	{
-		USART_1_RX = data;
+		if (id == API_USART1)
+		{
+			USART_1_RX = data;
+		}
+		else if (id == API_USART2)
+		{
+			USART_2_RX = data;
+		}
 	}
 }
-

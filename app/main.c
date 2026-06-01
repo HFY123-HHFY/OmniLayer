@@ -52,6 +52,7 @@ int main(void)
 
 /* 初始化层：初始化相关外设，启动硬件功能 */
 	API_USART_Init(API_USART1, 115200U); // 初始化 USART1，波特率 115200
+	API_USART_Init(API_USART2, 115200U); // 初始化 USART2，波特率 115200
 	/* PWM 初始化示例:
 	 * G3507: API_PWM_TIM1 -> 10kHz, ARR=400-1, PSC=8-1
 	 * F103 : API_PWM_TIM2 -> 1kHz,  ARR=100-1, PSC=720-1
@@ -70,7 +71,7 @@ int main(void)
 /*BSP硬件抽象层初始化*/
 	LED_Init(LED_LOW); // 初始化LED-低电平
 	KEY_Init(); // 初始化按键
-	OLED_Init(OLED_IF_I2C);		 /* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
+	OLED_Init(OLED_IF_SPI);		 /* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
 	MPU_Init();
 	uint8_t mpu6050_dma_int = mpu_dmp_init();
 	usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
@@ -80,16 +81,23 @@ int main(void)
 
 	while (1)
 	{
-		// static uint8_t oled_refresh_div = 0U;
 /* LED和延时测试 */
-		LED_Control(LED1, LED_HIGH);
-		// Delay_ms(500U);
-		// LED_Control(LED1, LED_LOW);
-		// Delay_ms(500U);
-		// LED_Turn(LED1, 500); /* LED1 翻转闪烁，周期 500ms */
+		// LED_Control(LED1, LED_HIGH);
+		LED_Control(LED2, LED_HIGH);
+		LED_Control(LED3, LED_HIGH);
+		// LED_Turn(LED2, 500); /* LED1 翻转闪烁，周期 500ms */
 
 /* KEY测试 Key 0变成1 */
-		// key_Get();
+		key_Get();
+		if (Key == 1U)
+		{
+			LED_Control(LED1, LED_HIGH);
+		}
+		else
+		{
+			LED_Control(LED1, LED_LOW);
+		}
+
 
 /* 串口测试 */
 		// usart_printf(USART1, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
@@ -102,34 +110,30 @@ int main(void)
 		// uint16_t adc5 = API_ADC_GetValue(API_ADC2, API_ADC_CH5);
 
 /* MPU6050测试 */
-		mpu_angle();
-		// Delay_ms(10U);
-		// mpu_dmp_get_data(&Pitch, &Roll, &Yaw);
+		// mpu_angle();
+		// Delay_ms(5U);
+		mpu_dmp_get_data(&Pitch, &Roll, &Yaw);
 		// MPU_Get_Gyroscope(&gyrox,&gyroy,&gyroz);  // 读取角速度
 
 /* 串口数据打印 */
 		if (print_task_flag != 0U)
 		{
 			print_task_flag = 0U;
+			// usart_printf(USART2, "key: %lu\r\n", Key);
 			// usart_printf(USART1, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
 			usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
+			// usart_printf(USART2, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
 			// usart_printf(USART1, "GyroX=%d GyroY=%d GyroZ=%d\r\n", gyrox, gyroy, gyroz);
 		}
 
 /* OLED测试 */
-		// oled_refresh_div++;
-		// if (oled_refresh_div >= 10U)
-		// {
-		// 	oled_refresh_div = 0U;
-		// 	OLED_ClearArea(0, 0, 128, 64);
-		// 	OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
-		// 	OLED_Printf(0, 16, OLED_8X16, "Pitch: %.1f", Pitch);
-		// 	OLED_Printf(0, 32, OLED_8X16, "Roll: %.1f", Roll);
-		// 	OLED_Printf(0, 48, OLED_8X16, "Yaw: %.1f", Yaw);
-		// 	OLED_Update();
-		// }
+		OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
+		OLED_Printf(0, 16, OLED_8X16, "Pitch: %.1f", Pitch);
+		OLED_Printf(0, 32, OLED_8X16, "Roll: %.1f", Roll);
+		OLED_Printf(0, 48, OLED_8X16, "Yaw: %.1f", Yaw);
+		OLED_Update();
 
 /* TB6612测试 */
-		// TB6612_SetSpeed(100, 100);
+		// TB6612_SetSpeed(200, 200);
 	}
 }

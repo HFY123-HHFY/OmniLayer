@@ -153,6 +153,18 @@ static uint8_t API_USART_GetG3507Pinmux(
 			*func = G3507_USART0_RX_FUNC;
 		}
 		return 1U;
+    case API_USART2:
+        if (isTx != 0U)
+        {
+            *iomux = G3507_USART1_TX_IOMUX;
+            *func = G3507_USART1_TX_FUNC;
+        }
+        else
+        {
+            *iomux = G3507_USART1_RX_IOMUX;
+            *func = G3507_USART1_RX_FUNC;
+        }
+        return 1U;
 	default:
 		break;
 	}
