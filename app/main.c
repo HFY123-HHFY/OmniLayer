@@ -24,9 +24,7 @@
 #include "MPU6050.h"
 #include "MPU6050_Int.h"
 #include "Control.h"
-#if (HW_TB6612_COUNT > 0U)
 #include "TB6612.h"
-#endif
 
 int main(void)
 {
@@ -75,9 +73,7 @@ int main(void)
 	MPU_Init();
 	// uint8_t mpu6050_dma_int = mpu_dmp_init();
 	// usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
-	#if (HW_TB6612_COUNT > 0U)
 	TB6612_Init(); /* TB6612 电机驱动初始化 */
-	#endif
 
 	while (1)
 	{
@@ -95,16 +91,19 @@ int main(void)
 		if (Key == 2U)
 		{
 			LED_Control(LED2, LED_HIGH);
+			TB6612_SetSpeed(0, 0);
 		}
 		if (Key == 3U)
 		{
 			LED_Control(LED3, LED_HIGH);
+			TB6612_SetSpeed(200, -200);
 		}
 		if (Key == 4U)
 		{
 			LED_Control(LED1, LED_LOW);
 			LED_Control(LED2, LED_LOW);
 			LED_Control(LED3, LED_LOW);
+			TB6612_SetSpeed(-300, 300);
 		}
 
 /* 串口测试 */
@@ -142,6 +141,6 @@ int main(void)
 		OLED_Update();
 
 /* TB6612测试 */
-		// TB6612_SetSpeed(200, 200);
+		// TB6612_SetSpeed(0, 0);
 	}
 }

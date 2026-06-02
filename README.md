@@ -146,6 +146,8 @@ cmake --build --preset Debug
 
 项目持续维护中。
 
+！注意事项：FreeRTOS-LTS、USB 协议、TI 官方 SDK 相关源码不再同步上传至本项目 GitHub 仓库，如需使用上述资源，请开发者前往各产品官方网站自行获取。
+
 如果你在使用过程中遇到问题，欢迎联系：
 
 - QQ 邮箱：634591772@qq.com

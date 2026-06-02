@@ -88,6 +88,7 @@ void TB6612_Init(void)
 void TB6612_SetSpeed(int speedA, int speedB)
 {
 	const TB6612_Config_t *config;
+	uint16_t dutyA = 0U, dutyB = 0U;
 
 	config = TB6612_GetConfig();
 	if (config == 0)
@@ -95,27 +96,52 @@ void TB6612_SetSpeed(int speedA, int speedB)
 		return;
 	}
 
-	if (speedA < 0)
+	dutyA = TB6612_AbsToDuty(speedA);
+	dutyB = TB6612_AbsToDuty(speedB);
+
+	// --------------------- A电机 ---------------------
+	if (speedA > 0)
 	{
+		// 正转
 		AIN1_OUT(1);
 		AIN2_OUT(0);
 	}
-	else
+	else if (speedA < 0)
 	{
+		// 反转
 		AIN1_OUT(0);
 		AIN2_OUT(1);
 	}
-	API_PWM_Setcom(TB6612_PWM_TIM, TB6612_PWM_CH_A, TB6612_AbsToDuty(speedA));
-
-	if (speedB < 0)
+	else
 	{
+		// 停止 = 方向脚全部置0
+		AIN1_OUT(0);
+		AIN2_OUT(0);
+	}
+
+	// 设置占空比
+	API_PWM_Setcom(TB6612_PWM_TIM, TB6612_PWM_CH_A, dutyA);
+
+	// --------------------- B电机 ---------------------
+	if (speedB > 0)
+	{
+		// 正转
+		BIN1_OUT(1);
+		BIN2_OUT(0);
+	}
+	else if (speedB < 0)
+	{
+		// 反转
 		BIN1_OUT(0);
 		BIN2_OUT(1);
 	}
 	else
 	{
-		BIN1_OUT(1);
+		// 停止 = 方向脚全部置0
+		BIN1_OUT(0);
 		BIN2_OUT(0);
 	}
-	API_PWM_Setcom(TB6612_PWM_TIM, TB6612_PWM_CH_B, TB6612_AbsToDuty(speedB));
+
+	// 设置占空比
+	API_PWM_Setcom(TB6612_PWM_TIM, TB6612_PWM_CH_B, dutyB);
 }

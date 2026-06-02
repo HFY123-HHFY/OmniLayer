@@ -24,8 +24,7 @@
     X(LED3, GPIOA, DL_GPIO_PIN_28)\
     X(Buzzer1, GPIOA, DL_GPIO_PIN_14)
 
-/* KEY 板级映射：KEY1 = PB21，低电平按下。 */
-#define G3507_KEY1_IOMUX IOMUX_PINCM49
+/* KEY 板级映射 */
 #define HW_KEY_MAP(X) \
     X(KEY1, GPIOB, DL_GPIO_PIN_21)\
     X(KEY2, GPIOA, DL_GPIO_PIN_27)\
