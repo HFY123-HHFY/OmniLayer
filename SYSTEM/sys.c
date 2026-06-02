@@ -39,20 +39,15 @@ void SYS_Init(void)
 
 uint32_t SYS_EXTI_GetIrqn(void *port, uint32_t pin)
 {
-	uint8_t lineIndex;
-
 	if ((port == 0) || (pin == 0U))
 	{
 		return SYS_EXTI_INVALID_IRQN;
 	}
 
-	lineIndex = SYS_EXTI_GetLineIndex(pin);
-	if (lineIndex > 15U)
-	{
-		return SYS_EXTI_INVALID_IRQN;
-	}
-
 	#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+	/* G3507 GPIOA/GPIOB 使用端口中断，支持 B24-B27 等高位引脚。
+	 * 仅需根据端口选择 IRQn，不再限制 lineIndex <= 15。
+	 */
 	if (port == GPIOA)
 	{
 		return (uint32_t)GPIOA_INT_IRQn;
@@ -63,6 +58,13 @@ uint32_t SYS_EXTI_GetIrqn(void *port, uint32_t pin)
 	}
 	return SYS_EXTI_INVALID_IRQN;
 	#else
+	uint8_t lineIndex;
+
+	lineIndex = SYS_EXTI_GetLineIndex(pin);
+	if (lineIndex > 15U)
+	{
+		return SYS_EXTI_INVALID_IRQN;
+	}
 	if (lineIndex == 0U)
 	{
 		return (uint32_t)SYS_EXTI0_IRQn;

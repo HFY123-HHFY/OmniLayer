@@ -62,7 +62,7 @@ int main(void)
 
 /* 通信协议初始化 */
 	MyI2C_Init();						/* 软件 I2C 初始化 */
-	// MySPI_Init();					/* 软件 SPI 初始化 */
+	MySPI_Init();						/* 软件 SPI 初始化 */
 	App_I2C_ScanOnce();					/* 开机执行一次 I2C 扫描 */
 	// App_SPI_TestOnce();				/* 开机执行一次 SPI 测试 */
 
@@ -71,8 +71,8 @@ int main(void)
 	KEY_Init(); // 初始化按键
 	OLED_Init(OLED_IF_SPI);		 /* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
 	MPU_Init();
-	// uint8_t mpu6050_dma_int = mpu_dmp_init();
-	// usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
+	uint8_t mpu6050_dma_int = mpu_dmp_init();
+	usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
 	TB6612_Init(); /* TB6612 电机驱动初始化 */
 
 	while (1)
@@ -117,19 +117,18 @@ int main(void)
 		// uint16_t adc5 = API_ADC_GetValue(API_ADC2, API_ADC_CH5);
 
 /* MPU6050测试 */
-		// mpu_angle();
-		// Delay_ms(5U);
-		mpu_dmp_get_data(&Pitch, &Roll, &Yaw);
+		mpu_angle();
+		// mpu_dmp_get_data(&Pitch, &Roll, &Yaw);
 		// MPU_Get_Gyroscope(&gyrox,&gyroy,&gyroz);  // 读取角速度
 
 /* 串口数据打印 */
 		if (print_task_flag != 0U)
 		{
 			print_task_flag = 0U;
-			usart_printf(USART1, "key: %lu\r\n", Key);
+			// usart_printf(USART1, "key: %lu\r\n", Key);
 			// usart_printf(USART1, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
-			// usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
-			// usart_printf(USART2, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
+			usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
+			// usart_printf(USART2, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw); /* 无线串口 */
 			// usart_printf(USART1, "GyroX=%d GyroY=%d GyroZ=%d\r\n", gyrox, gyroy, gyroz);
 		}
 
