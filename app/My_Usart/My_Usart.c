@@ -22,6 +22,7 @@ typedef struct
 static USART_TxAsyncQueue g_usart_tx_q1 = {USART1, 0U, 0U, {0}};
 static USART_TxAsyncQueue g_usart_tx_q2 = {USART2, 0U, 0U, {0}};
 static USART_TxAsyncQueue g_usart_tx_q3 = {USART3, 0U, 0U, {0}};
+static USART_TxAsyncQueue g_usart_tx_q4 = {USART4, 0U, 0U, {0}};
 
 /* 根据 USART 实例返回对应发送队列。 */
 static USART_TxAsyncQueue *usart_get_tx_queue(USART_TypeDef *USARTx)
@@ -38,10 +39,15 @@ static USART_TxAsyncQueue *usart_get_tx_queue(USART_TypeDef *USARTx)
 	{
 		return &g_usart_tx_q3;
 	}
+	if (USARTx == USART4)
+	{
+		return &g_usart_tx_q4;
+	}
 
 	return 0;
 }
 
+#if (ENROLL_MCU_TARGET != ENROLL_MCU_G3507)
 /* 进入临界区：返回进入前 PRIMASK 状态。 */
 static uint32_t usart_enter_critical(void)
 {
@@ -60,6 +66,7 @@ static void usart_exit_critical(uint32_t primask)
 		__asm volatile("cpsie i" : : : "memory");
 	}
 }
+#endif
 
 /* 统一映射：API 串口 ID -> USART 寄存器实例。 */
 static USART_TypeDef *usart_id_to_instance(API_USART_Id_t id)
@@ -76,67 +83,66 @@ static USART_TypeDef *usart_id_to_instance(API_USART_Id_t id)
 	{
 		return USART3;
 	}
-#if (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
 	if (id == API_USART4)
 	{
 		return USART4;
 	}
-#endif
 
 	return 0;
 }
 
+#if (ENROLL_MCU_TARGET != ENROLL_MCU_G3507)
 static void usart_enable_tx_irq(USART_TypeDef *USARTx)
 {
-#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
-	DL_UART_Main_enableInterrupt((UART_Regs *)USARTx, DL_UART_MAIN_INTERRUPT_TX);
-#else
 	USARTx->CR1 |= USART_CR1_TXEIE;
-#endif
 }
 
 static void usart_disable_tx_irq(USART_TypeDef *USARTx)
 {
-#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
-	DL_UART_Main_disableInterrupt((UART_Regs *)USARTx, DL_UART_MAIN_INTERRUPT_TX);
-#else
 	USARTx->CR1 &= ~USART_CR1_TXEIE;
-#endif
 }
 
 static uint8_t usart_is_tx_irq_enabled(USART_TypeDef *USARTx)
 {
-#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
-	if (DL_UART_Main_getEnabledInterruptStatus((UART_Regs *)USARTx, DL_UART_MAIN_INTERRUPT_TX) != 0U)
-	{
-		return 1U;
-	}
-	return 0U;
-#else
 	if ((USARTx->CR1 & USART_CR1_TXEIE) != 0U)
 	{
 		return 1U;
 	}
 	return 0U;
-#endif
 }
 
 static uint8_t usart_is_tx_ready(USART_TypeDef *USARTx)
 {
-#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
-	if (DL_UART_Main_isTXFIFOFull((UART_Regs *)USARTx) == 0U)
-	{
-		return 1U;
-	}
-	return 0U;
-#else
 	if ((USARTx->SR & USART_SR_TXE) != 0U)
 	{
 		return 1U;
 	}
 	return 0U;
-#endif
 }
+#else
+static void usart_disable_tx_irq(USART_TypeDef *USARTx)
+{
+	DL_UART_Main_disableInterrupt((UART_Regs *)USARTx, DL_UART_MAIN_INTERRUPT_TX);
+}
+
+static uint8_t usart_is_tx_irq_enabled(USART_TypeDef *USARTx)
+{
+	if (DL_UART_Main_getEnabledInterruptStatus((UART_Regs *)USARTx, DL_UART_MAIN_INTERRUPT_TX) != 0U)
+	{
+		return 1U;
+	}
+	return 0U;
+}
+
+static uint8_t usart_is_tx_ready(USART_TypeDef *USARTx)
+{
+	if (DL_UART_Main_isTXFIFOFull((UART_Regs *)USARTx) == 0U)
+	{
+		return 1U;
+	}
+	return 0U;
+}
+#endif
 
 static uint8_t usart_is_rx_ready(USART_TypeDef *USARTx)
 {
@@ -202,13 +208,11 @@ static uint8_t usart_instance_to_id(USART_TypeDef *USARTx, API_USART_Id_t *id)
 		*id = API_USART3;
 		return 1U;
 	}
-#if (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
 	if (USARTx == USART4)
 	{
 		*id = API_USART4;
 		return 1U;
 	}
-#endif
 
 	return 0U;
 }
@@ -242,6 +246,11 @@ void usart_send_byte(USART_TypeDef *USARTx, uint8_t Byte)
  */
 uint8_t usart_send_byte_async(USART_TypeDef *USARTx, uint8_t Byte)
 {
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+	(void)USARTx;
+	(void)Byte;
+	return 0U; /* G3507 不使用异步 TX 队列，统一走 API_USART_WriteByte 阻塞发送 */
+#else
 	uint32_t primask;
 	uint16_t next_head;
 	USART_TxAsyncQueue *q;
@@ -265,16 +274,9 @@ uint8_t usart_send_byte_async(USART_TypeDef *USARTx, uint8_t Byte)
 	q->head = next_head;
 	usart_enable_tx_irq(q->instance);
 
-#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
-	/* MSPM0 上使能 TX 中断后可能不会立刻触发首个搬运，主动 kick 一次。 */
-	if (usart_is_tx_ready(q->instance) != 0U)
-	{
-		usart_tx_irq_handler(q->instance);
-	}
-#endif
-
 	usart_exit_critical(primask);
 	return 1U;
+#endif
 }
 
 /* 发送 C 字符串（逐字节调用 usart_send_byte）。 */

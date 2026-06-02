@@ -33,6 +33,10 @@ static G3507_USART_Map_t G3507_USART_GetMap(uint8_t usartId)
 		map.regs = UART2;
 		map.irq = UART2_INT_IRQn;
 		break;
+	case 3U:
+		map.regs = UART3;
+		map.irq = UART3_INT_IRQn;
+		break;
 	default:
 		break;
 	}
@@ -98,9 +102,5 @@ void G3507_USART_WriteByte(uint8_t usartId, uint8_t data)
 		return;
 	}
 
-	while (!DL_UART_Main_transmitDataCheck(map.regs, (uint8_t)data))
-	{
-	}
-
-	DL_UART_Main_transmitData(map.regs, (uint16_t)data);
+	DL_UART_Main_transmitDataBlocking(map.regs, (uint8_t)data);
 }

@@ -153,26 +153,49 @@ static uint8_t API_USART_GetG3507Pinmux(
 			*func = G3507_USART0_RX_FUNC;
 		}
 		return 1U;
-    case API_USART2:
-        if (isTx != 0U)
-        {
-            *iomux = G3507_USART1_TX_IOMUX;
-            *func = G3507_USART1_TX_FUNC;
-        }
-        else
-        {
-            *iomux = G3507_USART1_RX_IOMUX;
-            *func = G3507_USART1_RX_FUNC;
-        }
-        return 1U;
-	default:
+	case API_USART2:
+		if (isTx != 0U)
+		{
+			*iomux = G3507_USART1_TX_IOMUX;
+			*func = G3507_USART1_TX_FUNC;
+		}
+		else
+		{
+			*iomux = G3507_USART1_RX_IOMUX;
+			*func = G3507_USART1_RX_FUNC;
+		}
+		return 1U;
+	case API_USART3:
+		if (isTx != 0U)
+		{
+			*iomux = G3507_USART2_TX_IOMUX;
+			*func = G3507_USART2_TX_FUNC;
+		}
+		else
+		{
+			*iomux = G3507_USART2_RX_IOMUX;
+			*func = G3507_USART2_RX_FUNC;
+		}
+		return 1U;
+	case API_USART4:
+		if (isTx != 0U)
+		{
+			*iomux = G3507_USART3_TX_IOMUX;
+			*func = G3507_USART3_TX_FUNC;
+		}
+		else
+		{
+			*iomux = G3507_USART3_RX_IOMUX;
+			*func = G3507_USART3_RX_FUNC;
+		}
+		return 1U;
 		break;
 	}
 
 	return 0U;
 }
 
-static void API_USART_ConfigTxPin(API_USART_Id_t id, void *port, uint16_t pin)
+static void API_USART_ConfigTxPin(API_USART_Id_t id, void *port, uint32_t pin)
 {
 	uint32_t iomux;
 	uint32_t func;
@@ -186,7 +209,7 @@ static void API_USART_ConfigTxPin(API_USART_Id_t id, void *port, uint16_t pin)
 	DL_GPIO_initPeripheralOutputFunction(iomux, func);
 }
 
-static void API_USART_ConfigRxPin(API_USART_Id_t id, void *port, uint16_t pin)
+static void API_USART_ConfigRxPin(API_USART_Id_t id, void *port, uint32_t pin)
 {
 	uint32_t iomux;
 	uint32_t func;
@@ -472,5 +495,10 @@ void UART1_IRQHandler(void)
 void UART2_IRQHandler(void)
 {
 	API_USART_HandleIrqByCoreId(API_USART_CORE_UART2);
+}
+
+void UART3_IRQHandler(void)
+{
+	API_USART_HandleIrqByCoreId(API_USART_CORE_UART3);
 }
 #endif

@@ -41,6 +41,7 @@ typedef enum
 #define API_USART_CORE_UART0   (0U)
 #define API_USART_CORE_UART1   (1U)
 #define API_USART_CORE_UART2   (2U)
+#define API_USART_CORE_UART3   (3U)
 #endif
 
 typedef struct
@@ -48,9 +49,9 @@ typedef struct
 	API_USART_Id_t id;
 	uint8_t coreId;
 	void *txPort;
-	uint16_t txPin;
+	uint32_t txPin;
 	void *rxPort;
-	uint16_t rxPin;
+	uint32_t rxPin;
 } API_USART_Config_t;
 
 typedef void (*API_USART_IrqHandler_t)(API_USART_Id_t id);
@@ -102,6 +103,7 @@ typedef UART_Regs G3507_USART_View_t;
 #define USART1 ((G3507_USART_View_t *)UART0)
 #define USART2 ((G3507_USART_View_t *)UART1)
 #define USART3 ((G3507_USART_View_t *)UART2)
+#define USART4 ((G3507_USART_View_t *)UART3)
 /* G3507 无与 STM32 完全同名位定义，这里仅保留兼容常量。 */
 #define USART_SR_RXNE (1UL << 5)
 #define USART_SR_TC   (1UL << 6)

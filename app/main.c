@@ -30,7 +30,6 @@ int main(void)
 {
 /* 系统时钟配置初始化 */
 	SYS_Init();
-
 /* 注册层：注册相关资源，登记资源映射 */
 	Enroll_USART_Register();				/* USART 资源注册 */
 	Enroll_PWM_Register();					/* PWM 资源注册 */
@@ -51,6 +50,8 @@ int main(void)
 /* 初始化层：初始化相关外设，启动硬件功能 */
 	API_USART_Init(API_USART1, 115200U); // 初始化 USART1，波特率 115200
 	API_USART_Init(API_USART2, 115200U); // 初始化 USART2，波特率 115200
+	API_USART_Init(API_USART3, 115200U); // 初始化 USART3，波特率 115200
+	API_USART_Init(API_USART4, 115200U); // 初始化 USART4，波特率 115200
 	/* PWM 初始化示例:
 	 * G3507: API_PWM_TIM1 -> 10kHz, ARR=400-1, PSC=8-1
 	 * F103 : API_PWM_TIM2 -> 1kHz,  ARR=100-1, PSC=720-1
@@ -71,8 +72,8 @@ int main(void)
 	KEY_Init(); // 初始化按键
 	OLED_Init(OLED_IF_SPI);		 /* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
 	MPU_Init();
-	uint8_t mpu6050_dma_int = mpu_dmp_init();
-	usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
+	// uint8_t mpu6050_dma_int = mpu_dmp_init();
+	// usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
 	TB6612_Init(); /* TB6612 电机驱动初始化 */
 
 	while (1)
@@ -117,8 +118,8 @@ int main(void)
 		// uint16_t adc5 = API_ADC_GetValue(API_ADC2, API_ADC_CH5);
 
 /* MPU6050测试 */
-		mpu_angle();
-		// mpu_dmp_get_data(&Pitch, &Roll, &Yaw);
+		// mpu_angle();
+		mpu_dmp_get_data(&Pitch, &Roll, &Yaw);
 		// MPU_Get_Gyroscope(&gyrox,&gyroy,&gyroz);  // 读取角速度
 
 /* 串口数据打印 */
@@ -126,8 +127,8 @@ int main(void)
 		{
 			print_task_flag = 0U;
 			// usart_printf(USART1, "key: %lu\r\n", Key);
-			// usart_printf(USART1, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
-			usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
+			usart_printf(USART4, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
+			// usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
 			// usart_printf(USART2, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw); /* 无线串口 */
 			// usart_printf(USART1, "GyroX=%d GyroY=%d GyroZ=%d\r\n", gyrox, gyroy, gyroz);
 		}
