@@ -18,16 +18,19 @@
  */
 
 /* LED 板级映射 */
-// #define G3507_LED1_IOMUX  IOMUX_PINCM50
 #define HW_LED_MAP(X) \
     X(LED1, GPIOB, DL_GPIO_PIN_14)\
     X(LED2, GPIOA, DL_GPIO_PIN_29)\
-    X(LED3, GPIOA, DL_GPIO_PIN_28)
+    X(LED3, GPIOA, DL_GPIO_PIN_28)\
+    X(Buzzer1, GPIOA, DL_GPIO_PIN_14)
 
 /* KEY 板级映射：KEY1 = PB21，低电平按下。 */
-// #define G3507_KEY1_IOMUX IOMUX_PINCM49
+#define G3507_KEY1_IOMUX IOMUX_PINCM49
 #define HW_KEY_MAP(X) \
-    X(KEY1, GPIOB, DL_GPIO_PIN_23)
+    X(KEY1, GPIOB, DL_GPIO_PIN_21)\
+    X(KEY2, GPIOA, DL_GPIO_PIN_27)\
+    X(KEY3, GPIOA, DL_GPIO_PIN_26)\
+    X(KEY4, GPIOB, DL_GPIO_PIN_23)
 
 /* USART0 板级映射（TX=PA10, RX=PA11） */
 #define HW_USART0_TX_PORT GPIOA
@@ -166,10 +169,10 @@
       HW_TB6612_BIN1_PORT, HW_TB6612_BIN1_PIN, \
       HW_TB6612_BIN2_PORT, HW_TB6612_BIN2_PIN)
 
-/* 当前板子上注册了 3 个LED */
-#define HW_LED_COUNT    3U
-/* 当前板子上注册了 1 个按键 */
-#define HW_KEY_COUNT    1U
+/* 当前板子上注册了 4 个LED */
+#define HW_LED_COUNT    4U
+/* 当前板子上注册了 4 个按键 */
+#define HW_KEY_COUNT    4U
 /* 当前板子上注册了 2 路 USART */
 #define HW_USART_COUNT  2U
 /* 当前板子上注册了 1 路 PWM（2 个输出通道） */

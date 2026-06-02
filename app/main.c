@@ -73,8 +73,8 @@ int main(void)
 	KEY_Init(); // 初始化按键
 	OLED_Init(OLED_IF_SPI);		 /* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
 	MPU_Init();
-	uint8_t mpu6050_dma_int = mpu_dmp_init();
-	usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
+	// uint8_t mpu6050_dma_int = mpu_dmp_init();
+	// usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
 	#if (HW_TB6612_COUNT > 0U)
 	TB6612_Init(); /* TB6612 电机驱动初始化 */
 	#endif
@@ -83,9 +83,8 @@ int main(void)
 	{
 /* LED和延时测试 */
 		// LED_Control(LED1, LED_HIGH);
-		LED_Control(LED2, LED_HIGH);
-		LED_Control(LED3, LED_HIGH);
 		// LED_Turn(LED2, 500); /* LED1 翻转闪烁，周期 500ms */
+		// LED_Control(Buzzer1, LED_HIGH);
 
 /* KEY测试 Key 0变成1 */
 		key_Get();
@@ -93,11 +92,20 @@ int main(void)
 		{
 			LED_Control(LED1, LED_HIGH);
 		}
-		else
+		if (Key == 2U)
+		{
+			LED_Control(LED2, LED_HIGH);
+		}
+		if (Key == 3U)
+		{
+			LED_Control(LED3, LED_HIGH);
+		}
+		if (Key == 4U)
 		{
 			LED_Control(LED1, LED_LOW);
+			LED_Control(LED2, LED_LOW);
+			LED_Control(LED3, LED_LOW);
 		}
-
 
 /* 串口测试 */
 		// usart_printf(USART1, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
@@ -119,9 +127,9 @@ int main(void)
 		if (print_task_flag != 0U)
 		{
 			print_task_flag = 0U;
-			// usart_printf(USART2, "key: %lu\r\n", Key);
+			usart_printf(USART1, "key: %lu\r\n", Key);
 			// usart_printf(USART1, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
-			usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
+			// usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
 			// usart_printf(USART2, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
 			// usart_printf(USART1, "GyroX=%d GyroY=%d GyroZ=%d\r\n", gyrox, gyroy, gyroz);
 		}

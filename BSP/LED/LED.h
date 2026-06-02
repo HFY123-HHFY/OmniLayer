@@ -19,11 +19,13 @@ typedef enum
 	/* 第 2 个注册的 LED。 */
 	LED2 = 1U,
 	/* 第 3 个注册的 LED。 */
-	LED3 = 2U
+	LED3 = 2U,
+	/* 注册一路有源蜂鸣器。 */
+	Buzzer1 = 3U
 } LED_Id_t;
 
 /* LED 逻辑编号上限（用于内部状态数组大小计算）。 */
-#define LED_ID_MAX  ((uint8_t)LED3)
+#define LED_ID_MAX  ((uint8_t)Buzzer1)
 
 typedef enum
 {
