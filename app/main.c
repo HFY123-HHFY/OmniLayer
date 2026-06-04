@@ -44,14 +44,13 @@ int main(void)
 	Enroll_TB6612_Register();				/* TB6612 资源注册 */
 
 	/* 注册后绑定中断回调*/
-	Enroll_USART_RegisterIrqHandler(Control_Task_USART_Callback);
-	Enroll_TIM_RegisterIrqHandler(Control_Task_TIM_Callback);
+	Enroll_USART_RegisterIrqHandler(Control_Task_USART_Callback); /* USART 中断回调注册 */
+	Enroll_TIM_RegisterIrqHandler(Control_Task_TIM_Callback);	   /* TIM 中断回调注册 */
 
 /* 初始化层：初始化相关外设，启动硬件功能 */
 	API_USART_Init(API_USART1, 115200U); // 初始化 USART1，波特率 115200
 	API_USART_Init(API_USART2, 115200U); // 初始化 USART2，波特率 115200
 	API_USART_Init(API_USART3, 115200U); // 初始化 USART3，波特率 115200
-	API_USART_Init(API_USART4, 115200U); // 初始化 USART4，波特率 115200
 	/* PWM 初始化示例:
 	 * G3507: API_PWM_TIM1 -> 10kHz, ARR=400-1, PSC=8-1
 	 * F103 : API_PWM_TIM2 -> 1kHz,  ARR=100-1, PSC=720-1
@@ -127,7 +126,7 @@ int main(void)
 		{
 			print_task_flag = 0U;
 			// usart_printf(USART1, "key: %lu\r\n", Key);
-			usart_printf(USART4, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
+			usart_printf(USART1, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
 			// usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
 			// usart_printf(USART2, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw); /* 无线串口 */
 			// usart_printf(USART1, "GyroX=%d GyroY=%d GyroZ=%d\r\n", gyrox, gyroy, gyroz);

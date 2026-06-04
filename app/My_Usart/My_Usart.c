@@ -1,5 +1,4 @@
 #include "My_Usart.h"
-
 #include <sys/stat.h>
 #if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
 #include "ti/driverlib/dl_uart_main.h"
@@ -22,7 +21,6 @@ typedef struct
 static USART_TxAsyncQueue g_usart_tx_q1 = {USART1, 0U, 0U, {0}};
 static USART_TxAsyncQueue g_usart_tx_q2 = {USART2, 0U, 0U, {0}};
 static USART_TxAsyncQueue g_usart_tx_q3 = {USART3, 0U, 0U, {0}};
-static USART_TxAsyncQueue g_usart_tx_q4 = {USART4, 0U, 0U, {0}};
 
 /* 根据 USART 实例返回对应发送队列。 */
 static USART_TxAsyncQueue *usart_get_tx_queue(USART_TypeDef *USARTx)
@@ -39,11 +37,6 @@ static USART_TxAsyncQueue *usart_get_tx_queue(USART_TypeDef *USARTx)
 	{
 		return &g_usart_tx_q3;
 	}
-	if (USARTx == USART4)
-	{
-		return &g_usart_tx_q4;
-	}
-
 	return 0;
 }
 
@@ -83,11 +76,6 @@ static USART_TypeDef *usart_id_to_instance(API_USART_Id_t id)
 	{
 		return USART3;
 	}
-	if (id == API_USART4)
-	{
-		return USART4;
-	}
-
 	return 0;
 }
 
@@ -208,12 +196,6 @@ static uint8_t usart_instance_to_id(USART_TypeDef *USARTx, API_USART_Id_t *id)
 		*id = API_USART3;
 		return 1U;
 	}
-	if (USARTx == USART4)
-	{
-		*id = API_USART4;
-		return 1U;
-	}
-
 	return 0U;
 }
 

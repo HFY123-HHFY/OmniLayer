@@ -10,6 +10,7 @@
 #include "My_SPI.h"
 #include "LED.h"
 #include "KEY.h"
+#include "Encoder.h"
 
 /*
  * 103_hw_config.h 板级硬件映射宏
@@ -147,35 +148,43 @@
       HW_TB6612_BIN1_PORT, HW_TB6612_BIN1_PIN, \
       HW_TB6612_BIN2_PORT, HW_TB6612_BIN2_PIN)
 
+#define HW_ENCODER1_A_PORT GPIOA
+#define HW_ENCODER1_A_PIN  GPIO_Pin_0
+#define HW_ENCODER1_B_PORT GPIOA
+#define HW_ENCODER1_B_PIN  GPIO_Pin_1
+
+#define HW_ENCODER2_A_PORT GPIOB
+#define HW_ENCODER2_A_PIN  GPIO_Pin_6
+#define HW_ENCODER2_B_PORT GPIOB
+#define HW_ENCODER2_B_PIN  GPIO_Pin_7
+
+#define HW_ENCODER_MAP(X) \
+	X(API_ENCODER_1, API_ENCODER_CORE_TIM2, HW_ENCODER1_A_PORT, HW_ENCODER1_A_PIN, HW_ENCODER1_B_PORT, HW_ENCODER1_B_PIN) \
+	X(API_ENCODER_2, API_ENCODER_CORE_TIM4, HW_ENCODER2_A_PORT, HW_ENCODER2_A_PIN, HW_ENCODER2_B_PORT, HW_ENCODER2_B_PIN)
+
 /* 当前板子上注册了 1 个 LED */
 #define HW_LED_COUNT  1U
-
 /* 当前板子上注册了 1 个按键 */
 #define HW_KEY_COUNT   1U
-
 /* 当前板子上注册了 1 路 USART */
 #define HW_USART_COUNT  1U
-
 /* 当前板子上注册了 1 路 TIM */
 #define HW_TIM_COUNT  1U
-
 /* 当前板子上注册了 2 路 PWM 通道 */
 #define HW_PWM_COUNT  2U
-
 /* 当前板子上注册了 4 路 ADC 通道 */
 #define HW_ADC_COUNT  4U
-
 /* 当前板子上注册了 2 路软件 I2C */
 #define HW_I2C_COUNT  2U
-
 /* 当前板子上注册了 2 路软件 SPI */
 #define HW_SPI_COUNT  2U
-
 /* 当前板子上注册了 1 组 OLED SPI 控制引脚 */
 #define HW_OLED_SPI_CTRL_COUNT  1U
 /* 当前板子上注册了 1 组 NRF24L01 控制引脚 */
 #define HW_NRF24L01_CTRL_COUNT  1U
 /* 当前板子上注册了 1 个 TB6612 电机驱动 */
 #define HW_TB6612_COUNT 1U
+/* 当前板子上注册了 1 个 MPU6050 INT 引脚 */
+#define HW_MPU6050_INT_COUNT 1U
 
 #endif /* __103_HW_CONFIG_H */

@@ -79,9 +79,5 @@ void Control_Task_USART_Callback(API_USART_Id_t id)
 		{
 			USART_3_RX = data;
 		}
-		else if (id == API_USART4)
-		{
-			USART_4_RX = data;
-		}
 	}
 }

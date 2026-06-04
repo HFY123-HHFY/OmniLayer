@@ -26,9 +26,7 @@
 #include "OLED.h"
 #include "exti.h"
 #include "MPU6050_Int.h"
-#if (HW_TB6612_COUNT > 0U)
 #include "TB6612.h"
-#endif
 
 #include <stddef.h>
 

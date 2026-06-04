@@ -10,6 +10,7 @@
 #include "pwm.h"
 #include "adc.h"
 #include "f407_gpio.h"
+#include "Encoder.h"
 
 /*
  * 407_hw_config.h 板级硬件映射宏
@@ -155,28 +156,20 @@ LED1 绿 LED2 红 LED3 蓝
 
 /* 当前板子上注册了 3 个 LED */
 #define HW_LED_COUNT  3U
-
 /* 当前板子上注册了 1 个按键 */
 #define HW_KEY_COUNT  1U
-
 /* 当前板子上注册了 1 路 USART */
 #define HW_USART_COUNT  1U
-
 /* 当前板子上注册了 1 路 TIM */
 #define HW_TIM_COUNT  1U
-
 /* 当前板子上注册了 4 路 PWM 通道 */
 #define HW_PWM_COUNT  4U
-
 /* 当前板子上注册了 4 路 ADC 通道 */
 #define HW_ADC_COUNT  4U
-
 /* 当前板子上注册了 2 路软件 I2C */
 #define HW_I2C_COUNT  2U
-
 /* 当前板子上注册了 2 路软件 SPI */
 #define HW_SPI_COUNT  2U
-
 /* 当前板子上注册了 1 组 OLED SPI 控制引脚 */
 #define HW_OLED_SPI_CTRL_COUNT  1U
 /* 当前板子上注册了 1 组 NRF24L01 控制引脚 */

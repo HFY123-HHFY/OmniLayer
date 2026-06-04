@@ -8,7 +8,7 @@
 
 static const API_USART_Config_t *s_usartTable;
 static uint8_t s_usartCount;
-static API_USART_IrqHandler_t s_usartIrqHandlers[API_USART4 + 1U];
+static API_USART_IrqHandler_t s_usartIrqHandlers[API_USART3 + 1U];
 
 #ifndef API_USART_CR1_TXEIE
 #define API_USART_CR1_TXEIE (1UL << 7)
@@ -82,10 +82,10 @@ static void API_USART_ConfigRxPin(void *port, uint16_t pin)
 }
 
 #elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
-/* USART1/2/3/4 对应的复用功能号。 */
+/* USART1/2/3 对应的复用功能号。 */
 static uint8_t API_USART_GetAfNum(API_USART_Id_t id)
 {
-	return (id == API_USART4) ? 8U : 7U;
+	return (id == API_USART3) ? 8U : 7U;
 }
 
 /* 配置 F407 的 TX/RX 引脚为复用模式。 */
@@ -177,19 +177,6 @@ static uint8_t API_USART_GetG3507Pinmux(
 			*func = G3507_USART2_RX_FUNC;
 		}
 		return 1U;
-	case API_USART4:
-		if (isTx != 0U)
-		{
-			*iomux = G3507_USART3_TX_IOMUX;
-			*func = G3507_USART3_TX_FUNC;
-		}
-		else
-		{
-			*iomux = G3507_USART3_RX_IOMUX;
-			*func = G3507_USART3_RX_FUNC;
-		}
-		return 1U;
-		break;
 	}
 
 	return 0U;
@@ -348,7 +335,7 @@ void API_USART_Register(const API_USART_Config_t *configTable, uint8_t count)
 
 void API_USART_RegisterIrqHandler(API_USART_Id_t id, API_USART_IrqHandler_t handler)
 {
-	if ((id < API_USART1) || (id > API_USART4))
+	if ((id < API_USART1) || (id > API_USART3))
 	{
 		return;
 	}
@@ -432,7 +419,7 @@ void API_USART_HandleIrqByCoreId(uint8_t coreId)
 		return;
 	}
 
-	if ((config->id < API_USART1) || (config->id > API_USART4))
+	if ((config->id < API_USART1) || (config->id > API_USART3))
 	{
 		return;
 	}
@@ -477,10 +464,6 @@ void USART3_IRQHandler(void)
 	API_USART_HandleIrqByCoreId(API_USART_CORE_USART3);
 }
 
-void UART4_IRQHandler(void)
-{
-	API_USART_HandleIrqByCoreId(API_USART_CORE_USART4);
-}
 #elif (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
 void UART0_IRQHandler(void)
 {

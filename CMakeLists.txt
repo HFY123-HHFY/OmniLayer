@@ -110,6 +110,7 @@ set(API_LAYER_SOURCES
     ${CMAKE_SOURCE_DIR}/API/src/tim.c
     ${CMAKE_SOURCE_DIR}/API/src/usart.c
     ${CMAKE_SOURCE_DIR}/API/src/pwm.c
+    ${CMAKE_SOURCE_DIR}/API/src/Encoder.c
 )
 
 # 注册层（Enroll）：把 BSP 资源和具体 MCU 驱动绑定。
@@ -187,6 +188,7 @@ if(RESOLVED_MCU_TARGET STREQUAL "F103")
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_tim.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_usart.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_pwm.c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_Encoder.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F1/Start/system_stm32f10x.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F1/Start/startup_stm32f103c8tx_gcc.c
     )
@@ -223,6 +225,7 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_tim.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_usart.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_pwm.c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_Encoder.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start/system_stm32f4xx.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start/startup_stm32f407vetx_gcc.c
     )
@@ -258,6 +261,7 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "G3507")
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_pwm.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_tim.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_usart.c
+        ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_Encoder.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_M0G3507/source/ti/devices/msp/m0p/startup_system_files/gcc/startup_mspm0g350x_gcc.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_M0G3507/source/ti/driverlib/dl_adc12.c
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_M0G3507/source/ti/driverlib/m0p/sysctl/dl_sysctl_mspm0g1x0x_g3x0x.c
