@@ -10,7 +10,7 @@ OmniLayer 的核心目标是把应用逻辑和芯片实现解耦，让工程可�
     
 - 同一套业务代码，按目标芯片切换底层实现。
 - 统一构建入口，减少多工程并行维护成本。
-- 保留 VS Code 与 Keil 双工作流，兼容不同团队习惯。
+- VS Code/Trae 工作流，保留keil，兼容不同团队开发习惯。
 
 ## 🌿 分支策略
 
@@ -24,10 +24,10 @@ OmniLayer 的核心目标是把应用逻辑和芯片实现解耦，让工程可�
 ## ✨ 架构亮点
 
 - 🧭 多目标工程：同一仓库支持多 MCU 目标扩展。
-- 🧱 分层清晰：应用层、接口层、BSP、注册层、核心层职责明确。
+- 🧱 分层清晰：应用层、接口层、BSP、注册层(核心思想)、核心层职责明确。
 - ⚙️ 工具统一：CMakePresets 构建，OpenOCD 烧录，流程一致。
 - 🚌 软件总线：I2C/SPI 参数集中配置，调优成本低。
-- 🔁 双 IDE 兼容：VS Code + CMake 与 Keil 并行可用。
+- 🔁 双 IDE 兼容：VS Code/Trae + CMake 与 Keil 并行可用。
 
 ## 🧩 注册层（Enroll）特色
 
@@ -49,11 +49,11 @@ OmniLayer/
 │  ├─ BusRate.h                # 软件总线速率集中配置
 │  ├─ Control/
 │  ├─ Control_Task/
-│  ├─ Filter/
-│  ├─ PID/
-│  ├─ My_I2c/
-│  ├─ My_SPI/
-│  └─ My_Usart/
+│  ├─ Filter/                  # 滤波器
+│  ├─ PID/                     # PID 控制器
+│  ├─ My_I2c/                  #软件 I2C 驱动
+│  ├─ My_SPI/                  #软件 SPI 驱动
+│  └─ My_Usart/                #串口 数据函数管理
 ├─ BSP/                        # 板级支持层：OLED/MPU6050/QMC5883P/NRF24L01 等
 │  ├─ BMP280/
 │  ├─ KEY/
@@ -149,7 +149,8 @@ cmake --build --preset Debug
 
 ## ⚠️ 注意事项
 
-FreeRTOS-LTS、USB 协议、TI 官方 SDK 相关源码不再同步上传至本项目 GitHub 仓库，如需使用上述资源，请开发者前往各产品官方网站自行获取。
+1. FreeRTOS-LTS、USB 协议、TI 官方 SDK 相关源码不再同步上传至本项目 GitHub 仓库，如需使用上述资源，请开发者前往各产品官方网站自行获取。
+2. 受开发精力限制，项目主力维护 VS Code + CMake 编译环境；Keil MDK 配套工程无法同步迭代更新，如需使用 Keil 编译，需使用者自行手动补齐缺失头文件与工程配置。
 
 ## 📮 项目状态与联系
 
