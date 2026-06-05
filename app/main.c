@@ -36,7 +36,7 @@ int main(void)
 /* 注册层：注册相关资源，登记资源映射 */
 	Enroll_USART_Register();				/* USART 资源注册 */
 	Enroll_PWM_Register();					/* PWM 资源注册 */
-	// Enroll_ADC_Register();					/* ADC 资源注册 */
+	Enroll_ADC_Register();					/* ADC 资源注册 */
 	Enroll_TIM_Register();					/* TIM 资源注册 */
 	Enroll_I2C_Register();					/* I2C 资源注册 */
 	Enroll_SPI_Register();					/* SPI 资源注册 */
@@ -128,10 +128,29 @@ int main(void)
 		// uint16_t adc2 = API_ADC_GetValue(API_ADC1, API_ADC_CH2);
 		// uint16_t adc5 = API_ADC_GetValue(API_ADC2, API_ADC_CH5);
 
+/* TB6612测试 */
+		// TB6612_SetSpeed(0, 0);
+
 /* MPU6050测试 */
 		mpu_angle();
-		// mpu_dmp_get_data(&Pitch, &Roll, &Yaw);
-		// MPU_Get_Gyroscope(&gyrox,&gyroy,&gyroz);  // 读取角速度
+
+ /* 串级PID控制 - 2ms 姿态环*/
+		if (pid_task_flag != 0U)   // 500Hz 姿态环
+		{
+			pid_task_flag = 0U;
+			// PID_Pitch_Roll_Combined(Pitch, Roll);
+		}
+
+/* 读编码器 + 速度环 PID（20ms 周期，与 Encoder_flag 同步） */
+		if (Encoder_flag != 0U)
+		{
+			Encoder_flag = 0U;
+			Encoder1_Speed = API_Encoder_GetSpeed(API_ENCODER_1);
+			Encoder2_Speed = API_Encoder_GetSpeed(API_ENCODER_2);
+
+			/* 速度环 */
+			PID_Speed_Control((float)(Encoder1_Speed), (float)Encoder2_Speed);
+		}
 
 /* 串口数据打印 */
 		if (print_task_flag != 0U)
@@ -152,19 +171,5 @@ int main(void)
 		OLED_Printf(0, 32, OLED_8X16, "Roll: %.1f", Roll);
 		OLED_Printf(0, 48, OLED_8X16, "Yaw: %.1f", Yaw);
 		OLED_Update();
-
-/* TB6612测试 */
-		// TB6612_SetSpeed(0, 0);
-
-/* 读编码器 + 速度环 PID（20ms 周期，与 Encoder_flag 同步） */
-		if (Encoder_flag != 0U)
-		{
-			Encoder_flag = 0U;
-			Encoder1_Speed = API_Encoder_GetSpeed(API_ENCODER_1);
-			Encoder2_Speed = API_Encoder_GetSpeed(API_ENCODER_2);
-
-			/* 速度环 */
-			PID_Speed_Control((float)(Encoder1_Speed), (float)Encoder2_Speed);
-		}
 	}
 }
