@@ -137,8 +137,6 @@ void PID_SetDerivativeLPF(PID_TypeDef* pid, float alpha);
 void PID_SetAntiWindup(PID_TypeDef* pid, uint8_t enable);
 /* 设置 kp/ki/kd */
 void Set_PID(PID_TypeDef* pid, float kp, float ki, float kd);
-/* 设置PID参数和目标值 */
-void PID_ConfigAll(PID_TypeDef* pid,float kp,float ki,float kd,float target);
 
 /*
  * 使用 pid->dt 进行一次 PID 计算。
@@ -168,12 +166,8 @@ float PID_Cascade_Calc(PID_Cascade_t* cascade,
 /* 编码器速度环初始化-左右轮共享同一组 kp/ki/kd 与限幅*/
 void PID_EncoderSpeed_Init(PID_EncoderSpeed_t* speed);
 
-/* 更新速度环参数与目标（目标单位由上层定义，如 rpm 或 ticks/s）。 */
-void PID_EncoderSpeed_Set(PID_EncoderSpeed_t* speed,
-				  float kp,
-				  float ki,
-				  float kd,
-				  float target);
+/* 设置编码器速度环参数与目标 */
+void PID_EncoderSpeed_Set(PID_EncoderSpeed_t* speed,float kp,float ki,float kd,float target);
 
 /* 速度环控制计算：输入左右实际速度，输出左右控制量。 */
 void PID_EncoderSpeed_Control(PID_EncoderSpeed_t* speed,

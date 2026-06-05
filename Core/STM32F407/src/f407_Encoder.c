@@ -2,13 +2,15 @@
 
 /*
  * F407 编码器底层实现：
- * - TIM1（coreId=0）CH1=PE9(AF1), CH2=PE11(AF1) → 编码器 1
- * - TIM4（coreId=3）CH1=PD12(AF2), CH2=PD13(AF2) → 编码器 2
- * - GPIO 须配置为 AF 模式以接入定时器通道
- * - 定时器编码器模式 3（TI1+TI2 双边沿，4 倍频）
+ * - 通过参数接收 portA/pinA、portB/pinB，不硬编码引脚映射；
+ * - 自动根据端口基址使能 AHB1 GPIO 时钟；
+ * - 自动根据 coreId 使能 APB1/APB2 TIM 时钟；
+ * - AF 编号从 TIM 自动推导（TIM1→AF1, TIM2→AF1, TIM3/4/5→AF2, TIM8→AF3）；
+ * - GPIO 配置为 AF 模式 + 上拉；
+ * - TIM 配置为编码器模式 3。
  */
 
-/* TIM 寄存器结构体（通用定时器，也兼容 TIM1 高级定时器的基本寄存器） */
+/* TIM 寄存器结构体（也兼容 TIM1 高级定时器） */
 typedef struct
 {
 	volatile uint32_t CR1;
@@ -25,7 +27,7 @@ typedef struct
 	volatile uint32_t ARR;
 } F407_TIM_Regs_t;
 
-/* F407 GPIO 寄存器结构体 */
+/* F407 GPIO 寄存器 */
 typedef struct
 {
 	volatile uint32_t MODER;
@@ -40,128 +42,137 @@ typedef struct
 	volatile uint32_t AFRH;
 } F407_GPIO_Regs_t;
 
-/* RCC 基址 */
+/* 外设基址 */
 #define F407_RCC_BASE       (0x40023800UL)
-
-/* TIM 基址 */
 #define F407_TIM1_BASE      (0x40010000UL)
+#define F407_TIM2_BASE      (0x40000000UL)
+#define F407_TIM3_BASE      (0x40000400UL)
 #define F407_TIM4_BASE      (0x40000800UL)
+#define F407_TIM5_BASE      (0x40000C00UL)
+#define F407_TIM8_BASE      (0x40010400UL)
+#define F407_GPIOA_BASE     (0x40020000UL)
 
-/* GPIO 基址 */
-#define F407_GPIOE_BASE     (0x40021000UL)
-#define F407_GPIOD_BASE     (0x40020C00UL)
+/* TIM_SMCR / CCMR1 / CCER / CR1 位定义 */
+#define TIM_SMCR_SMS_Pos    (0U)
+#define TIM_SMCR_SMS_Enc3   (3UL)
+#define TIM_CCMR1_CC1S_Pos  (0U)
+#define TIM_CCMR1_CC2S_Pos  (8U)
+#define TIM_CCMR1_IC1F_Pos  (4U)
+#define TIM_CCMR1_IC2F_Pos  (12U)
+#define TIM_CCER_CC1E       (0U)
+#define TIM_CCER_CC2E       (4U)
+#define TIM_CR1_CEN         (0U)
 
-/* 时钟使能位 */
-#define F407_APB2ENR_TIM1EN  (0U)   /* APB2 bit 0 */
-#define F407_APB1ENR_TIM4EN  (2U)   /* APB1 bit 2 */
-#define F407_AHB1ENR_GPIOEEN (4U)   /* AHB1 bit 4 */
-#define F407_AHB1ENR_GPIODEN (3U)   /* AHB1 bit 3 */
-
-/* TIM_SMCR 编码器模式 */
-#define F407_TIM_SMCR_SMS_Pos    (0U)
-#define F407_TIM_SMCR_SMS_Enc3   (3UL)
-
-/* TIM_CCMR1 位 */
-#define F407_TIM_CCMR1_CC1S_Pos  (0U)
-#define F407_TIM_CCMR1_CC2S_Pos  (8U)
-#define F407_TIM_CCMR1_CC1S_TI1  (1UL)
-#define F407_TIM_CCMR1_CC2S_TI2  (1UL)
-#define F407_TIM_CCMR1_IC1F_Pos  (4U)
-#define F407_TIM_CCMR1_IC2F_Pos  (12U)
-
-/* TIM_CCER 位 */
-#define F407_TIM_CCER_CC1E       (0U)
-#define F407_TIM_CCER_CC2E       (4U)
-
-/* TIM_CR1 位 */
-#define F407_TIM_CR1_CEN         (0U)
-
-typedef struct
+/* ---- 引脚掩码 → 引脚编号 ---- */
+static uint32_t F407_PinToIndex(uint32_t pin)
 {
-	F407_TIM_Regs_t  *timer;
-	void             *gpioPortA;
-	uint32_t          pinIndexA;
-	uint32_t          afA;         /* 复用功能编号 (AF1=1, AF2=2) */
-	void             *gpioPortB;
-	uint32_t          pinIndexB;
-	uint32_t          afB;
-	uint32_t          rccTimBit;
-	uint32_t          isApb2;      /* TIM1 在 APB2，TIM4 在 APB1 */
-} F407_Encoder_HwMap_t;
+	uint32_t i;
+	for (i = 0U; i < 16U; ++i)
+	{
+		if (pin == (1UL << i)) { return i; }
+	}
+	return 0xFFFFFFFFUL;
+}
 
-static F407_Encoder_HwMap_t F407_Encoder_GetMap(uint8_t coreId)
+/* ---- 根据 coreId 获取 TIM 基址 ---- */
+static F407_TIM_Regs_t *F407_Encoder_GetTimer(uint8_t coreId)
 {
-	F407_Encoder_HwMap_t map;
+	switch (coreId)
+	{
+	case 0U: return (F407_TIM_Regs_t *)F407_TIM1_BASE; /* TIM1 */
+	case 1U: return (F407_TIM_Regs_t *)F407_TIM2_BASE; /* TIM2 */
+	case 2U: return (F407_TIM_Regs_t *)F407_TIM3_BASE; /* TIM3 */
+	case 3U: return (F407_TIM_Regs_t *)F407_TIM4_BASE; /* TIM4 */
+	case 4U: return (F407_TIM_Regs_t *)F407_TIM5_BASE; /* TIM5 */
+	case 5U: return (F407_TIM_Regs_t *)F407_TIM8_BASE; /* TIM8 */
+	default: return 0;
+	}
+}
 
-	map.timer     = 0;
-	map.gpioPortA = 0;
-	map.pinIndexA = 0U;
-	map.afA       = 0U;
-	map.gpioPortB = 0;
-	map.pinIndexB = 0U;
-	map.afB       = 0U;
-	map.rccTimBit = 0U;
-	map.isApb2    = 0U;
+/* ---- 根据 TIM 编号推导 AF 编号 ---- */
+static uint32_t F407_Encoder_GetAf(uint8_t coreId)
+{
+	switch (coreId)
+	{
+	case 0U: return 1U; /* TIM1  → AF1 */
+	case 1U: return 1U; /* TIM2  → AF1 */
+	case 2U: return 2U; /* TIM3  → AF2 */
+	case 3U: return 2U; /* TIM4  → AF2 */
+	case 4U: return 2U; /* TIM5  → AF2 */
+	case 5U: return 3U; /* TIM8  → AF3 */
+	default: return 0U;
+	}
+}
+
+/* ---- 使能 TIM 时钟（APB1 或 APB2） ---- */
+static void F407_Encoder_EnableTimClk(uint8_t coreId)
+{
+	uint32_t bit;
+	volatile uint32_t *enr;
 
 	switch (coreId)
 	{
-	case 0U: /* TIM1: PE9=CH1(AF1), PE11=CH2(AF1) */
-		map.timer     = (F407_TIM_Regs_t *)F407_TIM1_BASE;
-		map.gpioPortA = (void *)F407_GPIOE_BASE;
-		map.pinIndexA = 9U;
-		map.afA       = 1U;
-		map.gpioPortB = (void *)F407_GPIOE_BASE;
-		map.pinIndexB = 11U;
-		map.afB       = 1U;
-		map.rccTimBit = F407_APB2ENR_TIM1EN;
-		map.isApb2    = 1U;
+	case 0U: /* TIM1 → APB2 bit 0 */
+		enr = (volatile uint32_t *)(F407_RCC_BASE + 0x44U);
+		bit = 0U;
 		break;
-
-	case 3U: /* TIM4: PD12=CH1(AF2), PD13=CH2(AF2) */
-		map.timer     = (F407_TIM_Regs_t *)F407_TIM4_BASE;
-		map.gpioPortA = (void *)F407_GPIOD_BASE;
-		map.pinIndexA = 12U;
-		map.afA       = 2U;
-		map.gpioPortB = (void *)F407_GPIOD_BASE;
-		map.pinIndexB = 13U;
-		map.afB       = 2U;
-		map.rccTimBit = F407_APB1ENR_TIM4EN;
-		map.isApb2    = 0U;
+	case 1U: /* TIM2 → APB1 bit 0 */
+		enr = (volatile uint32_t *)(F407_RCC_BASE + 0x40U);
+		bit = 0U;
 		break;
-
+	case 2U: /* TIM3 → APB1 bit 1 */
+		enr = (volatile uint32_t *)(F407_RCC_BASE + 0x40U);
+		bit = 1U;
+		break;
+	case 3U: /* TIM4 → APB1 bit 2 */
+		enr = (volatile uint32_t *)(F407_RCC_BASE + 0x40U);
+		bit = 2U;
+		break;
+	case 4U: /* TIM5 → APB1 bit 3 */
+		enr = (volatile uint32_t *)(F407_RCC_BASE + 0x40U);
+		bit = 3U;
+		break;
+	case 5U: /* TIM8 → APB2 bit 1 */
+		enr = (volatile uint32_t *)(F407_RCC_BASE + 0x44U);
+		bit = 1U;
+		break;
 	default:
-		break;
+		return;
 	}
 
-	return map;
+	*enr |= (1UL << bit);
 }
 
-/*
- * 配置 F407 GPIO 为 AF 模式 + 上拉。
- * 直接操作 MODER / PUPDR / AFR 寄存器，不依赖 F407 GPIO API。
- */
-static void F407_Encoder_GpioInitAfPullUp(void *portBase, uint32_t pinIndex, uint32_t af)
+/* ---- 使能 GPIO 端口时钟（AHB1 bit 0~7 = GPIOA~H） ---- */
+static void F407_Encoder_EnableGpioClk(void *port)
+{
+	volatile uint32_t *ahb1enr = (volatile uint32_t *)(F407_RCC_BASE + 0x30U);
+	uint32_t portAddr = (uint32_t)(uintptr_t)port;
+	uint32_t bit;
+
+	if (portAddr < F407_GPIOA_BASE) { return; }
+	bit = (portAddr - F407_GPIOA_BASE) / 0x400UL;
+	if (bit <= 7U)
+	{
+		*ahb1enr |= (1UL << bit);
+	}
+}
+
+/* ---- GPIO AF 模式 + 上拉配置 ---- */
+static void F407_Encoder_GpioInitAfPu(void *portBase, uint32_t pinIndex, uint32_t af)
 {
 	F407_GPIO_Regs_t *gpio = (F407_GPIO_Regs_t *)portBase;
-	uint32_t moderMask;
-	uint32_t moderVal;
-	uint32_t pupdrMask;
-	uint32_t pupdrVal;
 
 	/* MODER: 10 = AF */
-	moderMask = 3UL << (pinIndex * 2U);
-	moderVal  = 2UL << (pinIndex * 2U);
-	gpio->MODER = (gpio->MODER & ~moderMask) | moderVal;
+	gpio->MODER = (gpio->MODER & ~(3UL << (pinIndex * 2U))) | (2UL << (pinIndex * 2U));
 
 	/* OSPEEDR: 10 = 50MHz */
 	gpio->OSPEEDR = (gpio->OSPEEDR & ~(3UL << (pinIndex * 2U))) | (2UL << (pinIndex * 2U));
 
 	/* PUPDR: 01 = 上拉 */
-	pupdrMask = 3UL << (pinIndex * 2U);
-	pupdrVal  = 1UL << (pinIndex * 2U);
-	gpio->PUPDR = (gpio->PUPDR & ~pupdrMask) | pupdrVal;
+	gpio->PUPDR = (gpio->PUPDR & ~(3UL << (pinIndex * 2U))) | (1UL << (pinIndex * 2U));
 
-	/* AFR: 4bit/引脚，低8脚用 AFRL，高8脚用 AFRH */
+	/* AFR: 4bit/引脚，AFRL(0-7), AFRH(8-15) */
 	if (pinIndex <= 7U)
 	{
 		uint32_t shift = pinIndex * 4U;
@@ -174,89 +185,70 @@ static void F407_Encoder_GpioInitAfPullUp(void *portBase, uint32_t pinIndex, uin
 	}
 }
 
-void F407_Encoder_Init(uint8_t coreId)
+/* ---- 配置 TIM 为编码器模式 ---- */
+static void F407_Encoder_ConfigTimer(F407_TIM_Regs_t *tim)
 {
-	F407_Encoder_HwMap_t map;
-	F407_TIM_Regs_t     *tim;
-	volatile uint32_t   *ahb1enr;
-	volatile uint32_t   *apbXenr;
+	tim->CR1 &= ~(1UL << TIM_CR1_CEN);
 
-	map = F407_Encoder_GetMap(coreId);
-	tim = map.timer;
-	if (tim == 0)
-	{
-		return;
-	}
+	tim->CCMR1 = (1UL << TIM_CCMR1_CC1S_Pos) |
+	             (1UL << TIM_CCMR1_CC2S_Pos) |
+	             (3UL << TIM_CCMR1_IC1F_Pos) |
+	             (3UL << TIM_CCMR1_IC2F_Pos);
 
-	/* 1) 使能 GPIO 时钟 */
-	ahb1enr = (volatile uint32_t *)(F407_RCC_BASE + 0x30U); /* AHB1ENR */
-	{
-		uint32_t portBaseA = (uint32_t)(uintptr_t)map.gpioPortA;
-		uint32_t portBaseB = (uint32_t)(uintptr_t)map.gpioPortB;
+	tim->CCER = (1UL << TIM_CCER_CC1E) | (1UL << TIM_CCER_CC2E);
 
-		if (portBaseA == F407_GPIOE_BASE) { *ahb1enr |= (1UL << F407_AHB1ENR_GPIOEEN); }
-		if (portBaseB == F407_GPIOE_BASE) { *ahb1enr |= (1UL << F407_AHB1ENR_GPIOEEN); }
-		if (portBaseA == F407_GPIOD_BASE) { *ahb1enr |= (1UL << F407_AHB1ENR_GPIODEN); }
-		if (portBaseB == F407_GPIOD_BASE) { *ahb1enr |= (1UL << F407_AHB1ENR_GPIODEN); }
-	}
+	tim->SMCR = (TIM_SMCR_SMS_Enc3 << TIM_SMCR_SMS_Pos);
 
-	/* 2) 配置两路 GPIO 为 AF 上拉 */
-	F407_Encoder_GpioInitAfPullUp(map.gpioPortA, map.pinIndexA, map.afA);
-	F407_Encoder_GpioInitAfPullUp(map.gpioPortB, map.pinIndexB, map.afB);
-
-	/* 3) 使能 TIM 时钟 */
-	if (map.isApb2 != 0U)
-	{
-		apbXenr = (volatile uint32_t *)(F407_RCC_BASE + 0x44U); /* APB2ENR */
-	}
-	else
-	{
-		apbXenr = (volatile uint32_t *)(F407_RCC_BASE + 0x40U); /* APB1ENR */
-	}
-	*apbXenr |= (1UL << map.rccTimBit);
-
-	/* 4) 配置定时器编码器模式 */
-	tim->CR1 &= ~(1UL << F407_TIM_CR1_CEN);
-
-	/* CCMR1: CC1S=01(TI1→IC1), CC2S=01(TI2→IC2), ICxF=0x3 */
-	tim->CCMR1 &= ~((3UL << F407_TIM_CCMR1_CC1S_Pos) | (3UL << F407_TIM_CCMR1_CC2S_Pos));
-	tim->CCMR1 |= (F407_TIM_CCMR1_CC1S_TI1 << F407_TIM_CCMR1_CC1S_Pos);
-	tim->CCMR1 |= (F407_TIM_CCMR1_CC2S_TI2 << F407_TIM_CCMR1_CC2S_Pos);
-	tim->CCMR1 |= (0x3UL << F407_TIM_CCMR1_IC1F_Pos);
-	tim->CCMR1 |= (0x3UL << F407_TIM_CCMR1_IC2F_Pos);
-
-	/* CCER: CC1E=1, CC2E=1, 极性默认不反相 */
-	tim->CCER |= (1UL << F407_TIM_CCER_CC1E);
-	tim->CCER |= (1UL << F407_TIM_CCER_CC2E);
-
-	/* SMCR: SMS=011 编码器模式 3 */
-	tim->SMCR &= ~(7UL << F407_TIM_SMCR_SMS_Pos);
-	tim->SMCR |= (F407_TIM_SMCR_SMS_Enc3 << F407_TIM_SMCR_SMS_Pos);
-
-	/* ARR=65535, PSC=0 */
 	tim->ARR = 0xFFFFU;
 	tim->PSC = 0U;
 	tim->CNT = 0U;
 
-	/* 更新事件 */
 	tim->EGR = 1UL;
+	tim->CR1 |= (1UL << TIM_CR1_CEN);
+}
 
-	/* 启动 */
-	tim->CR1 |= (1UL << F407_TIM_CR1_CEN);
+/* ---- 公共接口 ---- */
+
+void F407_Encoder_Init(uint8_t coreId,
+                       void *portA, uint32_t pinA,
+                       void *portB, uint32_t pinB)
+{
+	F407_TIM_Regs_t *tim;
+	uint32_t af;
+	uint32_t idxA, idxB;
+
+	tim = F407_Encoder_GetTimer(coreId);
+	if (tim == 0) { return; }
+
+	af = F407_Encoder_GetAf(coreId);
+	if (af == 0U) { return; }
+
+	idxA = F407_PinToIndex(pinA);
+	idxB = F407_PinToIndex(pinB);
+	if ((idxA > 15U) || (idxB > 15U)) { return; }
+
+	/* 1) 使能 GPIO 时钟 */
+	F407_Encoder_EnableGpioClk(portA);
+	F407_Encoder_EnableGpioClk(portB);
+
+	/* 2) 配置 GPIO 为 AF 上拉 */
+	F407_Encoder_GpioInitAfPu(portA, idxA, af);
+	F407_Encoder_GpioInitAfPu(portB, idxB, af);
+
+	/* 3) 使能 TIM 时钟 */
+	F407_Encoder_EnableTimClk(coreId);
+
+	/* 4) 配置定时器编码器模式 */
+	F407_Encoder_ConfigTimer(tim);
 }
 
 int16_t F407_Encoder_GetCount(uint8_t coreId)
 {
-	F407_Encoder_HwMap_t map;
-	F407_TIM_Regs_t     *tim;
-	int16_t              val;
+	F407_TIM_Regs_t *tim;
+	int16_t val;
 
-	map = F407_Encoder_GetMap(coreId);
-	tim = map.timer;
-	if (tim == 0)
-	{
-		return 0;
-	}
+	tim = F407_Encoder_GetTimer(coreId);
+	if (tim == 0) { return 0; }
 
 	val = (int16_t)tim->CNT;
 	tim->CNT = 0U;

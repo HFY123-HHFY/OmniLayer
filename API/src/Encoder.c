@@ -6,6 +6,10 @@
  * - 维护编码器配置表，供 Init 时使用。
  */
 
+/* 编码器速度值 */
+int16_t Encoder1_Speed = 0;
+int16_t Encoder2_Speed = 0;
+
 #define API_ENCODER_MAX_ID  ((uint8_t)API_ENCODER_2)
 
 static const API_Encoder_Config_t *s_encoderTable;
@@ -16,9 +20,11 @@ static uint8_t                      s_encoderInited[API_ENCODER_MAX_ID + 1U];
  * Core 层条件编译分发
  */
 #if (ENROLL_MCU_TARGET == ENROLL_MCU_F103)
-static void API_Encoder_CoreInit(uint8_t coreId)
+static void API_Encoder_CoreInit(uint8_t coreId,
+                                 void *portA, uint32_t pinA,
+                                 void *portB, uint32_t pinB)
 {
-	F103_Encoder_Init(coreId);
+	F103_Encoder_Init(coreId, portA, pinA, portB, pinB);
 }
 
 static int16_t API_Encoder_CoreGetCount(uint8_t coreId)
@@ -26,9 +32,11 @@ static int16_t API_Encoder_CoreGetCount(uint8_t coreId)
 	return F103_Encoder_GetCount(coreId);
 }
 #elif (ENROLL_MCU_TARGET == ENROLL_MCU_F407)
-static void API_Encoder_CoreInit(uint8_t coreId)
+static void API_Encoder_CoreInit(uint8_t coreId,
+                                 void *portA, uint32_t pinA,
+                                 void *portB, uint32_t pinB)
 {
-	F407_Encoder_Init(coreId);
+	F407_Encoder_Init(coreId, portA, pinA, portB, pinB);
 }
 
 static int16_t API_Encoder_CoreGetCount(uint8_t coreId)
@@ -36,13 +44,9 @@ static int16_t API_Encoder_CoreGetCount(uint8_t coreId)
 	return F407_Encoder_GetCount(coreId);
 }
 #elif (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
-/*
- * G3507 编码器需要额外传递引脚信息，因为外部中断模拟需要知道两路信号位置。
- * Core 层内部存储引脚映射，Init 前需通过 SetPins 写入。
- */
-static void API_Encoder_CoreInitWithPins(uint8_t coreId,
-                                         void *portA, uint32_t pinA,
-                                         void *portB, uint32_t pinB)
+static void API_Encoder_CoreInit(uint8_t coreId,
+                                 void *portA, uint32_t pinA,
+                                 void *portB, uint32_t pinB)
 {
 	G3507_Encoder_SetPins(coreId, portA, pinA, portB, pinB);
 	G3507_Encoder_Init(coreId);
@@ -53,9 +57,9 @@ static int16_t API_Encoder_CoreGetCount(uint8_t coreId)
 	return G3507_Encoder_GetCount(coreId);
 }
 #else
-static void API_Encoder_CoreInitWithPins(uint8_t coreId,
-                                         void *portA, uint32_t pinA,
-                                         void *portB, uint32_t pinB)
+static void API_Encoder_CoreInit(uint8_t coreId,
+                                 void *portA, uint32_t pinA,
+                                 void *portB, uint32_t pinB)
 {
 	(void)coreId;
 	(void)portA;
@@ -117,14 +121,9 @@ void API_Encoder_Init(API_Encoder_Id_t id)
 		return;
 	}
 
-#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
-	API_Encoder_CoreInitWithPins(config->coreId,
-	                             config->portA, config->pinA,
-	                             config->portB, config->pinB);
-#else
-	(void)config;
-	API_Encoder_CoreInit(config->coreId);
-#endif
+	API_Encoder_CoreInit(config->coreId,
+	                     config->portA, config->pinA,
+	                     config->portB, config->pinB);
 
 	s_encoderInited[(uint8_t)id] = 1U;
 }

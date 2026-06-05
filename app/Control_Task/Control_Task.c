@@ -14,10 +14,6 @@ volatile uint8_t print_task_flag = 0;
 /* 编码器节拍 */
 volatile uint8_t Encoder_flag = 0;
 
-/* 编码器速度值 */
-int16_t Encoder1_Speed = 0;
-int16_t Encoder2_Speed = 0;
-
 /* 串口接收数据 */
 uint32_t USART_1_RX = 0;
 uint32_t USART_2_RX = 0;

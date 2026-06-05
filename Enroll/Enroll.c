@@ -53,8 +53,8 @@ static const API_USART_Config_t s_usartTable[] =
 #undef ENROLL_USART_ITEM
 
 /* ENCODER 编码器配置表：把 HW_ENCODER_MAP 展开成 API_Encoder_Config_t。 */
-#define ENROLL_ENCODER_ITEM(id, coreId, portA, pinA, portB, pinB) \
-	{ id, coreId, portA, pinA, portB, pinB },
+#define ENROLL_ENCODER_ITEM(id, coreId, chA, portA, pinA, chB, portB, pinB) \
+	{ id, coreId, chA, portA, pinA, chB, portB, pinB },
 
 static const API_Encoder_Config_t s_encoderTable[] =
 {

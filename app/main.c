@@ -16,6 +16,8 @@
 #include "My_Usart/My_Usart.h"
 #include "My_I2c/My_I2c.h"
 #include "My_SPI/My_SPI.h"
+#include "PID/PID.h"
+#include "Control/Control.h"
 #include "Control_Task/Control_Task.h"
 
 /*BSP硬件抽象层*/
@@ -34,7 +36,7 @@ int main(void)
 /* 注册层：注册相关资源，登记资源映射 */
 	Enroll_USART_Register();				/* USART 资源注册 */
 	Enroll_PWM_Register();					/* PWM 资源注册 */
-	Enroll_ADC_Register();					/* ADC 资源注册 */
+	// Enroll_ADC_Register();					/* ADC 资源注册 */
 	Enroll_TIM_Register();					/* TIM 资源注册 */
 	Enroll_I2C_Register();					/* I2C 资源注册 */
 	Enroll_SPI_Register();					/* SPI 资源注册 */
@@ -63,9 +65,9 @@ int main(void)
 	API_TIM_Init(API_TIM1, 1U); /* 定时器初始化：API_TIM1，每 1ms 触发一次更新中断 */
 
 /* 通信协议初始化 */
-	MyI2C_Init();						/* 软件 I2C 初始化 */
-	MySPI_Init();						/* 软件 SPI 初始化 */
-	App_I2C_ScanOnce();					/* 开机执行一次 I2C 扫描 */
+	// MyI2C_Init();						/* 软件 I2C 初始化 */
+	// MySPI_Init();						/* 软件 SPI 初始化 */
+	// App_I2C_ScanOnce();					/* 开机执行一次 I2C 扫描 */
 	// App_SPI_TestOnce();				/* 开机执行一次 SPI 测试 */
 
 /*BSP硬件抽象层初始化*/
@@ -79,10 +81,14 @@ int main(void)
 	API_Encoder_Init(API_ENCODER_1); /* 编码器 1 初始化 */
 	API_Encoder_Init(API_ENCODER_2); /* 编码器 2 初始化 */
 
+/* PID控制器初始化 */
+	PID_Speed_Init(); /* 速度环初始化 */
+	// PID_EncoderSpeed_Set(&speed_loop, 5.0f, 0.01f, 0.00f, 10.0f); /* 设置速度环 PID 参数与目标值 */
+
 	while (1)
 	{
 /* LED和延时测试 */
-		// LED_Control(LED1, LED_HIGH);
+		LED_Control(LED1, LED_HIGH);
 		// LED_Turn(LED2, 500); /* LED1 翻转闪烁，周期 500ms */
 		// LED_Control(Buzzer1, LED_HIGH);
 
@@ -91,23 +97,24 @@ int main(void)
 		if (Key == 1U)
 		{
 			LED_Control(LED1, LED_HIGH);
+			// PID_EncoderSpeed_Set(&speed_loop, 0.5f, 0.1f, 0.05f, 10.0f); /* 设置速度环 PID 参数与目标值 */
 		}
 		if (Key == 2U)
 		{
 			LED_Control(LED2, LED_HIGH);
-			TB6612_SetSpeed(0, 0);
+			// PID_EncoderSpeed_Set(&speed_loop, 0.5f, 0.1f, 0.05f, 15.0f); /* 设置速度环 PID 参数与目标值 */
 		}
 		if (Key == 3U)
 		{
 			LED_Control(LED3, LED_HIGH);
-			TB6612_SetSpeed(200, -200);
+			// PID_EncoderSpeed_Set(&speed_loop, 0.5f, 0.1f, 0.05f, 20.0f); /* 设置速度环 PID 参数与目标值 */
 		}
 		if (Key == 4U)
 		{
 			LED_Control(LED1, LED_LOW);
 			LED_Control(LED2, LED_LOW);
 			LED_Control(LED3, LED_LOW);
-			TB6612_SetSpeed(-300, 300);
+			// PID_EncoderSpeed_Set(&speed_loop, 0.5f, 0.1f, 0.05f, 0.0f); /* 设置速度环 PID 参数与目标值 */
 		}
 
 /* 串口测试 */
@@ -154,5 +161,8 @@ int main(void)
 			Encoder1_Speed = API_Encoder_GetSpeed(API_ENCODER_1);
 			Encoder2_Speed = API_Encoder_GetSpeed(API_ENCODER_2);
 		}
+
+/* PID - 速度环测试 */
+		PID_Speed_Control((float)Encoder1_Speed, (float)Encoder2_Speed);
 	}
 }

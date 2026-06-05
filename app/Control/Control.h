@@ -7,6 +7,7 @@
 #include "Filter/Filter.h"
 #include "MPU6050_Int.h"
 #include "pwm.h"
+#include "TB6612.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -35,6 +36,9 @@ extern PID_TypeDef pid_yaw;
 extern PID_TypeDef pid_rate_pitch;
 extern PID_TypeDef pid_rate_roll;
 extern PID_TypeDef pid_rate_yaw;
+
+/* 速度环 */
+extern PID_EncoderSpeed_t speed_loop;
 
 /*
  * 控制初始化：

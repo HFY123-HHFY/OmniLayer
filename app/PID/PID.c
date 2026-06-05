@@ -242,20 +242,6 @@ void Set_PID(PID_TypeDef* pid, float kp, float ki, float kd)
 	pid->kd = kd;
 }
 
-/* 设置PID参数和目标值 */
-void PID_ConfigAll(PID_TypeDef* pid,float kp,float ki,float kd,float target)
-{
-	if (pid == 0)
-	{
-		return;
-	}
-
-	pid->kp = kp;
-	pid->ki = ki;
-	pid->kd = kd;
-	pid->Target = target;
-}
-
 /*
  * 位置式 PID 计算。
  * 特性：
@@ -486,7 +472,7 @@ void PID_EncoderSpeed_Init(PID_EncoderSpeed_t* speed)
 	PID_Init_WithLimit(&speed->right, 300.0f, 2000.0f);
 }
 
-/* 更新编码器速度环参数与目标。 */
+/* 设置编码器速度环参数与目标。 */
 void PID_EncoderSpeed_Set(PID_EncoderSpeed_t* speed,
 				  float kp,
 				  float ki,

@@ -206,5 +206,5 @@ void PID_Speed_Control(float actual_left, float actual_right)
 	PID_EncoderSpeed_Control(&speed_loop, actual_left, actual_right, &out_left, &out_right);
 
 	/* 加载输出到电机：预留统一入口，后续混控。 */
-	Motor_Test();
+	TB6612_SetSpeed((int16_t)out_left, (int16_t)out_right);
 }
