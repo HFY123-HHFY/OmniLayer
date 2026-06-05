@@ -37,6 +37,6 @@ void TB6612_Register(const TB6612_Config_t *configTable, uint8_t count);
 /* 初始化 TB6612 方向脚。 */
 void TB6612_Init(void);
 /* 设置 A/B 两路电机速度（正负表示方向，绝对值表示占空比）。 */
-void TB6612_SetSpeed(int speedA, int speedB);
+void TB6612_SetSpeed(int16_t speedA, int16_t speedB);
 
 #endif /* __TB6612_H__ */

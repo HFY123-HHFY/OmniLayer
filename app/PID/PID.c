@@ -457,7 +457,7 @@ float PID_Cascade_Calc(PID_Cascade_t* cascade,
 	return PID_CalcDt(cascade->inner, inner_actual, inner_dt);
 }
 
-/* 编码器速度环初始化。 */
+/* 编码器速度环初始化。Out_max 须匹配 TB6612_MAX_DUTY（400），否则反积分饱和失效。 */
 void PID_EncoderSpeed_Init(PID_EncoderSpeed_t* speed)
 {
 	if (speed == 0)
@@ -468,8 +468,13 @@ void PID_EncoderSpeed_Init(PID_EncoderSpeed_t* speed)
 	PID_Init(&speed->left);
 	PID_Init(&speed->right);
 
-	PID_Init_WithLimit(&speed->left, 300.0f, 2000.0f);
-	PID_Init_WithLimit(&speed->right, 300.0f, 2000.0f);
+	/*
+	 * Integral_max 限制的是 error_sum，不是 I 贡献量。
+	 * I_out = ki × error_sum。所以 max_I_out = ki × Integral_max。
+	 * Integral_max 要给足够余量，否则稳态误差永远补不回来。
+	 */
+	PID_Init_WithLimit(&speed->left,  5000.0f, 400.0f);
+	PID_Init_WithLimit(&speed->right, 5000.0f, 400.0f);
 }
 
 /* 设置编码器速度环参数与目标。 */

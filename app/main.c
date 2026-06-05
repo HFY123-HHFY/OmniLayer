@@ -65,9 +65,9 @@ int main(void)
 	API_TIM_Init(API_TIM1, 1U); /* 定时器初始化：API_TIM1，每 1ms 触发一次更新中断 */
 
 /* 通信协议初始化 */
-	// MyI2C_Init();						/* 软件 I2C 初始化 */
-	// MySPI_Init();						/* 软件 SPI 初始化 */
-	// App_I2C_ScanOnce();					/* 开机执行一次 I2C 扫描 */
+	MyI2C_Init();						/* 软件 I2C 初始化 */
+	MySPI_Init();						/* 软件 SPI 初始化 */
+	App_I2C_ScanOnce();					/* 开机执行一次 I2C 扫描 */
 	// App_SPI_TestOnce();				/* 开机执行一次 SPI 测试 */
 
 /*BSP硬件抽象层初始化*/
@@ -83,7 +83,7 @@ int main(void)
 
 /* PID控制器初始化 */
 	PID_Speed_Init(); /* 速度环初始化 */
-	// PID_EncoderSpeed_Set(&speed_loop, 5.0f, 0.01f, 0.00f, 10.0f); /* 设置速度环 PID 参数与目标值 */
+	// PID_EncoderSpeed_Set(&speed_loop, 2.5f, 0.50f, 0.1f, -50.0f); /* 设置速度环 PID 参数与目标值 */
 
 	while (1)
 	{
@@ -97,24 +97,25 @@ int main(void)
 		if (Key == 1U)
 		{
 			LED_Control(LED1, LED_HIGH);
-			// PID_EncoderSpeed_Set(&speed_loop, 0.5f, 0.1f, 0.05f, 10.0f); /* 设置速度环 PID 参数与目标值 */
 		}
 		if (Key == 2U)
 		{
 			LED_Control(LED2, LED_HIGH);
-			// PID_EncoderSpeed_Set(&speed_loop, 0.5f, 0.1f, 0.05f, 15.0f); /* 设置速度环 PID 参数与目标值 */
+			PID_EncoderSpeed_Set(&speed_loop, 2.2f, 0.50f, 0.1f, 100.0f); /* 设置速度环 PID 参数与目标值 */
 		}
 		if (Key == 3U)
 		{
 			LED_Control(LED3, LED_HIGH);
-			// PID_EncoderSpeed_Set(&speed_loop, 0.5f, 0.1f, 0.05f, 20.0f); /* 设置速度环 PID 参数与目标值 */
+			PID_Reset(&speed_loop.left);
+			PID_Reset(&speed_loop.right);
+			PID_EncoderSpeed_Set(&speed_loop, 0.0f, 0.0f, 0.0f, 0.0f); /* 设置速度环 PID 参数与目标值 */
 		}
 		if (Key == 4U)
 		{
 			LED_Control(LED1, LED_LOW);
 			LED_Control(LED2, LED_LOW);
 			LED_Control(LED3, LED_LOW);
-			// PID_EncoderSpeed_Set(&speed_loop, 0.5f, 0.1f, 0.05f, 0.0f); /* 设置速度环 PID 参数与目标值 */
+			PID_EncoderSpeed_Set(&speed_loop, 2.2f, 0.50f, 0.1f, -100.0f); /* 设置速度环 PID 参数与目标值 */
 		}
 
 /* 串口测试 */
@@ -128,7 +129,7 @@ int main(void)
 		// uint16_t adc5 = API_ADC_GetValue(API_ADC2, API_ADC_CH5);
 
 /* MPU6050测试 */
-		// mpu_angle();
+		mpu_angle();
 		// mpu_dmp_get_data(&Pitch, &Roll, &Yaw);
 		// MPU_Get_Gyroscope(&gyrox,&gyroy,&gyroz);  // 读取角速度
 
@@ -136,7 +137,8 @@ int main(void)
 		if (print_task_flag != 0U)
 		{
 			print_task_flag = 0U;
-			usart_printf(USART1, "1= %d ,2= %d\r\n", Encoder1_Speed, Encoder2_Speed);
+			usart_printf(USART1, "1=%d, 2=%d, Lout=%d, Rout=%d\r\n", Encoder1_Speed, Encoder2_Speed, (int)speed_loop.left.output, (int)speed_loop.right.output);
+			usart_printf(USART1, "P=%.1f, I=%.1f, D=%.1f\r\n", (double)speed_loop.left.P_out, (double)speed_loop.left.I_out, (double)speed_loop.left.D_out);
 			// usart_printf(USART1, "key: %lu\r\n", Key);
 			// usart_printf(USART1, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
 			// usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
@@ -154,15 +156,15 @@ int main(void)
 /* TB6612测试 */
 		// TB6612_SetSpeed(0, 0);
 
-/* 读编码器 */
+/* 读编码器 + 速度环 PID（20ms 周期，与 Encoder_flag 同步） */
 		if (Encoder_flag != 0U)
 		{
 			Encoder_flag = 0U;
 			Encoder1_Speed = API_Encoder_GetSpeed(API_ENCODER_1);
 			Encoder2_Speed = API_Encoder_GetSpeed(API_ENCODER_2);
-		}
 
-/* PID - 速度环测试 */
-		PID_Speed_Control((float)Encoder1_Speed, (float)Encoder2_Speed);
+			/* 速度环 */
+			PID_Speed_Control((float)(Encoder1_Speed), (float)Encoder2_Speed);
+		}
 	}
 }

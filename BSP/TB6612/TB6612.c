@@ -20,7 +20,7 @@ static const TB6612_Config_t *TB6612_GetConfig(void)
 /*
  * 将输入速度绝对值转换为占空比，并限制在 0~TB6612_MAX_DUTY。
  */
-static uint16_t TB6612_AbsToDuty(int value)
+static uint16_t TB6612_AbsToDuty(int16_t value)
 {
 	uint32_t duty;
 	const TB6612_Config_t *config;
@@ -85,7 +85,7 @@ void TB6612_Init(void)
 }
 
 /* 根据速度符号设置方向脚，并通过 PWM 输出对应占空比。 */
-void TB6612_SetSpeed(int speedA, int speedB)
+void TB6612_SetSpeed(int16_t speedA, int16_t speedB)
 {
 	const TB6612_Config_t *config;
 	uint16_t dutyA = 0U, dutyB = 0U;
@@ -103,14 +103,14 @@ void TB6612_SetSpeed(int speedA, int speedB)
 	if (speedA > 0)
 	{
 		// 正转
-		AIN1_OUT(1);
-		AIN2_OUT(0);
+		AIN1_OUT(0);
+		AIN2_OUT(1);
 	}
 	else if (speedA < 0)
 	{
 		// 反转
-		AIN1_OUT(0);
-		AIN2_OUT(1);
+		AIN1_OUT(1);
+		AIN2_OUT(0);
 	}
 	else
 	{

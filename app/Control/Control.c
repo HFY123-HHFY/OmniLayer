@@ -86,6 +86,10 @@ void Motor_Test(void)
 void PID_Speed_Init(void)
 {
 	PID_EncoderSpeed_Init(&speed_loop);
+
+	/* 速度环周期与 Encoder_flag 保持一致（20ms） */
+	PID_SetSampleTime(&speed_loop.left,  0.02f);
+	PID_SetSampleTime(&speed_loop.right, 0.02f);
 }
 
 /* PID 参数初始化。 */
@@ -190,21 +194,14 @@ void PID_Pitch_Roll_Combined(float actual_pitch, float actual_roll)
 	Motor_Test();
 }
 
-/* 速度环控制函数 */
+/* 速度环控制函数：由 main.c 在 Encoder_flag 节拍（20ms）调用一次。 */
 void PID_Speed_Control(float actual_left, float actual_right)
 {
-	/* 只有节拍到来才执行一次 PID。 */
-	if (pid_task_flag != 1U)
-	{
-		return;
-	}
-	pid_task_flag = 0U;
-
 	float out_left = 0.0f;
 	float out_right = 0.0f;
 
 	PID_EncoderSpeed_Control(&speed_loop, actual_left, actual_right, &out_left, &out_right);
 
-	/* 加载输出到电机：预留统一入口，后续混控。 */
+	/* 加载输出到电机 */
 	TB6612_SetSpeed((int16_t)out_left, (int16_t)out_right);
 }
