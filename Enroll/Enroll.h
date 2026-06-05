@@ -92,11 +92,16 @@ void Enroll_TB6612_Register(void);
 /* MPU6050 外部中断与回调。 */
 void Enroll_MPU6050_Register(void);
 
+/* 编码器资源注册：登记板级编码器资源表。 */
+void Enroll_Encoder_Register(void);
+
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* __ENROLL_H */
+
+
 
 
 

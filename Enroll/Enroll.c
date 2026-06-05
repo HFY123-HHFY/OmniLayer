@@ -52,6 +52,16 @@ static const API_USART_Config_t s_usartTable[] =
 };
 #undef ENROLL_USART_ITEM
 
+/* ENCODER 编码器配置表：把 HW_ENCODER_MAP 展开成 API_Encoder_Config_t。 */
+#define ENROLL_ENCODER_ITEM(id, coreId, portA, pinA, portB, pinB) \
+	{ id, coreId, portA, pinA, portB, pinB },
+
+static const API_Encoder_Config_t s_encoderTable[] =
+{
+	HW_ENCODER_MAP(ENROLL_ENCODER_ITEM)
+};
+#undef ENROLL_ENCODER_ITEM
+
 /*************************** I2C/SPI协议配置层 ************************/
 /*******************************I2C***********************************/
 /* I2C 配置表：把 HW_I2C_MAP 展开成 MyI2C_Config_t。 */
@@ -219,7 +229,14 @@ void Enroll_MPU6050_Register(void)
 	API_EXTI_Init(s_mpuExtiTable[0].id, API_EXTI_TRIGGER_RISING, 0U, 2U);
 }
 
+/* TB6612 注册 */
 void Enroll_TB6612_Register(void)
 {
 	TB6612_Register(s_tb6612Table, HW_TB6612_COUNT);
+}
+
+/* 编码器注册 */
+void Enroll_Encoder_Register(void)
+{
+	API_Encoder_Register(s_encoderTable, HW_ENCODER_COUNT);
 }

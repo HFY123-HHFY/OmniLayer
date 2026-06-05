@@ -10,6 +10,7 @@
 #include "tim.h"
 #include "pwm.h"
 #include "adc.h"
+#include "Encoder.h"
 
 /*app应用层*/
 #include "My_Usart/My_Usart.h"
@@ -42,6 +43,7 @@ int main(void)
 	Enroll_MPU6050_Register();				/* MPU6050 INT 资源注册 */
 	Enroll_OLED_Register();					/* OLED SPI 控制脚注册 */
 	Enroll_TB6612_Register();				/* TB6612 资源注册 */
+	Enroll_Encoder_Register();				/* 编码器 资源注册 */
 
 	/* 注册后绑定中断回调*/
 	Enroll_USART_RegisterIrqHandler(Control_Task_USART_Callback); /* USART 中断回调注册 */
@@ -74,6 +76,8 @@ int main(void)
 	// uint8_t mpu6050_dma_int = mpu_dmp_init();
 	// usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
 	TB6612_Init(); /* TB6612 电机驱动初始化 */
+	API_Encoder_Init(API_ENCODER_1); /* 编码器 1 初始化 */
+	API_Encoder_Init(API_ENCODER_2); /* 编码器 2 初始化 */
 
 	while (1)
 	{
@@ -118,15 +122,16 @@ int main(void)
 
 /* MPU6050测试 */
 		// mpu_angle();
-		mpu_dmp_get_data(&Pitch, &Roll, &Yaw);
+		// mpu_dmp_get_data(&Pitch, &Roll, &Yaw);
 		// MPU_Get_Gyroscope(&gyrox,&gyroy,&gyroz);  // 读取角速度
 
 /* 串口数据打印 */
 		if (print_task_flag != 0U)
 		{
 			print_task_flag = 0U;
+			usart_printf(USART1, "1= %d ,2= %d\r\n", Encoder1_Speed, Encoder2_Speed);
 			// usart_printf(USART1, "key: %lu\r\n", Key);
-			usart_printf(USART1, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
+			// usart_printf(USART1, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
 			// usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
 			// usart_printf(USART2, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw); /* 无线串口 */
 			// usart_printf(USART1, "GyroX=%d GyroY=%d GyroZ=%d\r\n", gyrox, gyroy, gyroz);
@@ -141,5 +146,13 @@ int main(void)
 
 /* TB6612测试 */
 		// TB6612_SetSpeed(0, 0);
+
+/* 读编码器 */
+		if (Encoder_flag != 0U)
+		{
+			Encoder_flag = 0U;
+			Encoder1_Speed = API_Encoder_GetSpeed(API_ENCODER_1);
+			Encoder2_Speed = API_Encoder_GetSpeed(API_ENCODER_2);
+		}
 	}
 }

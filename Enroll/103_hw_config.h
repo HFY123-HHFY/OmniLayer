@@ -148,11 +148,13 @@
       HW_TB6612_BIN1_PORT, HW_TB6612_BIN1_PIN, \
       HW_TB6612_BIN2_PORT, HW_TB6612_BIN2_PIN)
 
+/* 编码器 1 板级映射 */ 
 #define HW_ENCODER1_A_PORT GPIOA
 #define HW_ENCODER1_A_PIN  GPIO_Pin_0
 #define HW_ENCODER1_B_PORT GPIOA
 #define HW_ENCODER1_B_PIN  GPIO_Pin_1
 
+/* 编码器 2 板级映射 */ 
 #define HW_ENCODER2_A_PORT GPIOB
 #define HW_ENCODER2_A_PIN  GPIO_Pin_6
 #define HW_ENCODER2_B_PORT GPIOB
@@ -186,5 +188,7 @@
 #define HW_TB6612_COUNT 1U
 /* 当前板子上注册了 1 个 MPU6050 INT 引脚 */
 #define HW_MPU6050_INT_COUNT 1U
+/* 当前板子上注册了 2 个编码器 */
+#define HW_ENCODER_COUNT  2U
 
 #endif /* __103_HW_CONFIG_H */

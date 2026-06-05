@@ -27,6 +27,7 @@
 #include "exti.h"
 #include "MPU6050_Int.h"
 #include "TB6612.h"
+#include "Encoder.h"
 
 #include <stddef.h>
 

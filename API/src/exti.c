@@ -9,6 +9,7 @@
 #include "f407_exti.h"
 #elif (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
 #include "G3507_exti.h"
+#include "G3507_Encoder.h"
 #include "ti/devices/msp/m0p/mspm0g350x.h"
 #include "ti/driverlib/m0p/dl_interrupt.h"
 #else
@@ -259,6 +260,10 @@ void EXTI15_10_IRQHandler(void)
 void GROUP1_IRQHandler(void)
 {
 	uint32_t pendingGroup;
+
+	/* 先处理编码器外部中断（独立于 API_EXTI 体系） */
+	G3507_Encoder_ProcessPortIrq(GPIOA);
+	G3507_Encoder_ProcessPortIrq(GPIOB);
 
 	for (;;)
 	{

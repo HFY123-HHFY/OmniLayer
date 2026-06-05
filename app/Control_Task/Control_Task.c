@@ -11,11 +11,17 @@ uint32_t Timer_Bsp_t = 0;
 /* printf节拍 */
 volatile uint8_t print_task_flag = 0;
 
+/* 编码器节拍 */
+volatile uint8_t Encoder_flag = 0;
+
+/* 编码器速度值 */
+int16_t Encoder1_Speed = 0;
+int16_t Encoder2_Speed = 0;
+
 /* 串口接收数据 */
 uint32_t USART_1_RX = 0;
 uint32_t USART_2_RX = 0;
 uint32_t USART_3_RX = 0;
-uint32_t USART_4_RX = 0;
 
 /*
  * 定时器回调函数：
@@ -26,6 +32,7 @@ void Control_Task_TIM_Callback(API_TIM_Id_t id)
 	static uint16_t time_t = 0U; /* 程序运行时间计数 */
 	static uint8_t printf_tick = 0U; /* printf 节拍计数 */
 	static uint8_t pid_2ms_tick = 0U; /* 2ms PID 节拍计数 */
+	static uint8_t Encoder_tick = 0u; /* 编码器节拍数 */
 
 	if (id != API_TIM1)
 	{
@@ -34,22 +41,33 @@ void Control_Task_TIM_Callback(API_TIM_Id_t id)
 
 	Key_Tick(); /* 按键扫描函数，更新按键状态和事件 */
 
+	pid_2ms_tick++;
+	Encoder_tick++;
 	printf_tick++;
 	time_t++;
-	pid_2ms_tick++;
 
+/* PID */
 	if (pid_2ms_tick >= 2U)
 	{
 		pid_2ms_tick = 0U;
 		pid_task_flag = 1U;
 	}
 
+/* 编码器 */
+	if(Encoder_tick >= 20)
+	{
+		Encoder_tick = 0U;
+		Encoder_flag = 1U;
+	}
+
+/* printf */
 	if (printf_tick >= 50U)
 	{
 		printf_tick = 0U;
 		print_task_flag = 1U;
 	}
 
+/* 时间戳 */
 	if (time_t >= 1000U)
 	{
 		time_t = 0U;
