@@ -1,16 +1,7 @@
 #ifndef __103_HW_CONFIG_H
 #define __103_HW_CONFIG_H
 
-#include "f103_gpio.h"
-#include "usart.h"
-#include "tim.h"
-#include "pwm.h"
-#include "adc.h"
-#include "My_I2c.h"
-#include "My_SPI.h"
-#include "LED.h"
-#include "KEY.h"
-#include "Encoder.h"
+#include "f103_gpio.h" /* GPIO_Pin_x + GPIOA/B 原语，其余枚举值在 Enroll.c 展开时由 Enroll_Internal.h 提供 */
 
 /*
  * 103_hw_config.h 板级硬件映射宏

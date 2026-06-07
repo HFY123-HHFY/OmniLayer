@@ -135,7 +135,7 @@ cmake --build --preset Debug
 
 - **策略文件**：[`app/IrqPriority.h`] — 集中定义所有中断的抢占/响应优先级宏。
 - **原则**：数字越小优先级越高，Core 层只提供"怎么设"的机制，`IrqPriority.h` 决定"谁比谁高"的策略。
-- **多平台适配**：STM32F103/F407（Cortex-M3/M4, 4bit NVIC → 0~15）和 MSPM0G3507（Cortex-M0+, 2bit NVIC → 0~3）自动按宏展开正确数值。
+- **多平台适配**：STM32F103/F407（Cortex-M3/M4, 4bit NVIC - 0~15）和 MSPM0G3507（Cortex-M0+, 2bit NVIC - 0~3）自动按宏展开正确数值。
 
 ## 🧱 新增 MCU 快速接入
 

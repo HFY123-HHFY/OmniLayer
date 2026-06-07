@@ -4,6 +4,7 @@
 #include "usart.h"
 #include "My_Usart/My_Usart.h"
 #include "Control/Control.h"
+#include "KEY.h"
 
 /* 程序运行的时间戳（s） */
 uint32_t Timer_Bsp_t = 0;

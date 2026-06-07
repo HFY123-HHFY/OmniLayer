@@ -1,4 +1,5 @@
 #include "G3507_pwm.h"
+#include "pwm.h"
 
 #include "G3507_hw_config.h"
 #include "ti/driverlib/dl_gpio.h"

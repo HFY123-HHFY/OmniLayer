@@ -1,20 +1,10 @@
 #ifndef __G3507_HW_CONFIG_H
 #define __G3507_HW_CONFIG_H
 
-#include "LED.h"
-#include "KEY.h"
-#include "My_I2c.h"
-#include "My_SPI.h"
-#include "TB6612.h"
-#include "pwm.h"
-#include "usart.h"
-#include "tim.h"
-#include "adc.h"
-#include "ti/driverlib/dl_gpio.h"
-#include "Encoder.h"
+#include "ti/driverlib/dl_gpio.h" /* GPIO_Pin_x + GPIOA/B 原语，其余枚举值在 Enroll.c 展开时由 Enroll_Internal.h 提供 */
 
 /*
- * G3507_hw_config.h
+ * G3507_hw_config.h 板级硬件映射宏
  * 只维护实际用到的端口/引脚/IOMUX，注册和查找都在这里完成。
  */
 

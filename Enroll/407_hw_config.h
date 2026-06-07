@@ -1,25 +1,10 @@
 #ifndef __407_HW_CONFIG_H
 #define __407_HW_CONFIG_H
 
-#include "LED.h"
-#include "KEY.h"
-#include "My_I2c.h"
-#include "My_SPI.h"
-#include "usart.h"
-#include "tim.h"
-#include "pwm.h"
-#include "adc.h"
-#include "f407_gpio.h"
-#include "Encoder.h"
+#include "f407_gpio.h" /* GPIO_Pin_x + GPIOA/B 原语，其余枚举值在 Enroll.c 展开时由 Enroll_Internal.h 提供 */
 
 /*
  * 407_hw_config.h 板级硬件映射宏
- */
-
-/*
- * HW_LED_MAP(X) 的用途：
- * 1) X 是一个宏函数，用于把每个 LED 映射项展开成结构体初始化代码。
- * 2) 这样 Enroll.c 里只需要写一次模板，不用重复手写每个 LED 项。
  */
 
 /*
