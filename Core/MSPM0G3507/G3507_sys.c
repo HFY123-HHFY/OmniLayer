@@ -11,10 +11,11 @@
 #endif
 
 #define G3507_STARTUP_SETTLE_CYCLES_FAST   (80000UL)
-#define G3507_STARTUP_SETTLE_CYCLES_COLD   (400000UL)
+#define G3507_STARTUP_SETTLE_CYCLES_COLD   (800000UL)   /* 冷启动延长到约 25ms@32MHz，确保模拟电路充分稳定 */
 #define G3507_POWER_GOOD_TIMEOUT           (800000UL)
-#define G3507_PLL_LOCK_TIMEOUT             (1200000UL)
+#define G3507_PLL_LOCK_TIMEOUT             (1600000UL)  /* 冷启动 PLL 锁定给更多时间 */
 #define G3507_HSCLK_SWITCH_TIMEOUT         (600000UL)
+#define G3507_SYSOSC_SETTLE_CYCLES         (200000UL)   /* SYSOSC 频率切换后稳定延时 */
 
 static void G3507_BusyWaitCycles(volatile uint32_t cycles)
 {
@@ -158,18 +159,22 @@ static uint8_t G3507_SwitchMclkToSysPll80(void)
 	return 0U;
 }
 
-/* 初始化系统时钟 - 设置G3507主频为80MHz 且保证断电在上电能自动复位启动程序 */
+/* 初始化系统时钟 - 设置 G3507 主频为 80MHz 且保证断电再上电能自动启动 */
 void G3507_SYS_Init(void)
 {
 	static uint8_t s_clockInited = 0U;
 	DL_SYSCTL_RESET_CAUSE resetCause;
+	uint8_t pllOk;
+	uint8_t retry;
 
 	if (s_clockInited != 0U)
 	{
 		return;
 	}
 
+	/* 读取复位原因，用于决定冷/热启动等待时长。 */
 	resetCause = DL_SYSCTL_getResetCause();
+
 	if ((resetCause == DL_SYSCTL_RESET_CAUSE_POR_HW_FAILURE) ||
 		(resetCause == DL_SYSCTL_RESET_CAUSE_POR_EXTERNAL_NRST) ||
 		(resetCause == DL_SYSCTL_RESET_CAUSE_POR_SW_TRIGGERED) ||
@@ -188,30 +193,71 @@ void G3507_SYS_Init(void)
 
 	/*
 	 * G3507 时钟策略：
-	 * 1) 进入 RUN0，确保 MCLK 走高速域（非 LFCLK 低功耗模式）
-	 * 2) 关闭 MCLK 分频并强制 SYSOSC=32MHz（BASE）
-	 * 3) 默认启用 SYSPLL，将 MCLK 提升到 80MHz
+	 * 1) setPowerPolicyRUN0SLEEP0：MCLK→LFCLK(32kHz)，安全状态下改时钟配置
+	 * 2) 设 SYSOSC=32MHz，立即切回 MCLK=SYSOSC（否则后续 BusyWait 全在 32kHz）
+	 * 3) 等 SYSOSC 稳定 + 等电源就绪
+	 * 4) VBOOST 常开，保证 80MHz 下核心电压不跌落
+	 * 5) 配 PLL 80MHz → 切 HSCLK
+	 * 6) 冷启动 PLL 失败 → 做一次系统复位 → 仍失败降级 32MHz
 	 */
-	DL_SYSCTL_setPowerPolicyRUN0SLEEP0();
+	DL_SYSCTL_setPowerPolicyRUN0SLEEP0();   /* MCLK→LFCLK 32kHz，安全配置态 */
 	DL_SYSCTL_setMCLKDivider(DL_SYSCTL_MCLK_DIVIDER_DISABLE);
 	DL_SYSCTL_setSYSOSCFreq(DL_SYSCTL_SYSOSC_FREQ_BASE);
 
+	/*
+	 * 切回 MCLK=SYSOSC(32MHz)。此操作必须在所有 BusyWait 之前，
+	 * 否则延时循环在 32kHz LFCLK 下耗时是预期的 1000 倍。
+	 */
+	SYSCTL->SOCLOCK.MCLKCFG &= ~SYSCTL_MCLKCFG_USELFCLK_ENABLE;
+
+	/* SYSOSC 切到 32MHz 后等振荡器稳定，约 6ms@32MHz。 */
+	G3507_BusyWaitCycles(G3507_SYSOSC_SETTLE_CYCLES);
+
+	/*
+	 * VBOOST（模拟电荷泵）常开，确保 80MHz 运行时代核电压足够。
+	 * 冷启动时如果 VBOOST 未开，PLL 锁定时核电压可能跌落导致崩溃。
+	 */
+	DL_SYSCTL_setVBOOSTConfig(DL_SYSCTL_VBOOST_ONALWAYS);
+
 	#if (G3507_ENABLE_PLL80 != 0U)
 	{
+		/*
+		 * 强制 80MHz 策略：PLL 失败就系统复位重试。
+		 * 不降级——32MHz 会导致串口乱码、I2C 时序错乱。
+		 *
+		 * 冷启动时 PMU 未充分暖机，第一次可能失败但复位后通常成功。
+		 * 现在 MCLK 已切回 32MHz + VBOOST 已开，成功率应大幅提升。
+		 */
+		pllOk = 0U;
+
 		/* MCLK 使用 HSCLK/SYSPLL 时，需要手动设置 Flash wait state。 */
 		DL_SYSCTL_setFlashWaitState(DL_SYSCTL_FLASH_WAIT_STATE_2);
 
-		if ((G3507_ConfigSysPll80WithTimeout() == 0U) ||
-			(G3507_SwitchMclkToSysPll80() == 0U))
+		for (retry = 0U; retry < 3U; ++retry)
 		{
-			/* 强制策略：80MHz 初始化失败则立即系统复位重试，不回退 32MHz。 */
-			DL_SYSCTL_resetDevice(DL_SYSCTL_RESET_SYSRST);
-			while (1)
+			if (G3507_ConfigSysPll80WithTimeout() != 0U)
 			{
+				if (G3507_SwitchMclkToSysPll80() != 0U)
+				{
+					pllOk = 1U;
+					break;
+				}
 			}
+			DL_SYSCTL_disableSYSPLL();
+			G3507_BusyWaitCycles(50000UL);
 		}
 
-		DL_SYSCTL_setULPCLKDivider(DL_SYSCTL_ULPCLK_DIV_2);
+		if (pllOk != 0U)
+		{
+			DL_SYSCTL_setULPCLKDivider(DL_SYSCTL_ULPCLK_DIV_2);
+		}
+		else
+		{
+			/* 80MHz 失败 → 复位重试，不复位永远到不了 80MHz */
+			DL_SYSCTL_disableSYSPLL();
+			DL_SYSCTL_resetDevice(DL_SYSCTL_RESET_SYSRST);
+			while (1) { /* 等复位生效 */ }
+		}
 	}
 	#endif
 
