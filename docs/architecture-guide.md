@@ -197,6 +197,42 @@ gpioPort = (GPIO_TypeDef *)port; // F103 Core
 
 总线速率集中配置在 [app/BusRate.h](app/BusRate.h)，每个 MCU 各自一份。
 
+### 4.6 中断优先级统一管理 (IrqPriority.h)
+
+对标 `BusRate.h` 的思路，[app/IrqPriority.h](app/IrqPriority.h) 集中管理所有 NVIC 中断优先级：
+
+```
+IrqPriority.h (策略层)  →  API/Core (机制层)  →  NVIC 硬件寄存器
+  "谁比谁高"                   "怎么设"              "硬件执行"
+```
+
+**优先级分配 (当前)**：
+| 优先级 | 中断源 | 理由 |
+|:---:|--------|------|
+| 0 | SysTick | 系统心跳 |
+| 1 | API_TIM | 1ms 控制节拍，所有 PID 回路的心脏 |
+| 2 | MPU6050 EXTI | 姿态数据，串级控制外环输入，实时性高于速度环 |
+| 3 | 编码器 EXTI | 速度内环反馈 |
+| 4 | USART ×3 | 通信（丢包可重传） |
+
+**多 MCU 适配**：
+- STM32F103/F407：Cortex-M3/M4，4bit NVIC → 0~15 级，每级独立
+- MSPM0G3507：Cortex-M0+，2bit NVIC → 0~3 级，需压缩（MPU6050 与 Encoder 同级）
+
+**关键设计**：
+- `IRQ_PRIO` 宏 = 抢占优先级（数字越小越高，高优先级 ISR 可打断低优先级）
+- `IRQ_SUB` 宏 = 响应优先级/子优先级（仅同抢占优先级的中断同时到达时决定顺序，当前未使用填 0）
+- PID 计算本身在 main loop 中执行，不是 ISR，无需 NVIC 优先级
+- 改优先级只需改一行宏，所有平台自动生效
+
+**调用链（以 MPU6050 为例）**：
+```
+IrqPriority.h: #define IRQ_PRIO_MPU6050 2U
+    → Enroll.c: API_EXTI_Init(id, trigger, IRQ_PRIO_MPU6050, IRQ_SUB_PRIO_MPU6050)
+    → API/exti.c: API_EXTI_CoreInit(port, pin, ..., preemptPriority=2, subPriority=0)
+    → Core/exti.c: NVIC_SetPriority(irqn, 2) — 写入硬件寄存器
+```
+
 ---
 
 ## 5. 当前 API 层支持的外设接口
@@ -208,10 +244,13 @@ gpioPort = (GPIO_TypeDef *)port; // F103 Core
 | [pwm.h](API/inc/pwm.h) | PWM 输出 | ✅ | ✅ | ✅ |
 | [tim.h](API/inc/tim.h) | 定时器中断 | ✅ | ✅ | ✅ |
 | [adc.h](API/inc/adc.h) | ADC 采集 | ✅ | ✅ | ✅ |
-| [exti.h](API/inc/exti.h) | 外部中断 | ✅ | ❌ (未实现) | ❌ (未实现) |
-| [Encoder.h](API/inc/Encoder.h) | 编码器接口 | ✅ (已规划) | ✅ (已规划) | ✅ (已规划) |
+| [exti.h](API/inc/exti.h) | 外部中断 | ✅ | ✅ | ✅ |
+| [Encoder.h](API/inc/Encoder.h) | 编码器接口 | ✅ (EXTI) | ✅ (TIM 模式) | ✅ (TIM 模式) |
 
-**说明：** EXTI 目前仅在 G3507 Core 有实现，从 git commit 记录看最近才解决 G3507 高 IO 脚外部中断的 BUG。
+**说明**：
+- **EXTI**：三平台均已完整实现。F103 用 AFIO+EXTI 寄存器，F407 用 SYSCFG+EXTI，G3507 用 DL_GPIO TI DriverLib。
+- **Encoder**：F103/F407 使用定时器硬件编码器模式（无需中断），G3507 使用外部中断软件模拟。
+  Core 层已通用化，所有 port/pin 参数化——改 `hw_config.h` 即可换引脚，无需改 Core 代码。
 
 ---
 
@@ -231,7 +270,50 @@ gpioPort = (GPIO_TypeDef *)port; // F103 Core
 
 ---
 
-## 7. 关键文件索引
+## 7. SYSTEM 层与 Core exti/sys 文件角色说明
+
+### 为什么 103/407 只有 `exti.h` 和 `sys.c`？
+
+这是历史命名遗留问题，容易误导：
+
+| MCU | 文件 | 实际作用 | 为什么 |
+|-----|------|---------|--------|
+| **F103** | `src/f103_exti.c` | EXTI 初始化实现（AFIO+EXTI+NVIC） | 2025 年修正：之前误命名为 f103_sys.c |
+| | `inc/f103_exti.h` | EXTI 函数声明 | |
+| | 无时钟 sys | 不需要 — STM32 启动时 `SystemInit()` 已配好时钟 |
+| **F407** | `src/f407_exti.c` | EXTI 初始化实现（SYSCFG+EXTI+NVIC） | 同 F103 模式 |
+| | `inc/f407_exti.h` | EXTI 函数声明 | 唯一的头文件 ✓ |
+| | 无时钟 sys | 不需要 — STM32 启动时 `SystemInit()` 已配好时钟 |
+| **G3507** | `G3507_sys.c/h` | **时钟初始化**（80MHz PLL）+ 系统信息查询 | G3507 需要自定义 PLL 配置 |
+| | `src/G3507_exti.c` + `inc/G3507_exti.h` | **EXTI 初始化**（DL_GPIO + NVIC） | G3507 GPIOn 高位引脚(PIN24-31)比 STM32 更复杂 |
+
+**关键区别**：
+- STM32 的 `SystemInit()` 在启动文件中由 CMSIS 标准库自动调用，所以 Core 层不需要 sys clock 代码
+- G3507 的时钟策略（PLL 80MHz）需要自定义初始化，所以要 `G3507_sys.c/h`
+- F103 和 F407 的 `xxx_sys.c` 文件名有误导性——它们其实应该叫 `xxx_exti.c`
+
+### SYSTEM 层 vs Core 层分工
+
+```
+SYSTEM/sys.c                          ← 平台无关的门面层
+  ├─ SYS_Init()                       → 条件编译分发到 Core 时钟初始化
+  │   └─ F103: 空（SystemInit 已做）  → 无额外操作
+  │   └─ F407: 空（SystemInit 已做）  → 无额外操作
+  │   └─ G3507: G3507_SYS_Init()      → Core 层配 80MHz PLL
+  ├─ SYS_EXTI_GetIrqn(port, pin)      → 端口+引脚 → NVIC IRQ 号
+  │   └─ F103/407: 引脚线号 → EXTIn_IRQn
+  │   └─ G3507: 端口 → GPIOA/B_INT_IRQn
+  └─ SYS_EXTI_GetLineIndex(pin)       → 引脚掩码 → 0~15 线号（三平台通用）
+
+Core/STM32F103/src/f103_exti.c         ← EXTI 硬寄存器实现（F103 AFIO 体系）
+Core/STM32F407/src/f407_exti.c         ← EXTI 硬寄存器实现（F407 SYSCFG 体系）
+Core/MSPM0G3507/G3507_sys.c           ← 系统时钟初始化（80MHz PLL）
+Core/MSPM0G3507/src/G3507_exti.c      ← EXTI TI DriverLib 实现
+```
+
+---
+
+## 8. 关键文件索引
 
 ### 构建系统
 | 文件 | 作用 |
@@ -254,11 +336,23 @@ gpioPort = (GPIO_TypeDef *)port; // F103 Core
 | [Enroll/G3507_hw_config.h](Enroll/G3507_hw_config.h) | G3507 板级引脚映射 |
 | [Enroll/G3507_pinmux.h](Enroll/G3507_pinmux.h) | G3507 IOMUX 引脚索引表 |
 
+### SYSTEM 层与 Core exti/sys 文件
+| 文件 | 实际作用 |
+|------|---------|
+| [SYSTEM/sys.c](SYSTEM/sys.c) | SYS_Init/EXTI_GetIrqn/LineIndex 门面（条件编译分发） |
+| [SYSTEM/sys.h](SYSTEM/sys.h) | 系统初始化和 EXTI 辅助接口声明 |
+| [SYSTEM/Delay.h](SYSTEM/Delay.h) | 统一延时接口（Delay_us/ms/s） |
+| [Core/STM32F103/src/f103_exti.c](Core/STM32F103/src/f103_exti.c) | F103 EXTI 实现（AFIO+EXTI+NVIC） |
+| [Core/STM32F407/src/f407_exti.c](Core/STM32F407/src/f407_exti.c) | F407 EXTI 实现（SYSCFG+EXTI+NVIC） |
+| [Core/MSPM0G3507/G3507_sys.c](Core/MSPM0G3507/G3507_sys.c) | G3507 时钟初始化（80MHz PLL） |
+| [Core/MSPM0G3507/src/G3507_exti.c](Core/MSPM0G3507/src/G3507_exti.c) | G3507 EXTI 实现（DL_GPIO + NVIC） |
+
 ### 应用层核心
 | 文件 | 作用 |
 |------|------|
 | [app/main.c](app/main.c) | 程序入口，完整的初始化流程 + 主循环 |
 | [app/BusRate.h](app/BusRate.h) | I2C/SPI 软件总线速率集中配置 |
+| [app/IrqPriority.h](app/IrqPriority.h) | NVIC 中断优先级统一管理（抢占/响应） |
 | [app/Control_Task/](app/Control_Task/) | 控制任务调度 + 中断回调 |
 | [app/PID/](app/PID/) | PID 控制器实现 |
 | [app/Filter/](app/Filter/) | 滤波器实现 |
@@ -268,7 +362,7 @@ gpioPort = (GPIO_TypeDef *)port; // F103 Core
 
 ---
 
-## 8. 开发约定与命名规范
+## 9. 开发约定与命名规范
 
 ### 函数命名
 - `API_xxx_*` — API 层对外接口 (如 `API_GPIO_Write`)
@@ -295,7 +389,7 @@ gpioPort = (GPIO_TypeDef *)port; // F103 Core
 
 ---
 
-## 9. 新增 MCU 的接入步骤
+## 10. 新增 MCU 的接入步骤
 
 参照 README 描述，实际工程中的接入流程：
 
@@ -309,23 +403,34 @@ gpioPort = (GPIO_TypeDef *)port; // F103 Core
 
 ---
 
-## 10. 当前工程状态
+## 11. 当前工程状态
 
-### 最近工作 (基于 git log)
-- TI MSPM0G3507 的串口 0/1/2 已调试通，串口 3 尚有乱码问题
-- G3507 外部中断 (EXTI) 高位 IO 触发的 BUG 已修复
-- 编码器 (Encoder) API 接口已规划，在 G3507_hw_config.h 中有预留头文件引用
-- TB6612 电机驱动已三平台通用化
-- KEY 驱动已修复多路返回值问题，优化消抖逻辑
+### 已完成 (近期)
+- **编码器 (Encoder)**：三平台完整实现
+  - F103/F407：定时器硬件编码器模式，通用 port/pin 参数化（改 hw_config 即生效）
+  - G3507：外部中断模拟，上升沿触发 + 读另一相电平判方向
+  - API 层：`API_Encoder_Register/Init/GetSpeed`，20ms 周期读取
+- **速度环 PID**：基于现有 PID 库完成左右轮速度闭环控制
+  - `PID_EncoderSpeed_t` 内部左右独立 `PID_TypeDef`，共用 kp/ki/kd
+  - **关键经验**：ki 值需要乘以 `1/dt` 倍补偿 dt 因子（库中 error_sum 乘以 dt），否则 I 项积累过慢
+  - 电机系统通常不需要 D 项（kd=0），微分噪声放大导致卡顿
+  - `Out_max` 必须匹配 TB6612_MAX_DUTY（400），否则反积分饱和失效
+- **中断优先级统一管理**：[app/IrqPriority.h](app/IrqPriority.h)
+  - 集中定义抢占/响应优先级宏，三平台自动适配 NVIC 位宽差异
+  - 填补了 6 个 Core 文件"只使能中断不设优先级"的空白
+  - 修复 G3507 编码器 IRQn 错误（两个编码器都用了 GPIOA_INT_IRQn）
+- TB6612 电机驱动三平台通用化
+- KEY 驱动修复多路返回值，优化消抖逻辑
 
 ### 注意事项
 - FreeRTOS-LTS、USB 协议库、TI 官方 SDK 源文件不再同步上传至 GitHub
 - 工程保留 MDK_ARM 目录用于 Keil IDE 兼容
 - G3507 构建通过 TI DriverLib 实现，区别于 STM32 的标准外设库
+- D 项（kd）在直流电机速度环中容易放大编码器量化噪声导致卡顿，通常设为 0
 
 ---
 
-## 11. 快速上手检查清单
+## 12. 快速上手检查清单
 
 为新对话恢复认知时，按以下顺序阅读关键文件：
 
@@ -335,5 +440,7 @@ gpioPort = (GPIO_TypeDef *)port; // F103 Core
 4. [Enroll/Enroll.h](Enroll/Enroll.h) — 注册层接口全览
 5. [Enroll/G3507_hw_config.h](Enroll/G3507_hw_config.h) — 当前默认 MCU 的板级映射
 6. [app/main.c](app/main.c) — 典型的初始化流程
-7. 任一 `API/src/*.c` — 理解 API→Core 分发模式
-8. 任一 `Core/*/src/*.c` — 理解 Core 层实现风格
+7. [app/IrqPriority.h](app/IrqPriority.h) — 中断优先级策略
+8. [app/BusRate.h](app/BusRate.h) — 软件总线速率策略
+9. 任一 `API/src/*.c` — 理解 API→Core 分发模式
+10. 任一 `Core/*/src/*.c` — 理解 Core 层实现风格

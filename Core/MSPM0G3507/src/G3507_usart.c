@@ -1,4 +1,5 @@
 #include "G3507_usart.h"
+#include "IrqPriority.h"
 
 #include "G3507_sys.h"
 
@@ -89,6 +90,7 @@ void G3507_USART_Init(uint8_t usartId, uint32_t baudRate)
 
 	DL_UART_Main_enableInterrupt(map.regs, DL_UART_MAIN_INTERRUPT_RX);
 	DL_UART_Main_enable(map.regs);
+	NVIC_SetPriority(map.irq, IRQ_PRIO_USART);
 	NVIC_EnableIRQ(map.irq);
 }
 

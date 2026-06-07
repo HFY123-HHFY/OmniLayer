@@ -1,4 +1,5 @@
 #include "Enroll_Internal.h"
+#include "IrqPriority.h"
 
 /*
  * Enroll.c 职责：
@@ -226,7 +227,7 @@ void Enroll_MPU6050_Register(void)
 	/* 同一 id 可继续追加其他回调。 */
 	API_EXTI_AddIrqHandler(s_mpuExtiTable[0].id, (API_EXTI_IrqHandler_t)MPU6050_EXTI_Callback, NULL);
 	/* API_EXTI_AddIrqHandler(s_mpuExtiTable[0].id, Other_EXTI_Callback, userPtr); */
-	API_EXTI_Init(s_mpuExtiTable[0].id, API_EXTI_TRIGGER_RISING, 0U, 2U);
+	API_EXTI_Init(s_mpuExtiTable[0].id, API_EXTI_TRIGGER_RISING, IRQ_PRIO_MPU6050, IRQ_SUB_PRIO_MPU6050);
 }
 
 /* TB6612 注册 */

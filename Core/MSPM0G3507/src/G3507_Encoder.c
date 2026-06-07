@@ -3,6 +3,7 @@
 #include "G3507_gpio.h"
 #include "G3507_exti.h"
 #include "gpio.h"
+#include "IrqPriority.h"
 #include "ti/driverlib/dl_gpio.h"
 #include "ti/devices/msp/m0p/mspm0g350x.h"
 
@@ -48,11 +49,16 @@ void G3507_Encoder_Init(uint8_t coreId)
 
 	/* 1) 配置两路 GPIO 为上拉输入（由 G3507_EXTI_Init 内部完成）*/
 
-	/* 2) 配置 EXTI：上升沿触发，中断优先级 0/2 */
-	G3507_EXTI_Init(ctx->portA, ctx->pinA, 0x01U, /* rising */
-	                GPIOA_INT_IRQn, 0U, 2U);
-	G3507_EXTI_Init(ctx->portB, ctx->pinB, 0x01U, /* rising */
-	                GPIOA_INT_IRQn, 0U, 2U);
+	/* 2) 配置 EXTI：根据端口选择正确的 IRQn */
+	{
+		IRQn_Type irqA = ((ctx->portA == GPIOA) ? GPIOA_INT_IRQn : GPIOB_INT_IRQn);
+		IRQn_Type irqB = ((ctx->portB == GPIOB) ? GPIOB_INT_IRQn : GPIOA_INT_IRQn);
+
+		G3507_EXTI_Init(ctx->portA, ctx->pinA, 0x01U, /* rising */
+		                (uint32_t)irqA, IRQ_PRIO_ENCODER, IRQ_SUB_PRIO_ENCODER);
+		G3507_EXTI_Init(ctx->portB, ctx->pinB, 0x01U, /* rising */
+		                (uint32_t)irqB, IRQ_PRIO_ENCODER, IRQ_SUB_PRIO_ENCODER);
+	}
 
 	/* 清中断挂起位 */
 	s_encoderCount[coreId] = 0;

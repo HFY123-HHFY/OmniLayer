@@ -1,4 +1,5 @@
 #include "f103_usart.h"
+#include "IrqPriority.h"
 
 /* USART 外设寄存器映射。 */
 typedef struct
@@ -112,17 +113,21 @@ static uint32_t F103_USART_CalcBrr(uint32_t pclkHz, uint32_t baudRate)
 	return ((mantissa << 4) | fraction);
 }
 
-/* 开启 NVIC 指定中断通道。 */
-static void F103_USART_EnableNvicIrq(uint32_t irqNum)
+/* 开启 NVIC 指定中断通道并配置优先级。 */
+static void F103_USART_EnableNvicIrq(uint32_t irqNum, uint32_t priority)
 {
 	F103_NVIC_Regs_t *nvic;
 	uint32_t iserIndex;
 	uint32_t iserBit;
+	volatile uint8_t *ipr;
 
 	nvic = (F103_NVIC_Regs_t *)F103_NVIC_ISER_BASE;
 	iserIndex = irqNum / 32U;
 	iserBit = irqNum % 32U;
 	nvic->ISER[iserIndex] = (1UL << iserBit);
+
+	ipr = (volatile uint8_t *)(0xE000E400UL + irqNum);
+	*ipr = (uint8_t)(priority << 4U);
 }
 
 void F103_USART_Init(uint8_t usartId, uint32_t baudRate)
@@ -141,7 +146,7 @@ void F103_USART_Init(uint8_t usartId, uint32_t baudRate)
 	map.regs->CR1 = F103_USART_CR1_TE | F103_USART_CR1_RE | F103_USART_CR1_RXNEIE;
 	map.regs->CR1 |= F103_USART_CR1_UE;
 
-	F103_USART_EnableNvicIrq(map.irqNum);
+	F103_USART_EnableNvicIrq(map.irqNum, IRQ_PRIO_USART);
 }
 
 

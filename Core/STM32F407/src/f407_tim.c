@@ -1,4 +1,5 @@
 #include "f407_tim.h"
+#include "IrqPriority.h"
 
 /* Cortex-M NVIC ISER 寄存器基址。 */
 #define F407_NVIC_ISER_BASE  (0xE000E100UL)
@@ -113,16 +114,21 @@ static F407_TIM_Map_t F407_TIM_GetMap(uint8_t timId)
 	return map;
 }
 
-static void F407_TIM_EnableNvicIrq(uint32_t irqNum)
+static void F407_TIM_EnableNvicIrq(uint32_t irqNum, uint32_t priority)
 {
 	F407_NVIC_Regs_t *nvic;
 	uint32_t iserIndex;
 	uint32_t iserBit;
+	volatile uint8_t *ipr;
 
 	nvic = (F407_NVIC_Regs_t *)F407_NVIC_ISER_BASE;
 	iserIndex = irqNum / 32U;
 	iserBit = irqNum % 32U;
 	nvic->ISER[iserIndex] = (1UL << iserBit);
+
+	/* 设置中断优先级 */
+	ipr = (volatile uint8_t *)(0xE000E400UL + irqNum);
+	*ipr = (uint8_t)(priority << 4U);
 }
 
 void F407_TIM_PeriodicInit(uint8_t timId, uint32_t periodMs)
@@ -156,7 +162,7 @@ void F407_TIM_PeriodicInit(uint8_t timId, uint32_t periodMs)
 	map.regs->CR1 |= (1UL << 0);    /* CEN=1，启动计数。 */
 
 	/* 开启 NVIC 对应中断通道。 */
-	F407_TIM_EnableNvicIrq(map.irqNum);
+	F407_TIM_EnableNvicIrq(map.irqNum, IRQ_PRIO_TIM_CTRL);
 }
 
 uint8_t F407_TIM_CheckAndClearUpdateIrq(uint8_t timId)

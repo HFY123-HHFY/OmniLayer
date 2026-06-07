@@ -67,7 +67,7 @@ int main(void)
 /* 通信协议初始化 */
 	MyI2C_Init();						/* 软件 I2C 初始化 */
 	MySPI_Init();						/* 软件 SPI 初始化 */
-	App_I2C_ScanOnce();					/* 开机执行一次 I2C 扫描 */
+	// App_I2C_ScanOnce();					/* 开机执行一次 I2C 扫描 */
 	// App_SPI_TestOnce();				/* 开机执行一次 SPI 测试 */
 
 /*BSP硬件抽象层初始化*/
@@ -83,12 +83,12 @@ int main(void)
 
 /* PID控制器初始化 */
 	PID_Speed_Init(); /* 速度环初始化 */
-	// PID_EncoderSpeed_Set(&speed_loop, 1.5f, 40.0f, 0.1f, -50.0f); /* 设置速度环 PID 参数与目标值 */
+	// PID_EncoderSpeed_Set(&speed_loop, 1.5f, 40.0f, 0.0f, -50.0f); /* 设置速度环 PID 参数与目标值 */
 
 	while (1)
 	{
 /* LED和延时测试 */
-		LED_Control(LED1, LED_HIGH);
+		// LED_Control(LED1, LED_HIGH);
 		// LED_Turn(LED2, 500); /* LED1 翻转闪烁，周期 500ms */
 		// LED_Control(Buzzer1, LED_HIGH);
 

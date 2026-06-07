@@ -182,7 +182,7 @@ if(RESOLVED_MCU_TARGET STREQUAL "F103")
     # F103 专属 MCU 驱动实现
     set(MCU_SOURCES
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/f103_delay.c
-        ${CMAKE_SOURCE_DIR}/Core/STM32F103/f103_sys.c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_exti.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_adc.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_gpio.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_tim.c
@@ -219,7 +219,7 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
     # F407 专属 MCU 驱动实现
     set(MCU_SOURCES
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/f407_delay.c
-        ${CMAKE_SOURCE_DIR}/Core/STM32F407/f407_sys.c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_exti.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_adc.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_gpio.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_tim.c
