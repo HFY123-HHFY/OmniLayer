@@ -83,7 +83,7 @@ int main(void)
 
 /* PID控制器初始化 */
 	PID_Speed_Init(); /* 速度环初始化 */
-	// PID_EncoderSpeed_Set(&speed_loop, 2.5f, 0.50f, 0.1f, -50.0f); /* 设置速度环 PID 参数与目标值 */
+	// PID_EncoderSpeed_Set(&speed_loop, 1.5f, 40.0f, 0.1f, -50.0f); /* 设置速度环 PID 参数与目标值 */
 
 	while (1)
 	{
@@ -101,7 +101,7 @@ int main(void)
 		if (Key == 2U)
 		{
 			LED_Control(LED2, LED_HIGH);
-			PID_EncoderSpeed_Set(&speed_loop, 2.2f, 0.50f, 0.1f, 100.0f); /* 设置速度环 PID 参数与目标值 */
+			PID_EncoderSpeed_Set(&speed_loop, 1.5f, 40.0f, 0.0f, 80.0f); /* 设置速度环 PID 参数与目标值 */
 		}
 		if (Key == 3U)
 		{
@@ -115,7 +115,7 @@ int main(void)
 			LED_Control(LED1, LED_LOW);
 			LED_Control(LED2, LED_LOW);
 			LED_Control(LED3, LED_LOW);
-			PID_EncoderSpeed_Set(&speed_loop, 2.2f, 0.50f, 0.1f, -100.0f); /* 设置速度环 PID 参数与目标值 */
+			PID_EncoderSpeed_Set(&speed_loop, 1.5f, 40.0f, 0.0f, -100.0f); /* 设置速度环 PID 参数与目标值 */
 		}
 
 /* 串口测试 */
@@ -129,10 +129,10 @@ int main(void)
 		// uint16_t adc5 = API_ADC_GetValue(API_ADC2, API_ADC_CH5);
 
 /* TB6612测试 */
-		// TB6612_SetSpeed(0, 0);
+		// TB6612_SetSpeed(100, 100);
 
 /* MPU6050测试 */
-		mpu_angle();
+		// mpu_angle();
 
  /* 串级PID控制 - 2ms 姿态环*/
 		if (pid_task_flag != 0U)   // 500Hz 姿态环
@@ -166,10 +166,11 @@ int main(void)
 		}
 
 /* OLED测试 */
+		OLED_Clear();
 		OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
-		OLED_Printf(0, 16, OLED_8X16, "Pitch: %.1f", Pitch);
-		OLED_Printf(0, 32, OLED_8X16, "Roll: %.1f", Roll);
-		OLED_Printf(0, 48, OLED_8X16, "Yaw: %.1f", Yaw);
+		OLED_Printf(0, 16, OLED_8X16, "%.1f  %.1f  %.1f", Pitch, Roll, Yaw);
+		OLED_Printf(0, 32, OLED_8X16, "L %d  R %d", Encoder1_Speed, Encoder2_Speed);
+		OLED_Printf(0, 48, OLED_8X16, "Lo %d  Ro %d", (int)speed_loop.left.output, (int)speed_loop.right.output);
 		OLED_Update();
 	}
 }
