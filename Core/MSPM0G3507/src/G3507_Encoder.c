@@ -60,6 +60,21 @@ void G3507_Encoder_Init(uint8_t coreId)
 		                (uint32_t)irqB, IRQ_PRIO_ENCODER, IRQ_SUB_PRIO_ENCODER);
 	}
 
+	/* 3) 开启施密特迟滞：滤除同端口软件 I2C 翻转的高频噪声 */
+	{
+		uint32_t iomuxA = G3507_GetIomux((GPIO_Regs *)ctx->portA, ctx->pinA);
+		uint32_t iomuxB = G3507_GetIomux((GPIO_Regs *)ctx->portB, ctx->pinB);
+
+		if (iomuxA != 0xFFFFFFFFUL) {
+			IOMUX->SECCFG.PINCM[iomuxA] &= ~IOMUX_PINCM_HYSTEN_MASK;
+			IOMUX->SECCFG.PINCM[iomuxA] |= IOMUX_PINCM_HYSTEN_ENABLE;
+		}
+		if (iomuxB != 0xFFFFFFFFUL) {
+			IOMUX->SECCFG.PINCM[iomuxB] &= ~IOMUX_PINCM_HYSTEN_MASK;
+			IOMUX->SECCFG.PINCM[iomuxB] |= IOMUX_PINCM_HYSTEN_ENABLE;
+		}
+	}
+
 	/* 清中断挂起位 */
 	s_encoderCount[coreId] = 0;
 	ctx->active = 1U;

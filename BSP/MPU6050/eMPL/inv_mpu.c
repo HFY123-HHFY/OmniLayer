@@ -2953,28 +2953,11 @@ uint8_t mpu_dmp_get_data(float *pitch,float *roll,float *yaw)
 	unsigned long sensor_timestamp;
 	short gyro[3], accel[3], sensors;
 	unsigned char more;
-    uint8_t retry;
-    int fifoRet;
-	long quat[4]; 
+	long quat[4];
 
-    /*
-     * DMP FIFO 在部分平台上首包到达较慢，短重试可避免上层长期读到失败。
-     */
-    fifoRet = -1;
-    for (retry = 0U; retry < MPU6050_DMP_FIFO_RETRY_COUNT; ++retry)
-    {
-        fifoRet = dmp_read_fifo(gyro, accel, quat, &sensor_timestamp, &sensors, &more);
-        if (fifoRet == 0)
-        {
-            break;
-        }
-        Delay_ms(MPU6050_DMP_FIFO_RETRY_DELAY_MS);
-    }
-
-    if (fifoRet != 0)
-    {
-        return 1;
-    }
+	/* 单次读取 FIFOINT 触发后才读，FIFO 必有数据。 */
+	if (dmp_read_fifo(gyro, accel, quat, &sensor_timestamp, &sensors, &more))
+		return 1;
 
 	/* Gyro and accel data are written to the FIFO by the DMP in chip frame and hardware units.
 	 * This behavior is convenient because it keeps the gyro and accel outputs of dmp_read_fifo and mpu_read_fifo consistent.

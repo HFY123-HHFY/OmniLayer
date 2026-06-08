@@ -42,7 +42,6 @@ int main(void)
 	Enroll_SPI_Register();					/* SPI 资源注册 */
 	Enroll_LED_Register();					/* LED 资源注册 */
 	Enroll_KEY_Register();					/* KEY 资源注册 */
-	Enroll_MPU6050_Register();				/* MPU6050 INT 资源注册 */
 	Enroll_OLED_Register();					/* OLED SPI 控制脚注册 */
 	Enroll_TB6612_Register();				/* TB6612 资源注册 */
 	Enroll_Encoder_Register();				/* 编码器 资源注册 */
@@ -67,7 +66,7 @@ int main(void)
 /* 通信协议初始化 */
 	MyI2C_Init();						/* 软件 I2C 初始化 */
 	MySPI_Init();						/* 软件 SPI 初始化 */
-	// App_I2C_ScanOnce();					/* 开机执行一次 I2C 扫描 */
+	// App_I2C_ScanOnce();				/* 开机执行一次 I2C 扫描 */
 	// App_SPI_TestOnce();				/* 开机执行一次 SPI 测试 */
 
 /*BSP硬件抽象层初始化*/
@@ -75,15 +74,16 @@ int main(void)
 	KEY_Init(); // 初始化按键
 	OLED_Init(OLED_IF_SPI);		 /* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
 	MPU_Init();
-	// uint8_t mpu6050_dma_int = mpu_dmp_init();
-	// usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
+	uint8_t mpu6050_dma_int = mpu_dmp_init();
+	usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
+	Enroll_MPU6050_Register();				/* MPU6050 INT 资源注册（DMP 初始化后才能使能 EXTI） */
 	TB6612_Init(); /* TB6612 电机驱动初始化 */
 	API_Encoder_Init(API_ENCODER_1); /* 编码器 1 初始化 */
 	API_Encoder_Init(API_ENCODER_2); /* 编码器 2 初始化 */
 
 /* PID控制器初始化 */
 	PID_Speed_Init(); /* 速度环初始化 */
-	// PID_EncoderSpeed_Set(&speed_loop, 1.5f, 40.0f, 0.0f, -50.0f); /* 设置速度环 PID 参数与目标值 */
+	// PID_EncoderSpeed_Set(&speed_loop, 1.5f, 40.0f, 0.0f, 80.0f); /* 设置速度环 PID 参数与目标值 */
 
 	while (1)
 	{
@@ -131,8 +131,9 @@ int main(void)
 /* TB6612测试 */
 		// TB6612_SetSpeed(100, 100);
 
-/* MPU6050测试 */
-		// mpu_angle();
+/* MPU6050 DMP */
+		mpu_angle();
+		// MPU_Get_Gyroscope(&gyrox, &gyroy, &gyroz);
 
  /* 串级PID控制 - 2ms 姿态环*/
 		if (pid_task_flag != 0U)   // 500Hz 姿态环
@@ -145,32 +146,30 @@ int main(void)
 		if (Encoder_flag != 0U)
 		{
 			Encoder_flag = 0U;
-			Encoder1_Speed = API_Encoder_GetSpeed(API_ENCODER_1);
-			Encoder2_Speed = API_Encoder_GetSpeed(API_ENCODER_2);
-
+			/* Encoder1/2_Speed 已在 Timer ISR 更新 */
 			/* 速度环 */
-			PID_Speed_Control((float)(Encoder1_Speed), (float)Encoder2_Speed);
+			PID_Speed_Control((float)(Encoder1_Speed), (float)(Encoder2_Speed));
 		}
 
 /* 串口数据打印 */
 		if (print_task_flag != 0U)
 		{
 			print_task_flag = 0U;
-			usart_printf(USART1, "1=%d, 2=%d, Lout=%d, Rout=%d\r\n", Encoder1_Speed, Encoder2_Speed, (int)speed_loop.left.output, (int)speed_loop.right.output);
-			usart_printf(USART1, "P=%.1f, I=%.1f, D=%.1f\r\n", (double)speed_loop.left.P_out, (double)speed_loop.left.I_out, (double)speed_loop.left.D_out);
+			// usart_printf(USART1, "1=%d, 2=%d, Lout=%d, Rout=%d\r\n", Encoder1_Speed, Encoder2_Speed, (int)speed_loop.left.output, (int)speed_loop.right.output);
+			// usart_printf(USART1, "P=%.1f, I=%.1f, D=%.1f\r\n", (double)speed_loop.left.P_out, (double)speed_loop.left.I_out, (double)speed_loop.left.D_out);
 			// usart_printf(USART1, "key: %lu\r\n", Key);
 			// usart_printf(USART1, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
-			// usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
+			usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
 			// usart_printf(USART2, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw); /* 无线串口 */
 			// usart_printf(USART1, "GyroX=%d GyroY=%d GyroZ=%d\r\n", gyrox, gyroy, gyroz);
 		}
 
 /* OLED测试 */
 		OLED_Clear();
-		OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
-		OLED_Printf(0, 16, OLED_8X16, "%.1f  %.1f  %.1f", Pitch, Roll, Yaw);
+		// OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
+		// OLED_Printf(0, 16, OLED_8X16, "%.1f  %.1f  %.1f", Pitch, Roll, Yaw);
 		OLED_Printf(0, 32, OLED_8X16, "L %d  R %d", Encoder1_Speed, Encoder2_Speed);
-		OLED_Printf(0, 48, OLED_8X16, "Lo %d  Ro %d", (int)speed_loop.left.output, (int)speed_loop.right.output);
+		// OLED_Printf(0, 48, OLED_8X16, "Lo %d  Ro %d", (int)speed_loop.left.output, (int)speed_loop.right.output);
 		OLED_Update();
 	}
 }

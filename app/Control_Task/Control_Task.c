@@ -5,6 +5,7 @@
 #include "My_Usart/My_Usart.h"
 #include "Control/Control.h"
 #include "KEY.h"
+#include "Encoder.h"
 
 /* 程序运行的时间戳（s） */
 uint32_t Timer_Bsp_t = 0;
@@ -38,10 +39,10 @@ void Control_Task_TIM_Callback(API_TIM_Id_t id)
 
 	Key_Tick(); /* 按键扫描函数，更新按键状态和事件 */
 
-	pid_2ms_tick++;
-	Encoder_tick++;
-	printf_tick++;
-	time_t++;
+	pid_2ms_tick++;	/* PID 控制器 */
+	Encoder_tick++; /* 编码器 */
+	printf_tick++;  /* printf */
+	time_t++;		/* 时间戳 */
 
 /* PID */
 	if (pid_2ms_tick >= 2U)
@@ -55,6 +56,8 @@ void Control_Task_TIM_Callback(API_TIM_Id_t id)
 	{
 		Encoder_tick = 0U;
 		Encoder_flag = 1U;
+		Encoder1_Speed = API_Encoder_GetSpeed(API_ENCODER_1);
+		Encoder2_Speed = API_Encoder_GetSpeed(API_ENCODER_2);
 	}
 
 /* printf */
