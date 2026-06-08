@@ -48,7 +48,9 @@ int main(void)
 
 	/* 注册后绑定中断回调*/
 	Enroll_USART_RegisterIrqHandler(Control_Task_USART_Callback); /* USART 中断回调注册 */
-	Enroll_TIM_RegisterIrqHandler(Control_Task_TIM_Callback);	   /* TIM 中断回调注册 */
+	API_TIM_RegisterIrqHandler(API_TIM1, Control_Task_TIM_Callback);             /* TIM1: PID */
+	API_TIM_RegisterIrqHandler(API_TIM2, Control_Task_Encoder_Callback);         /* TIM2: Encoder */
+	API_TIM_RegisterIrqHandler(API_TIM3, Control_Task_Housekeeping_Callback);    /* TIM3: Housekeeping */
 
 /* 初始化层：初始化相关外设，启动硬件功能 */
 	API_USART_Init(API_USART1, 115200U); // 初始化 USART1，波特率 115200
@@ -61,7 +63,9 @@ int main(void)
 	 */
 	API_PWM_Init(API_PWM_TIM1, 400U - 1U, 8U - 1U);
 	API_ADC_Init(API_ADC1); // 初始化 ADC1
-	API_TIM_Init(API_TIM1, 1U); /* 定时器初始化：API_TIM1，每 1ms 触发一次更新中断 */
+	API_TIM_Init(API_TIM1, 1U); /* TIM1: PID 节拍，每 1ms */
+	API_TIM_Init(API_TIM2, 1U); /* TIM2: 编码器节拍，每 1ms（每 20ms 快照） */
+	API_TIM_Init(API_TIM3, 1U); /* TIM3: 杂务节拍，每 1ms */
 
 /* 通信协议初始化 */
 	MyI2C_Init();						/* 软件 I2C 初始化 */
@@ -101,11 +105,12 @@ int main(void)
 		if (Key == 2U)
 		{
 			LED_Control(LED2, LED_HIGH);
-			PID_EncoderSpeed_Set(&speed_loop, 1.5f, 40.0f, 0.0f, 80.0f); /* 设置速度环 PID 参数与目标值 */
+			PID_EncoderSpeed_Set(&speed_loop, 1.5f, 40.0f, 0.0f, 60.0f); /* 设置速度环 PID 参数与目标值 */
 		}
 		if (Key == 3U)
 		{
 			LED_Control(LED3, LED_HIGH);
+			TB6612_SetSpeed(0, 0);
 			PID_Reset(&speed_loop.left);
 			PID_Reset(&speed_loop.right);
 			PID_EncoderSpeed_Set(&speed_loop, 0.0f, 0.0f, 0.0f, 0.0f); /* 设置速度环 PID 参数与目标值 */
@@ -115,7 +120,7 @@ int main(void)
 			LED_Control(LED1, LED_LOW);
 			LED_Control(LED2, LED_LOW);
 			LED_Control(LED3, LED_LOW);
-			PID_EncoderSpeed_Set(&speed_loop, 1.5f, 40.0f, 0.0f, -100.0f); /* 设置速度环 PID 参数与目标值 */
+			PID_EncoderSpeed_Set(&speed_loop, 1.5f, 40.0f, 0.0f, -20.0f); /* 设置速度环 PID 参数与目标值 */
 		}
 
 /* 串口测试 */
@@ -146,9 +151,7 @@ int main(void)
 		if (Encoder_flag != 0U)
 		{
 			Encoder_flag = 0U;
-			/* Encoder1/2_Speed 已在 Timer ISR 更新 */
-			/* 速度环 */
-			PID_Speed_Control((float)(Encoder1_Speed), (float)(Encoder2_Speed));
+			PID_Speed_Control((float)(Encoder1_Speed), (float)(Encoder2_Speed)); /* 速度环 */
 		}
 
 /* 串口数据打印 */
@@ -166,7 +169,7 @@ int main(void)
 
 /* OLED测试 */
 		OLED_Clear();
-		// OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
+		OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
 		// OLED_Printf(0, 16, OLED_8X16, "%.1f  %.1f  %.1f", Pitch, Roll, Yaw);
 		OLED_Printf(0, 32, OLED_8X16, "L %d  R %d", Encoder1_Speed, Encoder2_Speed);
 		// OLED_Printf(0, 48, OLED_8X16, "Lo %d  Ro %d", (int)speed_loop.left.output, (int)speed_loop.right.output);

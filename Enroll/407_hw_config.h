@@ -31,8 +31,10 @@ LED1 绿 LED2 红 LED3 蓝
 
 /* TIM 板级映射：逻辑 API_TIM1 绑定到硬件 TIM3。 */
 #define HW_TIM_MAP(X) \
-	X(API_TIM1, API_TIM_CORE_TIM3)
-
+	X(API_TIM1, API_TIM_CORE_TIM3) \
+	X(API_TIM2, API_TIM_CORE_TIM2) \
+	X(API_TIM3, API_TIM_CORE_TIM5)
+	
 /* PWM 板级映射：PE9 -> TIM1_CH1，PE11 -> TIM1_CH2，PE13 -> TIM1_CH3，PE14 -> TIM1_CH4 */
 #define HW_PWM_MAP(X) \
 	X(API_PWM_TIM1, API_PWM_CH1, API_PWM_CORE_TIM1, API_PWM_CORE_CH1, GPIOE, GPIO_Pin_9) \
@@ -166,7 +168,7 @@ LED1 绿 LED2 红 LED3 蓝
 /* 当前板子上注册了 1 路 USART */
 #define HW_USART_COUNT  1U
 /* 当前板子上注册了 1 路 TIM */
-#define HW_TIM_COUNT  1U
+#define HW_TIM_COUNT  3U
 /* 当前板子上注册了 4 路 PWM 通道 */
 #define HW_PWM_COUNT  4U
 /* 当前板子上注册了 4 路 ADC 通道 */

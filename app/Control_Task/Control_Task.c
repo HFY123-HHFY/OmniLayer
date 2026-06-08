@@ -24,58 +24,83 @@ uint32_t USART_3_RX = 0;
 /*
  * 定时器回调函数：
  * 由 API_TIM 的通用中断分发层在更新中断到来后调用。
+ * API_TIM1: 1ms -> PID 2ms
  */
 void Control_Task_TIM_Callback(API_TIM_Id_t id)
 {
-	static uint16_t time_t = 0U; /* 程序运行时间计数 */
-	static uint8_t printf_tick = 0U; /* printf 节拍计数 */
-	static uint8_t pid_2ms_tick = 0U; /* 2ms PID 节拍计数 */
-	static uint8_t Encoder_tick = 0u; /* 编码器节拍数 */
+	static uint8_t pid_2ms_tick = 0U;
 
 	if (id != API_TIM1)
 	{
 		return;
 	}
 
-	Key_Tick(); /* 按键扫描函数，更新按键状态和事件 */
+	pid_2ms_tick++;
 
-	pid_2ms_tick++;	/* PID 控制器 */
-	Encoder_tick++; /* 编码器 */
-	printf_tick++;  /* printf */
-	time_t++;		/* 时间戳 */
-
-/* PID */
 	if (pid_2ms_tick >= 2U)
 	{
 		pid_2ms_tick = 0U;
 		pid_task_flag = 1U;
 	}
+}
 
-/* 编码器 */
-	if(Encoder_tick >= 20)
+/*
+ * API_TIM2: 1ms -> Encoder 20ms
+ */
+void Control_Task_Encoder_Callback(API_TIM_Id_t id)
+{
+	static uint8_t Encoder_tick = 0U;
+
+	if (id != API_TIM2)
 	{
-		Encoder_tick = 0U;
-		Encoder_flag = 1U;
-		Encoder1_Speed = API_Encoder_GetSpeed(API_ENCODER_1);
-		Encoder2_Speed = API_Encoder_GetSpeed(API_ENCODER_2);
+		return;
 	}
 
-/* printf */
+	Encoder_tick++;
+
+	if (Encoder_tick >= 20)
+	{
+		Encoder_tick = 0U;
+#if (ENROLL_MCU_TARGET == ENROLL_MCU_G3507)
+		G3507_Encoder_SnapshotAll();
+#endif
+		Encoder1_Speed = API_Encoder_GetSpeed(API_ENCODER_1);
+		Encoder2_Speed = API_Encoder_GetSpeed(API_ENCODER_2);
+		Encoder_flag = 1U;
+	}
+}
+
+/*
+ * API_TIM3: 1ms -> Key + printf + time
+ */
+void Control_Task_Housekeeping_Callback(API_TIM_Id_t id)
+{
+	static uint8_t printf_tick = 0U;
+	static uint16_t time_t = 0U;
+
+	if (id != API_TIM3)
+	{
+		return;
+	}
+
+	Key_Tick();
+
+	printf_tick++;
+	time_t++;
+
 	if (printf_tick >= 50U)
 	{
 		printf_tick = 0U;
 		print_task_flag = 1U;
 	}
 
-/* 时间戳 */
 	if (time_t >= 1000U)
 	{
 		time_t = 0U;
-		Timer_Bsp_t++; /* 每 1s 更新一次全局时间戳 */
+		Timer_Bsp_t++;
 	}
 }
 
-/* 串口中断回调：由 API_USART 的通用分发层按 id 调用。 */
 void Control_Task_USART_Callback(API_USART_Id_t id)
 {
 	uint32_t data;

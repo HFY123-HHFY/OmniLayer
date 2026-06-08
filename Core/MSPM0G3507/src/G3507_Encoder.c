@@ -29,8 +29,13 @@ typedef struct
 
 static G3507_Encoder_Ctx_t s_ctx[G3507_ENCODER_MAX];
 
-/* 每个编码器的累加计数值 */
-static volatile int32_t s_encoderCount[G3507_ENCODER_MAX];
+/*
+ * 双缓冲编码器计数：
+ * - s_encoderRaw:    EXTI ISR 累加，随时被硬件中断更新（Should_Get）
+ * - s_encoderStable: TIM ISR 快照，main loop 只读（Obtained_Get）
+ */
+static volatile int32_t s_encoderRaw[G3507_ENCODER_MAX];
+static int32_t s_encoderStable[G3507_ENCODER_MAX];
 
 void G3507_Encoder_Init(uint8_t coreId)
 {
@@ -76,7 +81,8 @@ void G3507_Encoder_Init(uint8_t coreId)
 	}
 
 	/* 清中断挂起位 */
-	s_encoderCount[coreId] = 0;
+	s_encoderRaw[coreId] = 0;
+	s_encoderStable[coreId] = 0;
 	ctx->active = 1U;
 }
 
@@ -132,11 +138,11 @@ void G3507_Encoder_ProcessPortIrq(void *port)
 				/* A 相触发：读 B 相电平 */
 				if (API_GPIO_Read(ctx->portB, ctx->pinB) == 0U)
 				{
-					s_encoderCount[i]--;
+					s_encoderRaw[i]--;
 				}
 				else
 				{
-					s_encoderCount[i]++;
+					s_encoderRaw[i]++;
 				}
 
 				DL_GPIO_clearInterruptStatus((GPIO_Regs *)ctx->portA, ctx->pinA);
@@ -151,11 +157,11 @@ void G3507_Encoder_ProcessPortIrq(void *port)
 				/* B 相触发：读 A 相电平 */
 				if (API_GPIO_Read(ctx->portA, ctx->pinA) == 0U)
 				{
-					s_encoderCount[i]++;
+					s_encoderRaw[i]++;
 				}
 				else
 				{
-					s_encoderCount[i]--;
+					s_encoderRaw[i]--;
 				}
 
 				DL_GPIO_clearInterruptStatus((GPIO_Regs *)ctx->portB, ctx->pinB);
@@ -166,7 +172,13 @@ void G3507_Encoder_ProcessPortIrq(void *port)
 
 int16_t G3507_Encoder_GetCount(uint8_t coreId)
 {
-	int32_t count;
+	/* 返回 stable 快照值（由 SnapshotAll 在定时器 ISR 中更新） */
+	return G3507_Encoder_GetStable(coreId);
+}
+
+int16_t G3507_Encoder_GetStable(uint8_t coreId)
+{
+	int32_t val;
 	int16_t result;
 
 	if (coreId >= G3507_ENCODER_MAX)
@@ -174,25 +186,47 @@ int16_t G3507_Encoder_GetCount(uint8_t coreId)
 		return 0;
 	}
 
-	/* 原子读-清零：用临界区保护（M0+ 无 ldrex/strex，关全局中断最简单） */
-	__disable_irq();
-	count  = s_encoderCount[coreId];
-	s_encoderCount[coreId] = 0;
-	__enable_irq();
+	val = s_encoderStable[coreId];
 
 	/* 截断到 int16_t */
-	if (count > 32767L)
+	if (val > 32767L)
 	{
 		result = 32767;
 	}
-	else if (count < -32768L)
+	else if (val < -32768L)
 	{
 		result = -32768;
 	}
 	else
 	{
-		result = (int16_t)count;
+		result = (int16_t)val;
 	}
 
 	return result;
+}
+
+/*
+ * 原子快照所有已激活编码器：
+ * - raw→stable，清零 raw。
+ * - 在固定周期的定时器 ISR 中调用，保证采样窗口恒定。
+ */
+void G3507_Encoder_SnapshotAll(void)
+{
+	uint8_t i;
+
+	for (i = 0U; i < G3507_ENCODER_MAX; ++i)
+	{
+		if (s_ctx[i].active == 0U)
+		{
+			continue;
+		}
+
+		__disable_irq();
+		{
+			int32_t raw = s_encoderRaw[i];
+			s_encoderRaw[i] = 0;
+			s_encoderStable[i] = raw;
+		}
+		__enable_irq();
+	}
 }

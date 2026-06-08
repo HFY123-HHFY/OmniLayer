@@ -9,7 +9,7 @@
 #define TB6612_PWM_CH_B       (API_PWM_CH1)
 
 /* TB6612 占空比上限*/
-#define TB6612_MAX_DUTY       (400U)
+#define TB6612_MAX_DUTY       (400U) /* 占空比400-编码器 - 90左右, 占空比200-编码器 - 42左右 */
 
 #define TB6612_WRITE(port, pin, level) API_GPIO_Write((port), (pin), (uint8_t)((level) ? 1U : 0U))
 

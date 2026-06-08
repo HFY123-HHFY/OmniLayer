@@ -13,7 +13,9 @@ extern uint32_t USART_1_RX; // USART1 接收的最新数据
 extern uint32_t USART_2_RX; // USART2 接收的最新数据
 extern uint32_t USART_3_RX; // USART3 接收的最新数据
 
-void Control_Task_TIM_Callback(API_TIM_Id_t id);
+void Control_Task_TIM_Callback(API_TIM_Id_t id);           /* TIM1: PID 控制节拍 */
+void Control_Task_Encoder_Callback(API_TIM_Id_t id);       /* TIM2: 编码器读取节拍 */
+void Control_Task_Housekeeping_Callback(API_TIM_Id_t id);  /* TIM3: 按键/printf/时间戳 */
 void Control_Task_USART_Callback(API_USART_Id_t id);
 
 #endif /* __CONTROL_TASK_H */

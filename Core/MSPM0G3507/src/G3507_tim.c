@@ -85,36 +85,49 @@ void G3507_TIM_PeriodicInit(uint8_t timId, uint32_t periodMs)
 		while (!DL_TimerG_isPowerEnabled(map.regs))
 		{
 		}
+		/* TI SysConfig: 16-cycle delay after power-up for register stability */
+		__ISB();
+		__ISB();
 	}
 
-	clockConfig.clockSel = DL_TIMER_CLOCK_BUSCLK;
-	clockConfig.divideRatio = DL_TIMER_CLOCK_DIVIDE_1;
-	busClkHz = G3507_SYS_GetBusClkHz();
-	if (busClkHz == 0UL)
-	{
-		busClkHz = 32000000UL;
-	}
+	/*
+	 * Clock tree (TI SysConfig style):
+	 *   timerClk = BUSCLK / divideRatio / (prescale + 1)
+	 *   DIVIDE_8 -> 10MHz, then CPS -> 1MHz tick.
+	 */
+	clockConfig.clockSel     = DL_TIMER_CLOCK_BUSCLK;
+	clockConfig.divideRatio  = DL_TIMER_CLOCK_DIVIDE_8;
 
-	if (busClkHz < G3507_TIM_TICK_HZ)
+	/*
+	 * MSPM0G3507 dual power-domain clock difference:
+	 * - PD1 (TIMG0, TIMA0, TIMA1): BUSCLK = MCLK / ULPCLK_div (40MHz)
+	 * - PD0 (TIMG6, TIMG7, TIMG8, TIMG12): direct MCLK (80MHz)
+	 * Must use the actual clock frequency for prescaler calculation.
+	 */
+	if (timId == 1U || timId == 4U || timId == 5U || timId == 6U)
 	{
-		clockConfig.prescale = 0U;
-		periodTicks = periodMs * (busClkHz / 1000UL);
+		busClkHz = G3507_SYS_GetMclkHz(); /* PD0: direct MCLK */
 	}
 	else
 	{
+		busClkHz = G3507_SYS_GetBusClkHz(); /* PD1: via ULPCLK divider */
+	}
+	if (busClkHz == 0UL)
+	{
+		busClkHz = 80000000UL;
+	}
+
+	{
+		uint32_t clkAfterDiv;
 		uint32_t prescale;
-		prescale = (busClkHz / G3507_TIM_TICK_HZ);
-		if (prescale == 0UL)
-		{
-			prescale = 1UL;
-		}
-		if (prescale > 256UL)
-		{
-			prescale = 256UL;
-		}
+
+		clkAfterDiv = busClkHz / 8UL;
+		prescale    = clkAfterDiv / G3507_TIM_TICK_HZ;
+		if (prescale == 0UL) { prescale = 1UL; }
+		if (prescale > 256UL) { prescale = 256UL; }
 
 		clockConfig.prescale = (uint8_t)(prescale - 1UL);
-		periodTicks = (periodMs * (G3507_TIM_TICK_HZ / 1000UL));
+		periodTicks = periodMs * (G3507_TIM_TICK_HZ / 1000UL);
 	}
 
 	DL_TimerG_setClockConfig(map.regs, &clockConfig);
@@ -124,19 +137,25 @@ void G3507_TIM_PeriodicInit(uint8_t timId, uint32_t periodMs)
 		periodTicks = 1UL;
 	}
 
-	timerConfig.timerMode = DL_TIMER_TIMER_MODE_PERIODIC;
-	timerConfig.period = periodTicks - 1UL;
-	timerConfig.startTimer = DL_TIMER_STOP;
+	/*
+	 * TI SysConfig style: startTimer=START inside initTimerMode,
+	 * then enableClock to start counting. No separate startCounter.
+	 */
+	timerConfig.timerMode    = DL_TIMER_TIMER_MODE_PERIODIC;
+	timerConfig.period       = periodTicks - 1UL;
+	timerConfig.startTimer   = DL_TIMER_START;
 	timerConfig.genIntermInt = DL_TIMER_INTERM_INT_DISABLED;
-	timerConfig.counterVal = 0UL;
+	timerConfig.counterVal   = 0UL;
 	DL_TimerG_initTimerMode(map.regs, &timerConfig);
+
+	/* Enable counter clock AFTER clock config and timer mode are set */
+	DL_TimerG_enableClock(map.regs);
 
 	DL_TimerG_clearInterruptStatus(map.regs, G3507_TIM_ISR_MASK);
 	DL_TimerG_enableInterrupt(map.regs, G3507_TIM_ISR_MASK);
 	NVIC_ClearPendingIRQ(map.irq);
 	NVIC_SetPriority(map.irq, IRQ_PRIO_TIM_CTRL);
 	NVIC_EnableIRQ(map.irq);
-	DL_TimerG_startCounter(map.regs);
 }
 
 uint8_t G3507_TIM_CheckAndClearUpdateIrq(uint8_t timId)

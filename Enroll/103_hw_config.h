@@ -33,7 +33,9 @@
 
 /* TIM 板级映射：逻辑 API_TIM1 绑定到硬件 TIM3。 */
 #define HW_TIM_MAP(X) \
-	X(API_TIM1, API_TIM_CORE_TIM3)
+	X(API_TIM1, API_TIM_CORE_TIM3) \
+	X(API_TIM2, API_TIM_CORE_TIM2) \
+	X(API_TIM3, API_TIM_CORE_TIM4)
 
 /* PWM 板级映射 */
 #define HW_PWM_MAP(X) \
@@ -166,7 +168,7 @@
 /* 当前板子上注册了 1 路 USART */
 #define HW_USART_COUNT  1U
 /* 当前板子上注册了 1 路 TIM */
-#define HW_TIM_COUNT  1U
+#define HW_TIM_COUNT  3U
 /* 当前板子上注册了 2 路 PWM 通道 */
 #define HW_PWM_COUNT  2U
 /* 当前板子上注册了 4 路 ADC 通道 */
