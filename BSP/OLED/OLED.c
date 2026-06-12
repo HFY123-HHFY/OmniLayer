@@ -1,7 +1,7 @@
 #include "OLED.h"
 
-#include "My_I2c.h"
-#include "My_SPI.h"
+#include "API_I2C.h"
+#include "API_SPI.h"
 #include "gpio.h"
 #include "Delay.h"
 
@@ -10,158 +10,105 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+/* 注： OLED驱动代码移植自江协科技 */
+
 /*
-注:	移植来源-江协科技 OLED 驱动代码
-*/
+ * 数据存储格式：
+ * 纵向8点，高位在下，先从左到右，再从上到下；每个Bit对应一个像素点。
+ * 坐标定义：左上角为(0,0)，X向右(0~127)，Y向下(0~63)。
+ *
+ *       0             X轴           127
+ *      .------------------------------->
+ *    0 |
+ *      |
+ *      |
+ *  Y轴 |
+ *      |
+ *      |
+ *   63 |
+ *      v
+ */
 
-/**
-	* 数据存储格式：
-	* 纵向8点，高位在下，先从左到右，再从上到下；每个Bit对应一个像素点。
-	* 坐标定义：左上角为(0,0)，X向右(0~127)，Y向下(0~63)。
-	*/
+/* ===================== 全局变量 ===================== */
 
-/**
-  * 数据存储格式：
-  * 纵向8点，高位在下，先从左到右，再从上到下
-  * 每一个Bit对应一个像素点
-  * 
-  *      B0 B0                  B0 B0
-  *      B1 B1                  B1 B1
-  *      B2 B2                  B2 B2
-  *      B3 B3  ------------->  B3 B3 --
-  *      B4 B4                  B4 B4  |
-  *      B5 B5                  B5 B5  |
-  *      B6 B6                  B6 B6  |
-  *      B7 B7                  B7 B7  |
-  *                                    |
-  *  -----------------------------------
-  *  |   
-  *  |   B0 B0                  B0 B0
-  *  |   B1 B1                  B1 B1
-  *  |   B2 B2                  B2 B2
-  *  --> B3 B3  ------------->  B3 B3
-  *      B4 B4                  B4 B4
-  *      B5 B5                  B5 B5
-  *      B6 B6                  B6 B6
-  *      B7 B7                  B7 B7
-  * 
-  * 坐标轴定义：
-  * 左上角为(0, 0)点
-  * 横向向右为X轴，取值范围：0~127
-  * 纵向向下为Y轴，取值范围：0~63
-  * 
-  *       0             X轴           127 
-  *      .------------------------------->
-  *    0 |
-  *      |
-  *      |
-  *      |
-  *  Y轴 |
-  *      |
-  *      |
-  *      |
-  *   63 |
-  *      v
-  * 
-  */
-
-/*全局变量*********************/
-/** OLED显存数组（8页x128列） */
+/* OLED显存数组（8页x128列） */
 uint8_t OLED_DisplayBuf[8][128];
 
-/* OLED 当前接口类型，默认使用 I2C。 */
+/* OLED 当前接口类型。 */
 static OLED_Interface_t s_oledInterface = OLED_IF_I2C;
 
 /* OLED SPI 控制引脚注册表（DC/RES）。 */
 static const OLED_SpiCtrlConfig_t *s_oledSpiCtrlTable;
 static uint8_t s_oledSpiCtrlCount;
-/* ********************全局变量*/
 
-/* 获取 OLED SPI 控制引脚配置。 */
+/* ===================== SPI 控制脚（DC/RES） ===================== */
+
 static const OLED_SpiCtrlConfig_t *OLED_GetSpiCtrlConfig(void)
 {
 	if ((s_oledSpiCtrlTable == 0) || (s_oledSpiCtrlCount == 0U))
 	{
 		return 0;
 	}
-
 	return &s_oledSpiCtrlTable[0];
 }
 
-/* 注册 OLED SPI 控制引脚（DC/RES）。 */
 void OLED_RegisterSpiCtrl(const OLED_SpiCtrlConfig_t *configTable, uint8_t count)
 {
 	s_oledSpiCtrlTable = configTable;
 	s_oledSpiCtrlCount = count;
 }
 
-/* 写 OLED DC 控制脚电平。 */
 static void OLED_W_DC(uint8_t bitValue)
 {
 	const OLED_SpiCtrlConfig_t *config;
-
 	config = OLED_GetSpiCtrlConfig();
-	if (config == 0)
-	{
-		return;
-	}
-
+	if (config == 0) { return; }
 	API_GPIO_Write(config->dcPort, config->dcPin, bitValue);
 }
 
-/* 写 OLED RES 控制脚电平。 */
 static void OLED_W_RES(uint8_t bitValue)
 {
 	const OLED_SpiCtrlConfig_t *config;
-
 	config = OLED_GetSpiCtrlConfig();
-	if (config == 0)
-	{
-		return;
-	}
-
+	if (config == 0) { return; }
 	API_GPIO_Write(config->resPort, config->resPin, bitValue);
 }
 
-/* 选择I2C2 设置OLED I2C速率档 */
-static void OLED_SelectI2CSpeed(void)
+/* ===================== 总线选择与速率 ===================== */
+
+/*
+ * 确保当前选中正确的总线和速率。
+ * 应在每次批量操作（Update/Init）前调用，避免跨设备互相污染。
+ */
+static void OLED_AssertBus(void)
 {
-	MyI2C_SelectBus(OLED_I2C_BUS);
-	MyI2C_SetSpeed(OLED_I2C_SPEED);
+	if (s_oledInterface == OLED_IF_SPI)
+	{
+		API_SPI_SelectBus(OLED_SPI_BUS);
+		API_SPI_SetSpeed(OLED_SPI_SPEED);
+		API_SPI_DelayOff();
+	}
+	else
+	{
+		API_I2C_SelectBus(OLED_I2C_BUS);
+		API_I2C_SetSpeed(OLED_I2C_SPEED);
+		API_I2C_DelayOff();
+	}
 }
 
-/* 选择 OLED SPI 速率档位 */
-static void OLED_SelectSPISpeed(void)
-{
-	MySPI_SelectBus(OLED_SPI_BUS);
-	MySPI_SetSpeed(OLED_SPI_SPEED);
-}
+/* ===================== GPIO 初始化 ===================== */
 
-/* SPI 发送 1 字节（通过软件 SPI 协议层交换接口实现）。 */
-static void OLED_SPI_SendByte(uint8_t byteValue)
-{
-	(void)MySPI_SwapByte(byteValue);
-}
-
-/**
-	* 函    数：OLED引脚初始化
-	* 说    明：按当前仓库GPIO抽象初始化输出并释放总线
-	*/
 void OLED_GPIO_Init(void)
 {
-	uint32_t i = 0, j = 0;
 	const OLED_SpiCtrlConfig_t *spiCtrl;
 
-    /*在初始化前，加入适量延时，待OLED供电稳定*/
-	for (i = 0U; i < 1000U; i++)
-	{
-		for (j = 0U; j < 1000U; j++);
-	}
+	/* 待OLED供电稳定 */
+	Delay_ms(1U);
 
 	if (s_oledInterface == OLED_IF_SPI)
 	{
-		OLED_SelectSPISpeed();
-		MySPI_Init();
+		OLED_AssertBus();
+		API_SPI_Init();
 
 		spiCtrl = OLED_GetSpiCtrlConfig();
 		if (spiCtrl != 0)
@@ -169,11 +116,10 @@ void OLED_GPIO_Init(void)
 			API_GPIO_InitOutput(spiCtrl->dcPort, spiCtrl->dcPin);
 			API_GPIO_InitOutput(spiCtrl->resPort, spiCtrl->resPin);
 
-			/* 默认电平：DC=1（数据态），RES=1（非复位态）。 */
 			OLED_W_DC(1U);
 			OLED_W_RES(1U);
 
-			/* 按 SSD1306 常见时序执行硬复位脉冲。 */
+			/* 硬复位脉冲 */
 			OLED_W_RES(0U);
 			Delay_ms(10U);
 			OLED_W_RES(1U);
@@ -182,95 +128,149 @@ void OLED_GPIO_Init(void)
 	}
 	else
 	{
-		OLED_SelectI2CSpeed();
-		/* 释放SCL和SDA */
-		MyI2C_W_SCL(1U);
-		MyI2C_W_SDA(1U);
+		/* I2C: 总线已在 main.c 的 API_I2C_Init 中释放到空闲态 */
+		OLED_AssertBus();
 	}
 }
 
+/* ===================== 通信协议 ===================== */
 
-/** 函    数：OLED I2C发送一个字节 */
-void OLED_I2C_SendByte(uint8_t Byte)
+/*
+ * SPI 发送 1 字节。
+ */
+static void OLED_SPI_SendByte(uint8_t byteValue)
 {
-	uint8_t i;
-
-	for (i = 0U; i < 8U; i++)
-	{
-		MyI2C_W_SDA((uint8_t)!!(Byte & (uint8_t)(0x80U >> i)));
-		MyI2C_W_SCL(1U);
-		MyI2C_W_SCL(0U);
-	}
-
-	MyI2C_W_SCL(1U);
-	MyI2C_W_SCL(0U);
+	(void)API_SPI_SwapByte(byteValue);
 }
 
-/** 函    数：OLED写命令 */
+/*
+ * I2C 发送 1 字节（标准 I2C 协议：8 位数据 + ACK 检查）。
+ */
+static void OLED_I2C_SendByte(uint8_t Byte)
+{
+	API_I2C_SendByte(Byte);
+	API_I2C_Wait_Ack();
+}
+
+/*
+ * OLED写命令。
+ */
 void OLED_WriteCommand(uint8_t Command)
 {
 	if (s_oledInterface == OLED_IF_SPI)
 	{
-		OLED_SelectSPISpeed();
-		MySPI_Start();
+		API_SPI_Start();
 		OLED_W_DC(0U);
 		OLED_SPI_SendByte(Command);
-		MySPI_Stop();
+		API_SPI_Stop();
 	}
 	else
 	{
-		OLED_SelectI2CSpeed();
-		MyI2C_Start();
-		OLED_I2C_SendByte(0x78U);
-		OLED_I2C_SendByte(0x00U);
+		API_I2C_Start();
+		OLED_I2C_SendByte(0x78U);		/* 从机地址+写 */
+		OLED_I2C_SendByte(0x00U);		/* 控制字节: 命令 */
 		OLED_I2C_SendByte(Command);
-		MyI2C_Stop();
+		API_I2C_Stop();
 	}
 }
 
-/** 函    数：OLED写数据 */
+/*
+ * OLED写数据。
+ */
 void OLED_WriteData(uint8_t *Data, uint8_t Count)
 {
 	uint8_t i;
 
 	if (s_oledInterface == OLED_IF_SPI)
 	{
-		OLED_SelectSPISpeed();
-		MySPI_Start();
+		API_SPI_Start();
 		OLED_W_DC(1U);
 		for (i = 0U; i < Count; i++)
 		{
 			OLED_SPI_SendByte(Data[i]);
 		}
-		MySPI_Stop();
+		API_SPI_Stop();
 	}
 	else
 	{
-		OLED_SelectI2CSpeed();
-
-		MyI2C_Start();
-		OLED_I2C_SendByte(0x78U);
-		OLED_I2C_SendByte(0x40U);
+		API_I2C_Start();
+		OLED_I2C_SendByte(0x78U);		/* 从机地址+写 */
+		OLED_I2C_SendByte(0x40U);		/* 控制字节: 数据 */
 		for (i = 0U; i < Count; i++)
 		{
 			OLED_I2C_SendByte(Data[i]);
 		}
-		MyI2C_Stop();
+		API_I2C_Stop();
 	}
 }
 
-/** 函    数：设置页地址和列地址 */
+/* ===================== 硬件配置 ===================== */
+
+/*
+ * OLED 初始化。
+ */
+void OLED_Init(OLED_Interface_t interfaceType)
+{
+	s_oledInterface = interfaceType;
+	OLED_GPIO_Init();
+
+	OLED_WriteCommand(0xAE);	/* 关闭显示 */
+
+	OLED_WriteCommand(0xD5);	/* 设置显示时钟分频比/振荡器频率 */
+	OLED_WriteCommand(0x80);
+
+	OLED_WriteCommand(0xA8);	/* 设置多路复用率 */
+	OLED_WriteCommand(0x3F);
+
+	OLED_WriteCommand(0xD3);	/* 设置显示偏移 */
+	OLED_WriteCommand(0x00);
+
+	OLED_WriteCommand(0x40);	/* 设置显示开始行 */
+
+	OLED_WriteCommand(0xA1);	/* 设置左右方向，0xA1正常，0xA0反置 */
+
+	OLED_WriteCommand(0xC8);	/* 设置上下方向，0xC8正常，0xC0反置 */
+
+	OLED_WriteCommand(0xDA);	/* 设置COM引脚硬件配置 */
+	OLED_WriteCommand(0x12);
+
+	OLED_WriteCommand(0x81);	/* 设置对比度 */
+	OLED_WriteCommand(0xCF);
+
+	OLED_WriteCommand(0xD9);	/* 设置预充电周期 */
+	OLED_WriteCommand(0xF1);
+
+	OLED_WriteCommand(0xDB);	/* 设置VCOMH取消选择级别 */
+	OLED_WriteCommand(0x30);
+
+	OLED_WriteCommand(0xA4);	/* 设置整个显示打开/关闭 */
+
+	OLED_WriteCommand(0xA6);	/* 设置正常/反色显示，0xA6正常，0xA7反色 */
+
+	OLED_WriteCommand(0x8D);	/* 设置充电泵 */
+	OLED_WriteCommand(0x14);
+
+	OLED_WriteCommand(0xAF);	/* 开启显示 */
+
+	OLED_Clear();
+	OLED_Update();
+}
+
+/*
+ * 设置显示光标位置。
+ */
 void OLED_SetCursor(uint8_t Page, uint8_t X)
 {
 	/* SH1106 为 132 列，常见 1.3 寸屏幕起始列接在第 2 列。 */
-	// X = (uint8_t)(X + 2U);
+	// X = (uint8_t)(X + 2U); 
 
-	OLED_WriteCommand((uint8_t)(0xB0U | Page));
-	OLED_WriteCommand((uint8_t)(0x10U | ((X & 0xF0U) >> 4)));
-	OLED_WriteCommand((uint8_t)(0x00U | (X & 0x0FU)));
+	OLED_WriteCommand((uint8_t)(0xB0U | Page));						/* 设置页位置 */
+	OLED_WriteCommand((uint8_t)(0x10U | ((X & 0xF0U) >> 4U)));		/* 设置X高4位 */
+	OLED_WriteCommand((uint8_t)(0x00U | (X & 0x0FU)));				/* 设置X低4位 */
 }
 
-/** 工具函数：整数次幂 */
+/* ===================== 工具函数 ===================== */
+
 uint32_t OLED_Pow(uint32_t X, uint32_t Y)
 {
 	uint32_t Result = 1U;
@@ -281,13 +281,9 @@ uint32_t OLED_Pow(uint32_t X, uint32_t Y)
 	return Result;
 }
 
-/** 工具函数：点在多边形内判断 */
 uint8_t OLED_pnpoly(uint8_t nvert, int16_t *vertx, int16_t *verty, int16_t testx, int16_t testy)
 {
-	int16_t i;
-	int16_t j;
-	int16_t c = 0;
-
+	int16_t i, j, c = 0;
 	for (i = 0, j = (int16_t)(nvert - 1U); i < nvert; j = i++)
 	{
 		if (((verty[i] > testy) != (verty[j] > testy)) &&
@@ -299,70 +295,33 @@ uint8_t OLED_pnpoly(uint8_t nvert, int16_t *vertx, int16_t *verty, int16_t testx
 	return (uint8_t)c;
 }
 
-/** 工具函数：点在角度范围内判断 */
 uint8_t OLED_IsInAngle(int16_t X, int16_t Y, int16_t StartAngle, int16_t EndAngle)
 {
 	int16_t PointAngle;
-
 	PointAngle = (int16_t)(atan2((double)Y, (double)X) / 3.14 * 180.0);
 	if (StartAngle < EndAngle)
 	{
-		if (PointAngle >= StartAngle && PointAngle <= EndAngle)
-		{
-			return 1U;
-		}
+		if (PointAngle >= StartAngle && PointAngle <= EndAngle) { return 1U; }
 	}
 	else
 	{
-		if (PointAngle >= StartAngle || PointAngle <= EndAngle)
-		{
-			return 1U;
-		}
+		if (PointAngle >= StartAngle || PointAngle <= EndAngle) { return 1U; }
 	}
 	return 0U;
 }
 
-/**
-  * 函    数：OLED初始化
-  * 说    明：按SSD1306常用初始化序列配置
-  */
-void OLED_Init(OLED_Interface_t interfaceType)
-{
-	s_oledInterface = interfaceType;
-	OLED_GPIO_Init();
+/* ===================== 功能函数 ===================== */
 
-	OLED_WriteCommand(0xAE);
-	OLED_WriteCommand(0xD5);
-	OLED_WriteCommand(0x80);
-	OLED_WriteCommand(0xA8);
-	OLED_WriteCommand(0x3F);
-	OLED_WriteCommand(0xD3);
-	OLED_WriteCommand(0x00);
-	OLED_WriteCommand(0x40);
-	OLED_WriteCommand(0xA1);
-	OLED_WriteCommand(0xC8);
-	OLED_WriteCommand(0xDA);
-	OLED_WriteCommand(0x12);
-	OLED_WriteCommand(0x81);
-	OLED_WriteCommand(0xCF);
-	OLED_WriteCommand(0xD9);
-	OLED_WriteCommand(0xF1);
-	OLED_WriteCommand(0xDB);
-	OLED_WriteCommand(0x30);
-	OLED_WriteCommand(0xA4);
-	OLED_WriteCommand(0xA6);
-	OLED_WriteCommand(0x8D);
-	OLED_WriteCommand(0x14);
-	OLED_WriteCommand(0xAF);
-
-	OLED_Clear();
-	OLED_Update();
-}
-
-/** 函    数：全屏刷新 */
+/*
+ * 全屏刷新：将显存数组发送到 OLED 硬件。
+ */
 void OLED_Update(void)
 {
 	uint8_t j;
+
+	/* 每次更新前重新确认总线（可能已被其他设备切换） */
+	OLED_AssertBus();
+
 	for (j = 0U; j < 8U; j++)
 	{
 		OLED_SetCursor(j, 0U);
@@ -370,20 +329,19 @@ void OLED_Update(void)
 	}
 }
 
-/** 函    数：区域刷新 */
+/*
+ * 区域刷新。
+ */
 void OLED_UpdateArea(int16_t X, int16_t Y, uint8_t Width, uint8_t Height)
 {
 	int16_t j;
-	int16_t Page;
-	int16_t Page1;
+	int16_t Page, Page1;
+
+	OLED_AssertBus();
 
 	Page = Y / 8;
 	Page1 = (Y + Height - 1) / 8 + 1;
-	if (Y < 0)
-	{
-		Page -= 1;
-		Page1 -= 1;
-	}
+	if (Y < 0) { Page -= 1; Page1 -= 1; }
 
 	for (j = Page; j < Page1; j++)
 	{
@@ -395,26 +353,20 @@ void OLED_UpdateArea(int16_t X, int16_t Y, uint8_t Width, uint8_t Height)
 	}
 }
 
-/** 函    数：清空显存 */
+/*
+ * 清空显存。
+ */
 void OLED_Clear(void)
 {
-	uint8_t i;
-	uint8_t j;
-	for (j = 0U; j < 8U; j++)
-	{
-		for (i = 0U; i < 128U; i++)
-		{
-			OLED_DisplayBuf[j][i] = 0x00U;
-		}
-	}
+	memset(OLED_DisplayBuf, 0x00U, sizeof(OLED_DisplayBuf));
 }
 
-/** 函    数：区域清空 */
+/*
+ * 区域清空。
+ */
 void OLED_ClearArea(int16_t X, int16_t Y, uint8_t Width, uint8_t Height)
 {
-	int16_t i;
-	int16_t j;
-
+	int16_t i, j;
 	for (j = Y; j < Y + Height; j++)
 	{
 		for (i = X; i < X + Width; i++)
@@ -427,26 +379,25 @@ void OLED_ClearArea(int16_t X, int16_t Y, uint8_t Width, uint8_t Height)
 	}
 }
 
-/** 函    数：全屏取反 */
+/*
+ * 全屏取反（按 32-bit 字操作，比逐字节快 4 倍）。
+ */
 void OLED_Reverse(void)
 {
-	uint8_t i;
-	uint8_t j;
-	for (j = 0U; j < 8U; j++)
+	uint16_t k;
+	uint32_t *p = (uint32_t *)OLED_DisplayBuf;
+	for (k = 0U; k < (sizeof(OLED_DisplayBuf) / 4U); k++)
 	{
-		for (i = 0U; i < 128U; i++)
-		{
-			OLED_DisplayBuf[j][i] ^= 0xFFU;
-		}
+		p[k] ^= 0xFFFFFFFFUL;
 	}
 }
 
-/** 函    数：区域取反 */
+/*
+ * 区域取反。
+ */
 void OLED_ReverseArea(int16_t X, int16_t Y, uint8_t Width, uint8_t Height)
 {
-	int16_t i;
-	int16_t j;
-
+	int16_t i, j;
 	for (j = Y; j < Y + Height; j++)
 	{
 		for (i = X; i < X + Width; i++)
@@ -459,7 +410,8 @@ void OLED_ReverseArea(int16_t X, int16_t Y, uint8_t Width, uint8_t Height)
 	}
 }
 
-/** 函    数：显示单字符 */
+/* ===================== 显示函数 ===================== */
+
 void OLED_ShowChar(int16_t X, int16_t Y, char Char, uint8_t FontSize)
 {
 	if (FontSize == OLED_8X16)
@@ -472,7 +424,6 @@ void OLED_ShowChar(int16_t X, int16_t Y, char Char, uint8_t FontSize)
 	}
 }
 
-/** 函    数：显示字符串（ASCII/中文混合） */
 void OLED_ShowString(int16_t X, int16_t Y, char *String, uint8_t FontSize)
 {
 	uint16_t i = 0U;
@@ -553,10 +504,7 @@ void OLED_ShowString(int16_t X, int16_t Y, char *String, uint8_t FontSize)
 		{
 			for (pIndex = 0U; strcmp(OLED_CF16x16[pIndex].Index, "") != 0; pIndex++)
 			{
-				if (strcmp(OLED_CF16x16[pIndex].Index, SingleChar) == 0)
-				{
-					break;
-				}
+				if (strcmp(OLED_CF16x16[pIndex].Index, SingleChar) == 0) { break; }
 			}
 			if (FontSize == OLED_8X16)
 			{
@@ -572,22 +520,20 @@ void OLED_ShowString(int16_t X, int16_t Y, char *String, uint8_t FontSize)
 	}
 }
 
-/** 函    数：显示无符号十进制 */
 void OLED_ShowNum(int16_t X, int16_t Y, uint32_t Number, uint8_t Length, uint8_t FontSize)
 {
 	uint8_t i;
 	for (i = 0U; i < Length; i++)
 	{
-		OLED_ShowChar((int16_t)(X + i * FontSize), Y, (char)(Number / OLED_Pow(10U, Length - i - 1U) % 10U + '0'), FontSize);
+		OLED_ShowChar((int16_t)(X + i * FontSize), Y,
+			(char)(Number / OLED_Pow(10U, Length - i - 1U) % 10U + '0'), FontSize);
 	}
 }
 
-/** 函    数：显示有符号十进制 */
 void OLED_ShowSignedNum(int16_t X, int16_t Y, int32_t Number, uint8_t Length, uint8_t FontSize)
 {
 	uint8_t i;
 	uint32_t Number1;
-
 	if (Number >= 0)
 	{
 		OLED_ShowChar(X, Y, '+', FontSize);
@@ -598,14 +544,13 @@ void OLED_ShowSignedNum(int16_t X, int16_t Y, int32_t Number, uint8_t Length, ui
 		OLED_ShowChar(X, Y, '-', FontSize);
 		Number1 = (uint32_t)(-Number);
 	}
-
 	for (i = 0U; i < Length; i++)
 	{
-		OLED_ShowChar((int16_t)(X + (i + 1U) * FontSize), Y, (char)(Number1 / OLED_Pow(10U, Length - i - 1U) % 10U + '0'), FontSize);
+		OLED_ShowChar((int16_t)(X + (i + 1U) * FontSize), Y,
+			(char)(Number1 / OLED_Pow(10U, Length - i - 1U) % 10U + '0'), FontSize);
 	}
 }
 
-/** 函    数：显示十六进制 */
 void OLED_ShowHexNum(int16_t X, int16_t Y, uint32_t Number, uint8_t Length, uint8_t FontSize)
 {
 	uint8_t i;
@@ -624,23 +569,19 @@ void OLED_ShowHexNum(int16_t X, int16_t Y, uint32_t Number, uint8_t Length, uint
 	}
 }
 
-/** 函    数：显示二进制 */
 void OLED_ShowBinNum(int16_t X, int16_t Y, uint32_t Number, uint8_t Length, uint8_t FontSize)
 {
 	uint8_t i;
 	for (i = 0U; i < Length; i++)
 	{
-		OLED_ShowChar((int16_t)(X + i * FontSize), Y, (char)(Number / OLED_Pow(2U, Length - i - 1U) % 2U + '0'), FontSize);
+		OLED_ShowChar((int16_t)(X + i * FontSize), Y,
+			(char)(Number / OLED_Pow(2U, Length - i - 1U) % 2U + '0'), FontSize);
 	}
 }
 
-/** 函    数：显示浮点数（四舍五入） */
 void OLED_ShowFloatNum(int16_t X, int16_t Y, double Number, uint8_t IntLength, uint8_t FraLength, uint8_t FontSize)
 {
-	uint32_t PowNum;
-	uint32_t IntNum;
-	uint32_t FraNum;
-
+	uint32_t PowNum, IntNum, FraNum;
 	if (Number >= 0)
 	{
 		OLED_ShowChar(X, Y, '+', FontSize);
@@ -650,25 +591,20 @@ void OLED_ShowFloatNum(int16_t X, int16_t Y, double Number, uint8_t IntLength, u
 		OLED_ShowChar(X, Y, '-', FontSize);
 		Number = -Number;
 	}
-
 	IntNum = (uint32_t)Number;
 	Number -= IntNum;
 	PowNum = OLED_Pow(10U, FraLength);
 	FraNum = (uint32_t)round(Number * PowNum);
 	IntNum += FraNum / PowNum;
-
 	OLED_ShowNum((int16_t)(X + FontSize), Y, IntNum, IntLength, FontSize);
 	OLED_ShowChar((int16_t)(X + (IntLength + 1U) * FontSize), Y, '.', FontSize);
 	OLED_ShowNum((int16_t)(X + (IntLength + 2U) * FontSize), Y, FraNum, FraLength, FontSize);
 }
 
-/** 函    数：显示位图 */
 void OLED_ShowImage(int16_t X, int16_t Y, uint8_t Width, uint8_t Height, const uint8_t *Image)
 {
-	uint8_t i = 0U;
-	uint8_t j = 0U;
-	int16_t Page;
-	int16_t Shift;
+	uint8_t i = 0U, j = 0U;
+	int16_t Page, Shift;
 
 	OLED_ClearArea(X, Y, Width, Height);
 
@@ -680,17 +616,11 @@ void OLED_ShowImage(int16_t X, int16_t Y, uint8_t Width, uint8_t Height, const u
 			{
 				Page = Y / 8;
 				Shift = Y % 8;
-				if (Y < 0)
-				{
-					Page -= 1;
-					Shift += 8;
-				}
-
+				if (Y < 0) { Page -= 1; Shift += 8; }
 				if (Page + j >= 0 && Page + j <= 7)
 				{
 					OLED_DisplayBuf[Page + j][X + i] |= (uint8_t)(Image[j * Width + i] << Shift);
 				}
-
 				if (Page + j + 1 >= 0 && Page + j + 1 <= 7)
 				{
 					OLED_DisplayBuf[Page + j + 1][X + i] |= (uint8_t)(Image[j * Width + i] >> (8 - Shift));
@@ -700,7 +630,6 @@ void OLED_ShowImage(int16_t X, int16_t Y, uint8_t Width, uint8_t Height, const u
 	}
 }
 
-/** 函    数：格式化显示字符串 */
 void OLED_Printf(int16_t X, int16_t Y, uint8_t FontSize, char *format, ...)
 {
 	char String[256];
@@ -711,7 +640,8 @@ void OLED_Printf(int16_t X, int16_t Y, uint8_t FontSize, char *format, ...)
 	OLED_ShowString(X, Y, String, FontSize);
 }
 
-/** 函    数：画点 */
+/* ===================== 绘图函数 ===================== */
+
 void OLED_DrawPoint(int16_t X, int16_t Y)
 {
 	if (X >= 0 && X <= 127 && Y >= 0 && Y <= 63)
@@ -720,102 +650,53 @@ void OLED_DrawPoint(int16_t X, int16_t Y)
 	}
 }
 
-/** 函    数：读点 */
 uint8_t OLED_GetPoint(int16_t X, int16_t Y)
 {
 	if (X >= 0 && X <= 127 && Y >= 0 && Y <= 63)
 	{
-		if (OLED_DisplayBuf[Y / 8][X] & (uint8_t)(0x01U << (Y % 8)))
-		{
-			return 1U;
-		}
+		if (OLED_DisplayBuf[Y / 8][X] & (uint8_t)(0x01U << (Y % 8))) { return 1U; }
 	}
-
 	return 0U;
 }
 
-/** 函    数：画线 */
 void OLED_DrawLine(int16_t X0, int16_t Y0, int16_t X1, int16_t Y1)
 {
-	int16_t x;
-	int16_t y;
-	int16_t dx;
-	int16_t dy;
-	int16_t d;
-	int16_t incrE;
-	int16_t incrNE;
-	int16_t temp;
-	int16_t x0 = X0;
-	int16_t y0 = Y0;
-	int16_t x1 = X1;
-	int16_t y1 = Y1;
-	uint8_t yflag = 0U;
-	uint8_t xyflag = 0U;
+	int16_t x, y, dx, dy, d, incrE, incrNE, temp;
+	int16_t x0 = X0, y0 = Y0, x1 = X1, y1 = Y1;
+	uint8_t yflag = 0U, xyflag = 0U;
 
 	if (y0 == y1)
 	{
 		if (x0 > x1) { temp = x0; x0 = x1; x1 = temp; }
-		for (x = x0; x <= x1; x++)
-		{
-			OLED_DrawPoint(x, y0);
-		}
+		for (x = x0; x <= x1; x++) { OLED_DrawPoint(x, y0); }
 	}
 	else if (x0 == x1)
 	{
 		if (y0 > y1) { temp = y0; y0 = y1; y1 = temp; }
-		for (y = y0; y <= y1; y++)
-		{
-			OLED_DrawPoint(x0, y);
-		}
+		for (y = y0; y <= y1; y++) { OLED_DrawPoint(x0, y); }
 	}
 	else
 	{
-		if (x0 > x1)
-		{
-			temp = x0; x0 = x1; x1 = temp;
-			temp = y0; y0 = y1; y1 = temp;
-		}
-
-		if (y0 > y1)
-		{
-			y0 = -y0;
-			y1 = -y1;
-			yflag = 1U;
-		}
-
+		if (x0 > x1) { temp = x0; x0 = x1; x1 = temp; temp = y0; y0 = y1; y1 = temp; }
+		if (y0 > y1) { y0 = -y0; y1 = -y1; yflag = 1U; }
 		if (y1 - y0 > x1 - x0)
 		{
 			temp = x0; x0 = y0; y0 = temp;
 			temp = x1; x1 = y1; y1 = temp;
 			xyflag = 1U;
 		}
-
-		dx = x1 - x0;
-		dy = y1 - y0;
-		incrE = 2 * dy;
-		incrNE = 2 * (dy - dx);
-		d = 2 * dy - dx;
-		x = x0;
-		y = y0;
-
+		dx = x1 - x0; dy = y1 - y0;
+		incrE = 2 * dy; incrNE = 2 * (dy - dx);
+		d = 2 * dy - dx; x = x0; y = y0;
 		if (yflag && xyflag) { OLED_DrawPoint(y, -x); }
 		else if (yflag)      { OLED_DrawPoint(x, -y); }
 		else if (xyflag)     { OLED_DrawPoint(y, x); }
 		else                 { OLED_DrawPoint(x, y); }
-
 		while (x < x1)
 		{
 			x++;
-			if (d < 0)
-			{
-				d += incrE;
-			}
-			else
-			{
-				y++;
-				d += incrNE;
-			}
-
+			if (d < 0) { d += incrE; }
+			else { y++; d += incrNE; }
 			if (yflag && xyflag) { OLED_DrawPoint(y, -x); }
 			else if (yflag)      { OLED_DrawPoint(x, -y); }
 			else if (xyflag)     { OLED_DrawPoint(y, x); }
@@ -824,48 +705,27 @@ void OLED_DrawLine(int16_t X0, int16_t Y0, int16_t X1, int16_t Y1)
 	}
 }
 
-/** 函    数：画矩形 */
 void OLED_DrawRectangle(int16_t X, int16_t Y, uint8_t Width, uint8_t Height, uint8_t IsFilled)
 {
-	int16_t i;
-	int16_t j;
+	int16_t i, j;
 	if (!IsFilled)
 	{
-		for (i = X; i < X + Width; i++)
-		{
-			OLED_DrawPoint(i, Y);
-			OLED_DrawPoint(i, Y + Height - 1);
-		}
-		for (i = Y; i < Y + Height; i++)
-		{
-			OLED_DrawPoint(X, i);
-			OLED_DrawPoint(X + Width - 1, i);
-		}
+		for (i = X; i < X + Width; i++) { OLED_DrawPoint(i, Y); OLED_DrawPoint(i, Y + Height - 1); }
+		for (i = Y; i < Y + Height; i++) { OLED_DrawPoint(X, i); OLED_DrawPoint(X + Width - 1, i); }
 	}
 	else
 	{
 		for (i = X; i < X + Width; i++)
-		{
-			for (j = Y; j < Y + Height; j++)
-			{
-				OLED_DrawPoint(i, j);
-			}
-		}
+			for (j = Y; j < Y + Height; j++) { OLED_DrawPoint(i, j); }
 	}
 }
 
-/** 函    数：画三角形 */
 void OLED_DrawTriangle(int16_t X0, int16_t Y0, int16_t X1, int16_t Y1, int16_t X2, int16_t Y2, uint8_t IsFilled)
 {
-	int16_t minx = X0;
-	int16_t miny = Y0;
-	int16_t maxx = X0;
-	int16_t maxy = Y0;
-	int16_t i;
-	int16_t j;
+	int16_t minx = X0, miny = Y0, maxx = X0, maxy = Y0;
+	int16_t i, j;
 	int16_t vx[] = {X0, X1, X2};
 	int16_t vy[] = {Y0, Y1, Y2};
-
 	if (!IsFilled)
 	{
 		OLED_DrawLine(X0, Y0, X1, Y1);
@@ -874,216 +734,85 @@ void OLED_DrawTriangle(int16_t X0, int16_t Y0, int16_t X1, int16_t Y1, int16_t X
 	}
 	else
 	{
-		if (X1 < minx) { minx = X1; }
-		if (X2 < minx) { minx = X2; }
-		if (Y1 < miny) { miny = Y1; }
-		if (Y2 < miny) { miny = Y2; }
-
-		if (X1 > maxx) { maxx = X1; }
-		if (X2 > maxx) { maxx = X2; }
-		if (Y1 > maxy) { maxy = Y1; }
-		if (Y2 > maxy) { maxy = Y2; }
-
+		if (X1 < minx) { minx = X1; } if (X2 < minx) { minx = X2; }
+		if (Y1 < miny) { miny = Y1; } if (Y2 < miny) { miny = Y2; }
+		if (X1 > maxx) { maxx = X1; } if (X2 > maxx) { maxx = X2; }
+		if (Y1 > maxy) { maxy = Y1; } if (Y2 > maxy) { maxy = Y2; }
 		for (i = minx; i <= maxx; i++)
-		{
 			for (j = miny; j <= maxy; j++)
-			{
 				if (OLED_pnpoly(3U, vx, vy, i, j)) { OLED_DrawPoint(i, j); }
-			}
-		}
 	}
 }
 
-/** 函    数：画圆 */
 void OLED_DrawCircle(int16_t X, int16_t Y, uint8_t Radius, uint8_t IsFilled)
 {
-	int16_t x;
-	int16_t y;
-	int16_t d;
-	int16_t j;
-
-	d = 1 - Radius;
-	x = 0;
-	y = Radius;
-
-	OLED_DrawPoint(X + x, Y + y);
-	OLED_DrawPoint(X - x, Y - y);
-	OLED_DrawPoint(X + y, Y + x);
-	OLED_DrawPoint(X - y, Y - x);
-
-	if (IsFilled)
-	{
-		for (j = -y; j < y; j++)
-		{
-			OLED_DrawPoint(X, Y + j);
-		}
-	}
-
+	int16_t x, y, d, j;
+	d = 1 - Radius; x = 0; y = Radius;
+	OLED_DrawPoint(X + x, Y + y); OLED_DrawPoint(X - x, Y - y);
+	OLED_DrawPoint(X + y, Y + x); OLED_DrawPoint(X - y, Y - x);
+	if (IsFilled) { for (j = -y; j < y; j++) { OLED_DrawPoint(X, Y + j); } }
 	while (x < y)
 	{
 		x++;
-		if (d < 0)
-		{
-			d += 2 * x + 1;
-		}
-		else
-		{
-			y--;
-			d += 2 * (x - y) + 1;
-		}
-
-		OLED_DrawPoint(X + x, Y + y);
-		OLED_DrawPoint(X + y, Y + x);
-		OLED_DrawPoint(X - x, Y - y);
-		OLED_DrawPoint(X - y, Y - x);
-		OLED_DrawPoint(X + x, Y - y);
-		OLED_DrawPoint(X + y, Y - x);
-		OLED_DrawPoint(X - x, Y + y);
-		OLED_DrawPoint(X - y, Y + x);
-
+		if (d < 0) { d += 2 * x + 1; }
+		else { y--; d += 2 * (x - y) + 1; }
+		OLED_DrawPoint(X + x, Y + y); OLED_DrawPoint(X + y, Y + x);
+		OLED_DrawPoint(X - x, Y - y); OLED_DrawPoint(X - y, Y - x);
+		OLED_DrawPoint(X + x, Y - y); OLED_DrawPoint(X + y, Y - x);
+		OLED_DrawPoint(X - x, Y + y); OLED_DrawPoint(X - y, Y + x);
 		if (IsFilled)
 		{
-			for (j = -y; j < y; j++)
-			{
-				OLED_DrawPoint(X + x, Y + j);
-				OLED_DrawPoint(X - x, Y + j);
-			}
-
-			for (j = -x; j < x; j++)
-			{
-				OLED_DrawPoint(X - y, Y + j);
-				OLED_DrawPoint(X + y, Y + j);
-			}
+			for (j = -y; j < y; j++) { OLED_DrawPoint(X + x, Y + j); OLED_DrawPoint(X - x, Y + j); }
+			for (j = -x; j < x; j++) { OLED_DrawPoint(X - y, Y + j); OLED_DrawPoint(X + y, Y + j); }
 		}
 	}
 }
 
-/** 函    数：画椭圆 */
 void OLED_DrawEllipse(int16_t X, int16_t Y, uint8_t A, uint8_t B, uint8_t IsFilled)
 {
-	int16_t x;
-	int16_t y;
-	int16_t j;
-	int16_t a = A;
-	int16_t b = B;
-	float d1;
-	float d2;
-
-	x = 0;
-	y = b;
+	int16_t x, y, j;
+	int16_t a = A, b = B;
+	float d1, d2;
+	x = 0; y = b;
 	d1 = b * b + a * a * (-b + 0.5f);
-
-	if (IsFilled)
-	{
-		for (j = -y; j < y; j++)
-		{
-			OLED_DrawPoint(X, Y + j);
-			OLED_DrawPoint(X, Y + j);
-		}
-	}
-
-	OLED_DrawPoint(X + x, Y + y);
-	OLED_DrawPoint(X - x, Y - y);
-	OLED_DrawPoint(X - x, Y + y);
-	OLED_DrawPoint(X + x, Y - y);
-
+	if (IsFilled) { for (j = -y; j < y; j++) { OLED_DrawPoint(X, Y + j); } }
+	OLED_DrawPoint(X + x, Y + y); OLED_DrawPoint(X - x, Y - y);
+	OLED_DrawPoint(X - x, Y + y); OLED_DrawPoint(X + x, Y - y);
 	while (b * b * (x + 1) < a * a * (y - 0.5f))
 	{
-		if (d1 <= 0)
-		{
-			d1 += (float)(b * b * (2 * x + 3));
-		}
-		else
-		{
-			d1 += (float)(b * b * (2 * x + 3) + a * a * (-2 * y + 2));
-			y--;
-		}
+		if (d1 <= 0) { d1 += b * b * (2 * x + 3); }
+		else { d1 += b * b * (2 * x + 3) + a * a * (-2 * y + 2); y--; }
 		x++;
-
-		if (IsFilled)
-		{
-			for (j = -y; j < y; j++)
-			{
-				OLED_DrawPoint(X + x, Y + j);
-				OLED_DrawPoint(X - x, Y + j);
-			}
-		}
-
-		OLED_DrawPoint(X + x, Y + y);
-		OLED_DrawPoint(X - x, Y - y);
-		OLED_DrawPoint(X - x, Y + y);
-		OLED_DrawPoint(X + x, Y - y);
+		if (IsFilled) { for (j = -y; j < y; j++) { OLED_DrawPoint(X + x, Y + j); OLED_DrawPoint(X - x, Y + j); } }
+		OLED_DrawPoint(X + x, Y + y); OLED_DrawPoint(X - x, Y - y);
+		OLED_DrawPoint(X - x, Y + y); OLED_DrawPoint(X + x, Y - y);
 	}
-
-	d2 = (float)(b * b) * (x + 0.5f) * (x + 0.5f) + (float)(a * a) * (y - 1) * (y - 1) - (float)(a * a * b * b);
-
+	d2 = b * b * (x + 0.5f) * (x + 0.5f) + a * a * (y - 1) * (y - 1) - a * a * b * b;
 	while (y > 0)
 	{
-		if (d2 <= 0)
-		{
-			d2 += (float)(b * b * (2 * x + 2) + a * a * (-2 * y + 3));
-			x++;
-		}
-		else
-		{
-			d2 += (float)(a * a * (-2 * y + 3));
-		}
+		if (d2 <= 0) { d2 += b * b * (2 * x + 2) + a * a * (-2 * y + 3); x++; }
+		else { d2 += a * a * (-2 * y + 3); }
 		y--;
-
-		if (IsFilled)
-		{
-			for (j = -y; j < y; j++)
-			{
-				OLED_DrawPoint(X + x, Y + j);
-				OLED_DrawPoint(X - x, Y + j);
-			}
-		}
-
-		OLED_DrawPoint(X + x, Y + y);
-		OLED_DrawPoint(X - x, Y - y);
-		OLED_DrawPoint(X - x, Y + y);
-		OLED_DrawPoint(X + x, Y - y);
+		if (IsFilled) { for (j = -y; j < y; j++) { OLED_DrawPoint(X + x, Y + j); OLED_DrawPoint(X - x, Y + j); } }
+		OLED_DrawPoint(X + x, Y + y); OLED_DrawPoint(X - x, Y - y);
+		OLED_DrawPoint(X - x, Y + y); OLED_DrawPoint(X + x, Y - y);
 	}
 }
 
-/** 函    数：画圆弧/扇形 */
 void OLED_DrawArc(int16_t X, int16_t Y, uint8_t Radius, int16_t StartAngle, int16_t EndAngle, uint8_t IsFilled)
 {
-	int16_t x;
-	int16_t y;
-	int16_t d;
-	int16_t j;
-
-	d = 1 - Radius;
-	x = 0;
-	y = Radius;
-
+	int16_t x, y, d, j;
+	d = 1 - Radius; x = 0; y = Radius;
 	if (OLED_IsInAngle(x, y, StartAngle, EndAngle)) { OLED_DrawPoint(X + x, Y + y); }
 	if (OLED_IsInAngle(-x, -y, StartAngle, EndAngle)) { OLED_DrawPoint(X - x, Y - y); }
 	if (OLED_IsInAngle(y, x, StartAngle, EndAngle)) { OLED_DrawPoint(X + y, Y + x); }
 	if (OLED_IsInAngle(-y, -x, StartAngle, EndAngle)) { OLED_DrawPoint(X - y, Y - x); }
-
-	if (IsFilled)
-	{
-		for (j = -y; j < y; j++)
-		{
-			if (OLED_IsInAngle(0, j, StartAngle, EndAngle)) { OLED_DrawPoint(X, Y + j); }
-		}
-	}
-
+	if (IsFilled) { for (j = -y; j < y; j++) { if (OLED_IsInAngle(0, j, StartAngle, EndAngle)) { OLED_DrawPoint(X, Y + j); } } }
 	while (x < y)
 	{
 		x++;
-		if (d < 0)
-		{
-			d += 2 * x + 1;
-		}
-		else
-		{
-			y--;
-			d += 2 * (x - y) + 1;
-		}
-
+		if (d < 0) { d += 2 * x + 1; }
+		else { y--; d += 2 * (x - y) + 1; }
 		if (OLED_IsInAngle(x, y, StartAngle, EndAngle)) { OLED_DrawPoint(X + x, Y + y); }
 		if (OLED_IsInAngle(y, x, StartAngle, EndAngle)) { OLED_DrawPoint(X + y, Y + x); }
 		if (OLED_IsInAngle(-x, -y, StartAngle, EndAngle)) { OLED_DrawPoint(X - x, Y - y); }
@@ -1092,7 +821,6 @@ void OLED_DrawArc(int16_t X, int16_t Y, uint8_t Radius, int16_t StartAngle, int1
 		if (OLED_IsInAngle(y, -x, StartAngle, EndAngle)) { OLED_DrawPoint(X + y, Y - x); }
 		if (OLED_IsInAngle(-x, y, StartAngle, EndAngle)) { OLED_DrawPoint(X - x, Y + y); }
 		if (OLED_IsInAngle(-y, x, StartAngle, EndAngle)) { OLED_DrawPoint(X - y, Y + x); }
-
 		if (IsFilled)
 		{
 			for (j = -y; j < y; j++)
@@ -1100,7 +828,6 @@ void OLED_DrawArc(int16_t X, int16_t Y, uint8_t Radius, int16_t StartAngle, int1
 				if (OLED_IsInAngle(x, j, StartAngle, EndAngle)) { OLED_DrawPoint(X + x, Y + j); }
 				if (OLED_IsInAngle(-x, j, StartAngle, EndAngle)) { OLED_DrawPoint(X - x, Y + j); }
 			}
-
 			for (j = -x; j < x; j++)
 			{
 				if (OLED_IsInAngle(-y, j, StartAngle, EndAngle)) { OLED_DrawPoint(X - y, Y + j); }
@@ -1109,5 +836,3 @@ void OLED_DrawArc(int16_t X, int16_t Y, uint8_t Radius, int16_t StartAngle, int1
 		}
 	}
 }
-
-

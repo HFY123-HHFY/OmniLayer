@@ -65,22 +65,22 @@ static const API_Encoder_Config_t s_encoderTable[] =
 
 /*************************** I2C/SPI协议配置层 ************************/
 /*******************************I2C***********************************/
-/* I2C 配置表：把 HW_I2C_MAP 展开成 MyI2C_Config_t。 */
-#define ENROLL_I2C_ITEM(id, port, sclPin, sdaPin) \
-	{ id, port, sclPin, sdaPin },
+/* I2C 配置表：把 HW_I2C_MAP 展开成 API_I2C_Config_t。 */
+#define ENROLL_I2C_ITEM(id, sclPort, sclPin, sdaPort, sdaPin, sclIomux, sdaIomux) \
+	{ id, sclPort, sclPin, sclIomux, sdaPort, sdaPin, sdaIomux },
 
-static const MyI2C_Config_t s_i2cTable[] =
+static const API_I2C_Config_t s_i2cTable[] =
 {
 	HW_I2C_MAP(ENROLL_I2C_ITEM)
 };
 #undef ENROLL_I2C_ITEM
 
 /*******************************SPI***********************************/
-/* SPI 配置表：把 HW_SPI_MAP 展开成 MySPI_Config_t。 */
-#define ENROLL_SPI_ITEM(id, csPort, csPin, sckPort, sckPin, mosiPort, mosiPin, misoPort, misoPin) \
-	{ id, csPort, csPin, sckPort, sckPin, mosiPort, mosiPin, misoPort, misoPin },
+/* SPI 配置表：把 HW_SPI_MAP 展开成 API_SPI_Config_t。 */
+#define ENROLL_SPI_ITEM(id, csPort, csPin, sckPort, sckPin, mosiPort, mosiPin, misoPort, misoPin, csIomux, sckIomux, mosiIomux, misoIomux) \
+	{ id, csPort, csPin, csIomux, sckPort, sckPin, sckIomux, mosiPort, mosiPin, mosiIomux, misoPort, misoPin, misoIomux },
 
-static const MySPI_Config_t s_spiTable[] =
+static const API_SPI_Config_t s_spiTable[] =
 {
 	HW_SPI_MAP(ENROLL_SPI_ITEM)
 };
@@ -187,13 +187,13 @@ void Enroll_USART_RegisterIrqHandler(API_USART_IrqHandler_t handler)
 /* I2C 注册：仅登记资源表，不在这里做总线初始化。 */
 void Enroll_I2C_Register(void)
 {
-	MyI2C_Register(s_i2cTable, HW_I2C_COUNT);
+	API_I2C_Register(s_i2cTable, HW_I2C_COUNT);
 }
 
-/* SPI 注册：把板级 SPI 资源表登记到 MySPI 模块。 */
+/* SPI 注册：把板级 SPI 资源表登记到 API_SPI 模块。 */
 void Enroll_SPI_Register(void)
 {
-	MySPI_Register(s_spiTable, HW_SPI_COUNT);
+	API_SPI_Register(s_spiTable, HW_SPI_COUNT);
 }
 
 /***************** BSP层资源注册层 *********************/

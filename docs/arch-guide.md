@@ -36,14 +36,12 @@
 
 ```
 ┌────────────────────────────────────────────┐
+│  A_Entry/      程序入口                     │  唯一 main.c
 │  app/          应用层                       │  业务逻辑、控制算法、任务调度
-│  - main.c      程序入口                     │
 │  - Control/    控制逻辑                     │
 │  - Control_Task/ 任务调度+中断回调          │
 │  - PID/        PID 控制器                   │
 │  - Filter/     滤波器                       │
-│  - My_I2c/     软件 I2C 驱动               │
-│  - My_SPI/     软件 SPI 驱动               │
 │  - My_Usart/   串口打印管理                 │
 └────────────────────────────────────────────┘
               ↓ 调用
@@ -69,8 +67,9 @@
 ┌────────────────────────────────────────────┐
 │  API/          片内外设抽象接口层            │  统一接口，屏蔽芯片差异
 │  inc/ + src/   gpio/adc/pwm/tim/usart/exti  │
-│  每个 API 函数通过 #if ENROLL_MCU_TARGET    │
-│  分发到对应 Core 实现                        │
+│  API_I2C/      I2C 协议层 (平台无关)        │
+│  API_SPI/      SPI 协议层 (平台无关)        │
+│  通过 soft_xxx_hal 桥接到 Core 层            │
 └────────────────────────────────────────────┘
               ↓ 分发
 ┌────────────────────────────────────────────┐
@@ -89,8 +88,11 @@
 └────────────────────────────────────────────┘
               ↓ 基础
 ┌────────────────────────────────────────────┐
-│  SYSTEM/       系统层                       │  系统初始化、时钟、延时
-│  sys.c / sys.h / Delay.h                   │
+│  SYSTEM/       系统层                       │  系统配置与初始化
+│  sys.c/h      系统初始化 / 中断分发         │
+│  Delay.h      统一延时接口                  │
+│  BusRate.h    软件总线选择+速率集中配置     │
+│  IrqPriority.h 统一中断优先级管理           │
 └────────────────────────────────────────────┘
 ```
 
@@ -188,18 +190,43 @@ gpioPort = (GPIO_Regs *)port;  // G3507 Core
 gpioPort = (GPIO_TypeDef *)port; // F103 Core
 ```
 
-### 4.5 软件总线 (bit-bang I2C/SPI)
+### 4.5 软件总线 (bit-bang I2C/SPI) — 双分层架构
 
-项目目前使用软件模拟的 I2C 和 SPI（非硬件外设），原因可能是：
+项目目前使用软件模拟的 I2C 和 SPI（非硬件外设），原因：
 - 灵活性高，不受硬件 I2C/SPI 实例限制
 - 跨平台一致性好（软件模拟行为相同）
 - 引脚映射自由
 
-总线速率集中配置在 [app/BusRate.h](app/BusRate.h)，每个 MCU 各自一份。
+**V3.1 架构升级**：将原先混在一起的 `app/My_I2c/` 和 `app/My_SPI/` 拆为两层：
+
+```
+API/API_I2C/API_I2C.c          ← 协议逻辑 (平台无关, 始终编译)
+    │  Start/Stop/SendByte/ReceiveByte/Wait_Ack/...
+    │  通过 soft_i2c_hal.h 桥接 ↓
+    │
+Core/{platform}/{platform}_soft_i2c.c  ← GPIO 翻转+延时 (CMake 按平台选一个)
+    │  直接寄存器访问: BSRR/BRR/DOUTSET/DOUTCLR/IOMUX...
+```
+
+```
+API/API_SPI/API_SPI.c          ← 协议逻辑 (Start/Stop/SwapByte)
+    │  通过 soft_spi_hal.h 桥接 ↓
+Core/{platform}/{platform}_soft_spi.c  ← GPIO 翻转+延时
+```
+
+**HAL 桥接接口** (`soft_i2c_hal.h`, `soft_spi_hal.h`)：
+- **内部桥接**：API 协议层 ↔ Core 底层实现之间的桥梁
+- **不对外暴露**：BSP/App 层不应直接引用，统一通过 `API_I2C.h` / `API_SPI.h` 操作
+- 声明平台无关的底层原语函数（W_SCL, W_SDA, R_SDA, W_CS, W_SCK, delay_us 等）
+- 由 Core 层各平台各自实现（零 `#if`，直接寄存器操作）
+
+**设计原则**：
+- **所有 BSP 设备**只通过 `API_I2C.h` / `API_SPI.h` 的标准协议函数操作总线
+- 总线选择+速率集中配置在 [SYSTEM/BusRate.h](SYSTEM/BusRate.h)，新增设备只需加两行宏
 
 ### 4.6 中断优先级统一管理 (IrqPriority.h)
 
-对标 `BusRate.h` 的思路，[app/IrqPriority.h](app/IrqPriority.h) 集中管理所有 NVIC 中断优先级：
+对标 `BusRate.h` 的思路，[SYSTEM/IrqPriority.h](SYSTEM/IrqPriority.h) 集中管理所有 NVIC 中断优先级：
 
 ```
 IrqPriority.h (策略层)  →  API/Core (机制层)  →  NVIC 硬件寄存器
@@ -246,11 +273,15 @@ IrqPriority.h: #define IRQ_PRIO_MPU6050 2U
 | [adc.h](API/inc/adc.h) | ADC 采集 | ✅ | ✅ | ✅ |
 | [exti.h](API/inc/exti.h) | 外部中断 | ✅ | ✅ | ✅ |
 | [Encoder.h](API/inc/Encoder.h) | 编码器接口 | ✅ (EXTI) | ✅ (TIM 模式) | ✅ (TIM 模式) |
+| [API_I2C.h](API/API_I2C/API_I2C.h) | 软件 I2C 协议 (平台无关) | ✅ (soft_i2c_hal) | ✅ (soft_i2c_hal) | ✅ (soft_i2c_hal) |
+| [API_SPI.h](API/API_SPI/API_SPI.h) | 软件 SPI 协议 (平台无关) | ✅ (soft_spi_hal) | ✅ (soft_spi_hal) | ✅ (soft_spi_hal) |
 
 **说明**：
 - **EXTI**：三平台均已完整实现。F103 用 AFIO+EXTI 寄存器，F407 用 SYSCFG+EXTI，G3507 用 DL_GPIO TI DriverLib。
 - **Encoder**：F103/F407 使用定时器硬件编码器模式（无需中断），G3507 使用外部中断软件模拟。
   Core 层已通用化，所有 port/pin 参数化——改 `hw_config.h` 即可换引脚，无需改 Core 代码。
+- **I2C/SPI**：V3.1 采用双分层架构——API 层负责协议逻辑（平台无关，始终编译），Core 层负责 GPIO 翻转+延时（CMake 按平台选一个编译）。
+  中间通过 `soft_i2c_hal.h` / `soft_spi_hal.h` 桥接（内部接口，BSP 不接触）。
 
 ---
 
@@ -342,6 +373,8 @@ Core/MSPM0G3507/src/G3507_exti.c      ← EXTI TI DriverLib 实现
 | [SYSTEM/sys.c](SYSTEM/sys.c) | SYS_Init/EXTI_GetIrqn/LineIndex 门面（条件编译分发） |
 | [SYSTEM/sys.h](SYSTEM/sys.h) | 系统初始化和 EXTI 辅助接口声明 |
 | [SYSTEM/Delay.h](SYSTEM/Delay.h) | 统一延时接口（Delay_us/ms/s） |
+| [SYSTEM/BusRate.h](SYSTEM/BusRate.h) | 软件总线选择+速率集中配置 |
+| [SYSTEM/IrqPriority.h](SYSTEM/IrqPriority.h) | NVIC 中断优先级统一管理 |
 | [Core/STM32F103/src/f103_exti.c](Core/STM32F103/src/f103_exti.c) | F103 EXTI 实现（AFIO+EXTI+NVIC） |
 | [Core/STM32F407/src/f407_exti.c](Core/STM32F407/src/f407_exti.c) | F407 EXTI 实现（SYSCFG+EXTI+NVIC） |
 | [Core/MSPM0G3507/G3507_sys.c](Core/MSPM0G3507/G3507_sys.c) | G3507 时钟初始化（80MHz PLL） |
@@ -350,14 +383,18 @@ Core/MSPM0G3507/src/G3507_exti.c      ← EXTI TI DriverLib 实现
 ### 应用层核心
 | 文件 | 作用 |
 |------|------|
-| [app/main.c](app/main.c) | 程序入口，完整的初始化流程 + 主循环 |
-| [app/BusRate.h](app/BusRate.h) | I2C/SPI 软件总线速率集中配置 |
-| [app/IrqPriority.h](app/IrqPriority.h) | NVIC 中断优先级统一管理（抢占/响应） |
+| [A_Entry/main.c](A_Entry/main.c) | 程序入口，完整的初始化流程 + 主循环 |
 | [app/Control_Task/](app/Control_Task/) | 控制任务调度 + 中断回调 |
 | [app/PID/](app/PID/) | PID 控制器实现 |
 | [app/Filter/](app/Filter/) | 滤波器实现 |
-| [app/My_I2c/](app/My_I2c/) | 软件 I2C 驱动 (bit-bang) |
-| [app/My_SPI/](app/My_SPI/) | 软件 SPI 驱动 (bit-bang) |
+| [API/API_I2C/](API/API_I2C/) | 软件 I2C 协议层 (平台无关) |
+| [API/API_SPI/](API/API_SPI/) | 软件 SPI 协议层 (平台无关) |
+| [Core/STM32F103/f103_soft_i2c/](Core/STM32F103/f103_soft_i2c/) | F103 I2C GPIO 翻转+延时 |
+| [Core/STM32F103/f103_soft_spi/](Core/STM32F103/f103_soft_spi/) | F103 SPI GPIO 翻转+延时 |
+| [Core/STM32F407/f407_soft_i2c/](Core/STM32F407/f407_soft_i2c/) | F407 I2C GPIO 翻转+延时 |
+| [Core/STM32F407/f407_soft_spi/](Core/STM32F407/f407_soft_spi/) | F407 SPI GPIO 翻转+延时 |
+| [Core/MSPM0G3507/G3507_soft_i2c/](Core/MSPM0G3507/G3507_soft_i2c/) | G3507 I2C GPIO 翻转+延时 |
+| [Core/MSPM0G3507/G3507_soft_spi/](Core/MSPM0G3507/G3507_soft_spi/) | G3507 SPI GPIO 翻转+延时 |
 | [app/My_Usart/](app/My_Usart/) | 串口打印封装 |
 
 ---
@@ -370,7 +407,8 @@ Core/MSPM0G3507/src/G3507_exti.c      ← EXTI TI DriverLib 实现
 - `F407_xxx_*` — F407 Core 层实现
 - `G3507_xxx_*` — G3507 Core 层实现
 - `Enroll_xxx_*` — 注册层门面函数
-- `MyI2C_*` / `MySPI_*` — 软件总线驱动
+- `API_I2C_*` / `API_SPI_*` — 软件总线协议层
+- `soft_i2c_hal_*` / `soft_spi_hal_*` — 总线 HAL 桥接接口 (由 Core 层实现)
 
 ### 文件组织
 - 每个外设模块在自己的目录下，含 `.c` + `.h`
@@ -399,13 +437,23 @@ Core/MSPM0G3507/src/G3507_exti.c      ← EXTI TI DriverLib 实现
 4. **CMakeLists.txt** — 新增 `elseif(RESOLVED_MCU_TARGET STREQUAL "NewMCU")` 分支
 5. **CMakePresets.json** — 新增 `Debug-NewMCU` 构建预设
 6. **OpenOCD** — 新增对应的 `.cfg` 下载配置
-7. **app/BusRate.h** — 新增该 MCU 的总线速率配置
+7. **SYSTEM/BusRate.h** — 新增该 MCU 的总线选择+速率配置
 
 ---
 
 ## 11. 当前工程状态
 
 ### 已完成 (近期)
+- **I2C/SPI 架构重构 (V3.1)**：将 `app/My_I2c/` 和 `app/My_SPI/` 拆为 API 协议层 + Core 底层双层架构
+  - API 层：`API/API_I2C/` + `API/API_SPI/`，平台无关协议逻辑，始终编译
+  - Core 层：每 MCU 独立的 `{platform}_soft_i2c.c` + `{platform}_soft_spi.c`，CMake 按平台选一个
+  - HAL 桥接：`soft_i2c_hal.h` / `soft_spi_hal.h` 为 API↔Core 内部桥梁，BSP/App 不接触
+  - 消除了原先 `My_I2C.c` 和 `My_SPI.c` 中大量的 `#if ENROLL_MCU_TARGET` 块
+- **BSP 统一到 API**：OLED/NRF24L01 等所有 BSP 设备只通过 `API_I2C.h` / `API_SPI.h` 操作总线
+- **OLED 驱动重构**：基于江协科技参考代码重写，I2C 模式走标准协议（SendByte + Wait_Ack）
+- **配置集中化**：总线选择+速率收至 `SYSTEM/BusRate.h`，中断优先级收至 `SYSTEM/IrqPriority.h`
+- **文件迁移**：`main.c` → `A_Entry/`，`BusRate.h` `IrqPriority.h` → `SYSTEM/`
+- **文档**：`docs/architecture-guide.md` → `docs/arch-guide.md`
 - **编码器 (Encoder)**：三平台完整实现
   - F103/F407：定时器硬件编码器模式，通用 port/pin 参数化（改 hw_config 即生效）
   - G3507：外部中断模拟，上升沿触发 + 读另一相电平判方向
@@ -415,7 +463,7 @@ Core/MSPM0G3507/src/G3507_exti.c      ← EXTI TI DriverLib 实现
   - **关键经验**：ki 值需要乘以 `1/dt` 倍补偿 dt 因子（库中 error_sum 乘以 dt），否则 I 项积累过慢
   - 电机系统通常不需要 D 项（kd=0），微分噪声放大导致卡顿
   - `Out_max` 必须匹配 TB6612_MAX_DUTY（400），否则反积分饱和失效
-- **中断优先级统一管理**：[app/IrqPriority.h](app/IrqPriority.h)
+- **中断优先级统一管理**：[SYSTEM/IrqPriority.h](SYSTEM/IrqPriority.h)
   - 集中定义抢占/响应优先级宏，三平台自动适配 NVIC 位宽差异
   - 填补了 6 个 Core 文件"只使能中断不设优先级"的空白
   - 修复 G3507 编码器 IRQn 错误（两个编码器都用了 GPIOA_INT_IRQn）
@@ -434,13 +482,13 @@ Core/MSPM0G3507/src/G3507_exti.c      ← EXTI TI DriverLib 实现
 
 为新对话恢复认知时，按以下顺序阅读关键文件：
 
-1. ✅ 本文档 (docs/architecture-guide.md) — 架构全貌
+1. ✅ 本文档 (docs/arch-guide.md) — 架构全貌
 2. [README.md](README.md) — 项目简介与构建命令
 3. [CMakeLists.txt](CMakeLists.txt) — 理解源文件组织与平台分支
 4. [Enroll/Enroll.h](Enroll/Enroll.h) — 注册层接口全览
 5. [Enroll/G3507_hw_config.h](Enroll/G3507_hw_config.h) — 当前默认 MCU 的板级映射
-6. [app/main.c](app/main.c) — 典型的初始化流程
-7. [app/IrqPriority.h](app/IrqPriority.h) — 中断优先级策略
-8. [app/BusRate.h](app/BusRate.h) — 软件总线速率策略
+6. [A_Entry/main.c](A_Entry/main.c) — 典型的初始化流程
+7. [SYSTEM/IrqPriority.h](SYSTEM/IrqPriority.h) — 中断优先级策略
+8. [SYSTEM/BusRate.h](SYSTEM/BusRate.h) — 软件总线速率策略
 9. 任一 `API/src/*.c` — 理解 API→Core 分发模式
 10. 任一 `Core/*/src/*.c` — 理解 Core 层实现风格

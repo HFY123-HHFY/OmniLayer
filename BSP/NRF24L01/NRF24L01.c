@@ -38,13 +38,13 @@ void NRF24L01_RegisterCtrl(const NRF24L01_CtrlConfig_t *configTable, uint8_t cou
 /* 选择 NRF24L01 绑定的软件 SPI 总线。 */
 static void NRF24L01_SelectSPIBus(void)
 {
-	MySPI_SelectBus(NRF24L01_SPI_BUS);
+	API_SPI_SelectBus(NRF24L01_SPI_BUS);
 }
 
 /* 选择 NRF24L01 专用 SPI 速率档位（默认 1MHz）*/
 static void NRF24L01_SelectSPISpeed(void)
 {
-	MySPI_SetSpeed(NRF24L01_SPI_SPEED);
+	API_SPI_SetSpeed(NRF24L01_SPI_SPEED);
 }
 
 /*
@@ -75,12 +75,12 @@ static void NRF24L01_W_CE(uint8_t bitValue)
 static uint8_t NRF24L01_SPI_SwapByte(uint8_t byteValue)
 {
 	NRF24L01_SelectSPI();
-	return MySPI_SwapByte(byteValue);
+	return API_SPI_SwapByte(byteValue);
 }
 
 /*
  * NRF24L01 端口初始化：
- * - SPI 引脚由 MySPI_Init 统一初始化；
+ * - SPI 引脚由 API_SPI_Init 统一初始化；
  * - CE 由本模块单独初始化并默认拉低。
  */
 static void NRF24L01_GPIO_Init(void)
@@ -88,7 +88,7 @@ static void NRF24L01_GPIO_Init(void)
 	const NRF24L01_CtrlConfig_t *ctrl;
 
 	NRF24L01_SelectSPI();
-	MySPI_Init();
+	API_SPI_Init();
 
 	ctrl = NRF24L01_GetCtrlConfig();
 	if (ctrl != 0)
@@ -96,10 +96,7 @@ static void NRF24L01_GPIO_Init(void)
 		API_GPIO_InitOutput(ctrl->cePort, ctrl->cePin);
 		NRF24L01_W_CE(0U);
 	}
-
-	MySPI_W_SS(1U);
-	MySPI_W_SCK(0U);
-	MySPI_W_MOSI(0U);
+	/* CS=1, SCK=0 已由 API_SPI_Init 设置, MOSI 初始电平无关紧要 */
 }
 
 /* 读单寄存器。 */
@@ -108,10 +105,10 @@ uint8_t NRF24L01_ReadReg(uint8_t regAddress)
 	uint8_t data;
 
 	NRF24L01_SelectSPI();
-	MySPI_Start();
+	API_SPI_Start();
 	(void)NRF24L01_SPI_SwapByte((uint8_t)(NRF24L01_R_REGISTER | regAddress));
 	data = NRF24L01_SPI_SwapByte(NRF24L01_NOP);
-	MySPI_Stop();
+	API_SPI_Stop();
 
 	return data;
 }
@@ -122,23 +119,23 @@ void NRF24L01_ReadRegs(uint8_t regAddress, uint8_t *dataArray, uint8_t count)
 	uint8_t i;
 
 	NRF24L01_SelectSPI();
-	MySPI_Start();
+	API_SPI_Start();
 	(void)NRF24L01_SPI_SwapByte((uint8_t)(NRF24L01_R_REGISTER | regAddress));
 	for (i = 0U; i < count; i++)
 	{
 		dataArray[i] = NRF24L01_SPI_SwapByte(NRF24L01_NOP);
 	}
-	MySPI_Stop();
+	API_SPI_Stop();
 }
 
 /* 写单寄存器。 */
 void NRF24L01_WriteReg(uint8_t regAddress, uint8_t data)
 {
 	NRF24L01_SelectSPI();
-	MySPI_Start();
+	API_SPI_Start();
 	(void)NRF24L01_SPI_SwapByte((uint8_t)(NRF24L01_W_REGISTER | regAddress));
 	(void)NRF24L01_SPI_SwapByte(data);
-	MySPI_Stop();
+	API_SPI_Stop();
 }
 
 /* 连续写寄存器。 */
@@ -147,13 +144,13 @@ void NRF24L01_WriteRegs(uint8_t regAddress, const uint8_t *dataArray, uint8_t co
 	uint8_t i;
 
 	NRF24L01_SelectSPI();
-	MySPI_Start();
+	API_SPI_Start();
 	(void)NRF24L01_SPI_SwapByte((uint8_t)(NRF24L01_W_REGISTER | regAddress));
 	for (i = 0U; i < count; i++)
 	{
 		(void)NRF24L01_SPI_SwapByte(dataArray[i]);
 	}
-	MySPI_Stop();
+	API_SPI_Stop();
 }
 
 /* 读取 RX 载荷。 */
@@ -162,13 +159,13 @@ void NRF24L01_ReadRxPayload(uint8_t *dataArray, uint8_t count)
 	uint8_t i;
 
 	NRF24L01_SelectSPI();
-	MySPI_Start();
+	API_SPI_Start();
 	(void)NRF24L01_SPI_SwapByte(NRF24L01_R_RX_PAYLOAD);
 	for (i = 0U; i < count; i++)
 	{
 		dataArray[i] = NRF24L01_SPI_SwapByte(NRF24L01_NOP);
 	}
-	MySPI_Stop();
+	API_SPI_Stop();
 }
 
 /* 写入 TX 载荷。 */
@@ -177,31 +174,31 @@ void NRF24L01_WriteTxPayload(const uint8_t *dataArray, uint8_t count)
 	uint8_t i;
 
 	NRF24L01_SelectSPI();
-	MySPI_Start();
+	API_SPI_Start();
 	(void)NRF24L01_SPI_SwapByte(NRF24L01_W_TX_PAYLOAD);
 	for (i = 0U; i < count; i++)
 	{
 		(void)NRF24L01_SPI_SwapByte(dataArray[i]);
 	}
-	MySPI_Stop();
+	API_SPI_Stop();
 }
 
 /* 清空 TX FIFO。 */
 void NRF24L01_FlushTx(void)
 {
 	NRF24L01_SelectSPI();
-	MySPI_Start();
+	API_SPI_Start();
 	(void)NRF24L01_SPI_SwapByte(NRF24L01_FLUSH_TX);
-	MySPI_Stop();
+	API_SPI_Stop();
 }
 
 /* 清空 RX FIFO。 */
 void NRF24L01_FlushRx(void)
 {
 	NRF24L01_SelectSPI();
-	MySPI_Start();
+	API_SPI_Start();
 	(void)NRF24L01_SPI_SwapByte(NRF24L01_FLUSH_RX);
-	MySPI_Stop();
+	API_SPI_Stop();
 }
 
 /* 读取状态寄存器。 */
@@ -210,9 +207,9 @@ uint8_t NRF24L01_ReadStatus(void)
 	uint8_t status;
 
 	NRF24L01_SelectSPI();
-	MySPI_Start();
+	API_SPI_Start();
 	status = NRF24L01_SPI_SwapByte(NRF24L01_NOP);
-	MySPI_Stop();
+	API_SPI_Stop();
 
 	return status;
 }

@@ -87,11 +87,9 @@ endif()
 
 # 应用层（app）：业务入口与任务调度。
 set(APP_LAYER_SOURCES
-    ${CMAKE_SOURCE_DIR}/app/main.c
+    ${CMAKE_SOURCE_DIR}/A_Entry/main.c
     ${CMAKE_SOURCE_DIR}/app/Control/Control.c
     ${CMAKE_SOURCE_DIR}/app/My_Usart/My_Usart.c
-    ${CMAKE_SOURCE_DIR}/app/My_I2c/My_I2c.c
-    ${CMAKE_SOURCE_DIR}/app/My_SPI/My_SPI.c
     ${CMAKE_SOURCE_DIR}/app/Control_Task/Control_Task.c
     ${CMAKE_SOURCE_DIR}/app/PID/PID.c
     ${CMAKE_SOURCE_DIR}/app/Filter/Filter.c
@@ -111,6 +109,8 @@ set(API_LAYER_SOURCES
     ${CMAKE_SOURCE_DIR}/API/src/usart.c
     ${CMAKE_SOURCE_DIR}/API/src/pwm.c
     ${CMAKE_SOURCE_DIR}/API/src/Encoder.c
+    ${CMAKE_SOURCE_DIR}/API/API_I2C/API_I2C.c
+    ${CMAKE_SOURCE_DIR}/API/API_SPI/API_SPI.c
 )
 
 # 注册层（Enroll）：把 BSP 资源和具体 MCU 驱动绑定。
@@ -120,16 +120,17 @@ set(ENROLL_LAYER_SOURCES
 
 # 通用头文件目录：三平台共享。
 set(COMMON_INCLUDE_DIRS
+    ${CMAKE_SOURCE_DIR}/A_Entry
     ${CMAKE_SOURCE_DIR}/app
     ${CMAKE_SOURCE_DIR}/app/Control_Task
     ${CMAKE_SOURCE_DIR}/app/Control
     ${CMAKE_SOURCE_DIR}/app/My_Usart
-    ${CMAKE_SOURCE_DIR}/app/My_I2c
-    ${CMAKE_SOURCE_DIR}/app/My_SPI
     ${CMAKE_SOURCE_DIR}/app/PID
     ${CMAKE_SOURCE_DIR}/app/Filter
     ${CMAKE_SOURCE_DIR}/API
     ${CMAKE_SOURCE_DIR}/API/inc
+    ${CMAKE_SOURCE_DIR}/API/API_I2C
+    ${CMAKE_SOURCE_DIR}/API/API_SPI
     ${CMAKE_SOURCE_DIR}/Enroll
     ${CMAKE_SOURCE_DIR}/SYSTEM
 )
@@ -177,11 +178,15 @@ if(RESOLVED_MCU_TARGET STREQUAL "F103")
         ${BSP_COMMON_INCLUDE_DIRS}
         ${CMAKE_SOURCE_DIR}/BSP/NRF24L01
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/inc
+        ${CMAKE_SOURCE_DIR}/Core/STM32F103/f103_soft_i2c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F103/f103_soft_spi
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F1/Start
     )
     # F103 专属 MCU 驱动实现
     set(MCU_SOURCES
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/f103_delay.c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F103/f103_soft_i2c/f103_soft_i2c.c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F103/f103_soft_spi/f103_soft_spi.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_exti.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_adc.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F103/src/f103_gpio.c
@@ -214,11 +219,15 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "F407")
         ${CMAKE_SOURCE_DIR}/BSP/NRF24L01
         ${CMAKE_SOURCE_DIR}/BSP/QMC5883P
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/inc
+        ${CMAKE_SOURCE_DIR}/Core/STM32F407/f407_soft_i2c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F407/f407_soft_spi
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_STM32F4/Start
     )
     # F407 专属 MCU 驱动实现
     set(MCU_SOURCES
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/f407_delay.c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F407/f407_soft_i2c/f407_soft_i2c.c
+        ${CMAKE_SOURCE_DIR}/Core/STM32F407/f407_soft_spi/f407_soft_spi.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_exti.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_adc.c
         ${CMAKE_SOURCE_DIR}/Core/STM32F407/src/f407_gpio.c
@@ -247,6 +256,8 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "G3507")
         ${BSP_COMMON_INCLUDE_DIRS}
         ${CMAKE_SOURCE_DIR}/BSP/TB6612
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/inc
+        ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/G3507_soft_i2c
+        ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/G3507_soft_spi
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_M0G3507/source
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_M0G3507/source/ti/devices/msp/m0p
         ${CMAKE_SOURCE_DIR}/Drivers/Drivers_M0G3507/source/third_party/CMSIS/Core/Include
@@ -255,6 +266,8 @@ elseif(RESOLVED_MCU_TARGET STREQUAL "G3507")
     set(MCU_SOURCES
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/G3507_delay.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/G3507_sys.c
+        ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/G3507_soft_i2c/G3507_soft_i2c.c
+        ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/G3507_soft_spi/G3507_soft_spi.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_adc.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_exti.c
         ${CMAKE_SOURCE_DIR}/Core/MSPM0G3507/src/G3507_gpio.c

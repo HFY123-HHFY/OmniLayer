@@ -31,8 +31,8 @@ static void MPU_Apply_Mount_Transform(int16_t *x, int16_t *y, int16_t *z)
 
 static void MPU_SelectI2CBus(void)
 {
-	MyI2C_SelectBus(MPU6050_I2C_BUS);
-	MyI2C_SetSpeed(MPU6050_I2C_SPEED);
+	API_I2C_SelectBus(MPU6050_I2C_BUS);
+	API_I2C_SetSpeed(MPU6050_I2C_SPEED);
 }
 
 /* 初始化 MPU6050
@@ -175,28 +175,28 @@ uint8_t MPU_Write_Len(uint8_t addr, uint8_t reg, uint8_t len, uint8_t *buf)
 
 	MPU_SelectI2CBus();
 
-	MyI2C_Start();
-	MyI2C_SendByte((uint8_t)((addr << 1) | 0U));
-	if (MyI2C_Wait_Ack())
+	API_I2C_Start();
+	API_I2C_SendByte((uint8_t)((addr << 1) | 0U));
+	if (API_I2C_Wait_Ack())
 	{
-		MyI2C_Stop();
+		API_I2C_Stop();
 		return 1U;
 	}
 
-	MyI2C_SendByte(reg);
-	MyI2C_Wait_Ack();
+	API_I2C_SendByte(reg);
+	API_I2C_Wait_Ack();
 
 	for (i = 0U; i < len; i++)
 	{
-		MyI2C_SendByte(buf[i]);
-		if (MyI2C_Wait_Ack())
+		API_I2C_SendByte(buf[i]);
+		if (API_I2C_Wait_Ack())
 		{
-			MyI2C_Stop();
+			API_I2C_Stop();
 			return 1U;
 		}
 	}
 
-	MyI2C_Stop();
+	API_I2C_Stop();
 	return 0U;
 }
 
@@ -205,36 +205,36 @@ uint8_t MPU_Read_Len(uint8_t addr, uint8_t reg, uint8_t len, uint8_t *buf)
 {
 	MPU_SelectI2CBus();
 
-	MyI2C_Start();
-	MyI2C_SendByte((uint8_t)((addr << 1) | 0U));
-	if (MyI2C_Wait_Ack())
+	API_I2C_Start();
+	API_I2C_SendByte((uint8_t)((addr << 1) | 0U));
+	if (API_I2C_Wait_Ack())
 	{
-		MyI2C_Stop();
+		API_I2C_Stop();
 		return 1U;
 	}
 
-	MyI2C_SendByte(reg);
-	MyI2C_Wait_Ack();
+	API_I2C_SendByte(reg);
+	API_I2C_Wait_Ack();
 
-	MyI2C_Start();
-	MyI2C_SendByte((uint8_t)((addr << 1) | 1U));
-	MyI2C_Wait_Ack();
+	API_I2C_Start();
+	API_I2C_SendByte((uint8_t)((addr << 1) | 1U));
+	API_I2C_Wait_Ack();
 
 	while (len)
 	{
 		if (len == 1U)
 		{
-			*buf = MyI2C_ReceiveByte(0U);
+			*buf = API_I2C_ReceiveByte(0U);
 		}
 		else
 		{
-			*buf = MyI2C_ReceiveByte(1U);
+			*buf = API_I2C_ReceiveByte(1U);
 		}
 		len--;
 		buf++;
 	}
 
-	MyI2C_Stop();
+	API_I2C_Stop();
 	return 0U;
 }
 
@@ -243,25 +243,25 @@ uint8_t MPU_Write_Byte(uint8_t reg, uint8_t data)
 {
 	MPU_SelectI2CBus();
 
-	MyI2C_Start();
-	MyI2C_SendByte((uint8_t)((MPU_ADDR << 1) | 0U));
-	if (MyI2C_Wait_Ack())
+	API_I2C_Start();
+	API_I2C_SendByte((uint8_t)((MPU_ADDR << 1) | 0U));
+	if (API_I2C_Wait_Ack())
 	{
-		MyI2C_Stop();
+		API_I2C_Stop();
 		return 1U;
 	}
 
-	MyI2C_SendByte(reg);
-	MyI2C_Wait_Ack();
+	API_I2C_SendByte(reg);
+	API_I2C_Wait_Ack();
 
-	MyI2C_SendByte(data);
-	if (MyI2C_Wait_Ack())
+	API_I2C_SendByte(data);
+	if (API_I2C_Wait_Ack())
 	{
-		MyI2C_Stop();
+		API_I2C_Stop();
 		return 1U;
 	}
 
-	MyI2C_Stop();
+	API_I2C_Stop();
 	return 0U;
 }
 
@@ -272,19 +272,19 @@ uint8_t MPU_Read_Byte(uint8_t reg)
 
 	MPU_SelectI2CBus();
 
-	MyI2C_Start();
-	MyI2C_SendByte((uint8_t)((MPU_ADDR << 1) | 0U));
-	MyI2C_Wait_Ack();
+	API_I2C_Start();
+	API_I2C_SendByte((uint8_t)((MPU_ADDR << 1) | 0U));
+	API_I2C_Wait_Ack();
 
-	MyI2C_SendByte(reg);
-	MyI2C_Wait_Ack();
+	API_I2C_SendByte(reg);
+	API_I2C_Wait_Ack();
 
-	MyI2C_Start();
-	MyI2C_SendByte((uint8_t)((MPU_ADDR << 1) | 1U));
-	MyI2C_Wait_Ack();
+	API_I2C_Start();
+	API_I2C_SendByte((uint8_t)((MPU_ADDR << 1) | 1U));
+	API_I2C_Wait_Ack();
 
-	res = MyI2C_ReceiveByte(0U);
-	MyI2C_Stop();
+	res = API_I2C_ReceiveByte(0U);
+	API_I2C_Stop();
 
 	return res;
 }

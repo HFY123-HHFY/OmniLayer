@@ -3,14 +3,11 @@
 
 #include <stdint.h>
 
-#include "My_I2c.h"
+#include "API_I2C.h"
 #include "Delay.h"
 #include "BusRate.h"
 
-/* MPU6050 软件 I2C 总线选择：My_I2C1。 */
-#define MPU6050_I2C_BUS My_I2C1
-/* MPU6050 软件 I2C 速率选择：来自总线速率画像。 */
-#define MPU6050_I2C_SPEED MPU6050_I2C_SPEED_PROFILE
+/* MPU6050 总线与速率: 统一在 SYSTEM/BusRate.h 集中配置 */
 
 /*
  * DMP 稳定参数：

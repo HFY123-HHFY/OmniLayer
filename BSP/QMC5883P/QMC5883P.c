@@ -1,6 +1,6 @@
 #include "QMC5883P.h"
 
-#include "My_I2c.h"
+#include "API_I2C.h"
 #include <math.h>
 
 /* 最近一次角度结果（单位：度，0~360）。 */
@@ -9,22 +9,22 @@ float Angle_XY = 0.0f;
 /*  选择I2C1 设置QMC5883P I2C速率为100kHZ */
 static void QMC_SelectI2CSpeed(void)
 {
-	MyI2C_SelectBus(QMC5883P_I2C_BUS);
-	MyI2C_SetSpeed(QMC5883P_I2C_SPEED);
+	API_I2C_SelectBus(QMC5883P_I2C_BUS);
+	API_I2C_SetSpeed(QMC5883P_I2C_SPEED);
 }
 
 /* 向指定寄存器写 1 字节。 */
 static void QMC_WriteReg(uint8_t regAddress, uint8_t data)
 {
 	QMC_SelectI2CSpeed();
-	MyI2C_Start();
-	MyI2C_SendByte(QMC5883P_I2C_ADDR_W);
-	MyI2C_Wait_Ack();
-	MyI2C_SendByte(regAddress);
-	MyI2C_Wait_Ack();
-	MyI2C_SendByte(data);
-	MyI2C_Wait_Ack();
-	MyI2C_Stop();
+	API_I2C_Start();
+	API_I2C_SendByte(QMC5883P_I2C_ADDR_W);
+	API_I2C_Wait_Ack();
+	API_I2C_SendByte(regAddress);
+	API_I2C_Wait_Ack();
+	API_I2C_SendByte(data);
+	API_I2C_Wait_Ack();
+	API_I2C_Stop();
 }
 
 /* 从指定寄存器读取 1 字节。 */
@@ -34,18 +34,18 @@ static uint8_t QMC_ReadReg(uint8_t regAddress)
 
 	QMC_SelectI2CSpeed();
 
-	MyI2C_Start();
-	MyI2C_SendByte(QMC5883P_I2C_ADDR_W);
-	MyI2C_Wait_Ack();
-	MyI2C_SendByte(regAddress);
-	MyI2C_Wait_Ack();
+	API_I2C_Start();
+	API_I2C_SendByte(QMC5883P_I2C_ADDR_W);
+	API_I2C_Wait_Ack();
+	API_I2C_SendByte(regAddress);
+	API_I2C_Wait_Ack();
 
-	MyI2C_Start();
-	MyI2C_SendByte((uint8_t)(QMC5883P_I2C_ADDR_W | 0x01U));
-	MyI2C_Wait_Ack();
-	data = MyI2C_ReceiveByte(0U);
-	MyI2C_NAck();
-	MyI2C_Stop();
+	API_I2C_Start();
+	API_I2C_SendByte((uint8_t)(QMC5883P_I2C_ADDR_W | 0x01U));
+	API_I2C_Wait_Ack();
+	data = API_I2C_ReceiveByte(0U);
+	API_I2C_NAck();
+	API_I2C_Stop();
 
 	return data;
 }

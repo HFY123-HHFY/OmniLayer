@@ -32,18 +32,8 @@ typedef struct
 } OLED_SpiCtrlConfig_t;
 
 /*
- * OLED 绑定的软件 I2C 总线与速率
- * 默认使用 My_I2C2 + 400KHz
+ * OLED 总线与速率: 统一在 SYSTEM/BusRate.h 集中配置
  */
-#define OLED_I2C_BUS   My_I2C2
-#define OLED_I2C_SPEED OLED_I2C_SPEED_PROFILE
-
-/*
- * OLED 绑定的软件 SPI 总线与速率
- * 默认使用 My_SPI1 + 500KHz
- */
-#define OLED_SPI_BUS   My_SPI1
-#define OLED_SPI_SPEED OLED_SPI_SPEED_PROFILE
 
 #ifdef __cplusplus
 extern "C" {

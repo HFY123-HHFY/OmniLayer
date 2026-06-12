@@ -2,7 +2,7 @@
 
 #include <math.h>
 
-#include "My_I2c.h"
+#include "API_I2C.h"
 
 /* 最新一次计算得到的海拔高度（单位：m）。 */
 float alt = 0.0f;
@@ -59,8 +59,8 @@ static uint32_t bmp280CompensateP(int32_t adcP);
 /*  选择I2C1 设置BMP280 I2C速率为400kHZ */
 static void BMP280_SelectI2CSpeed(void)
 {
-	MyI2C_SelectBus(BMP280_I2C_BUS);
-	MyI2C_SetSpeed(BMP280_I2C_SPEED);
+	API_I2C_SelectBus(BMP280_I2C_BUS);
+	API_I2C_SetSpeed(BMP280_I2C_SPEED);
 }
 
 /*
@@ -75,17 +75,17 @@ uint8_t iicDevReadByte(uint8_t devaddr, uint8_t addr)
 
 	BMP280_SelectI2CSpeed();
 
-	MyI2C_Start();
-	MyI2C_SendByte(devaddr);
-	MyI2C_Wait_Ack();
-	MyI2C_SendByte(addr);
-	MyI2C_Wait_Ack();
+	API_I2C_Start();
+	API_I2C_SendByte(devaddr);
+	API_I2C_Wait_Ack();
+	API_I2C_SendByte(addr);
+	API_I2C_Wait_Ack();
 
-	MyI2C_Start();
-	MyI2C_SendByte((uint8_t)(devaddr | 0x01U));
-	MyI2C_Wait_Ack();
-	temp = MyI2C_ReceiveByte(0U);
-	MyI2C_Stop();
+	API_I2C_Start();
+	API_I2C_SendByte((uint8_t)(devaddr | 0x01U));
+	API_I2C_Wait_Ack();
+	temp = API_I2C_ReceiveByte(0U);
+	API_I2C_Stop();
 
 	return temp;
 }
@@ -103,29 +103,29 @@ void iicDevRead(uint8_t devaddr, uint8_t addr, uint8_t len, uint8_t *rbuf)
 
 	BMP280_SelectI2CSpeed();
 
-	MyI2C_Start();
-	MyI2C_SendByte(devaddr);
-	MyI2C_Wait_Ack();
-	MyI2C_SendByte(addr);
-	MyI2C_Wait_Ack();
+	API_I2C_Start();
+	API_I2C_SendByte(devaddr);
+	API_I2C_Wait_Ack();
+	API_I2C_SendByte(addr);
+	API_I2C_Wait_Ack();
 
-	MyI2C_Start();
-	MyI2C_SendByte((uint8_t)(devaddr | 0x01U));
-	MyI2C_Wait_Ack();
+	API_I2C_Start();
+	API_I2C_SendByte((uint8_t)(devaddr | 0x01U));
+	API_I2C_Wait_Ack();
 
 	for (i = 0U; i < len; i++)
 	{
 		if (i == (uint8_t)(len - 1U))
 		{
-			rbuf[i] = MyI2C_ReceiveByte(0U);
+			rbuf[i] = API_I2C_ReceiveByte(0U);
 		}
 		else
 		{
-			rbuf[i] = MyI2C_ReceiveByte(1U);
+			rbuf[i] = API_I2C_ReceiveByte(1U);
 		}
 	}
 
-	MyI2C_Stop();
+	API_I2C_Stop();
 }
 
 /*
@@ -138,14 +138,14 @@ void iicDevWriteByte(uint8_t devaddr, uint8_t addr, uint8_t data)
 {
 	BMP280_SelectI2CSpeed();
 
-	MyI2C_Start();
-	MyI2C_SendByte(devaddr);
-	MyI2C_Wait_Ack();
-	MyI2C_SendByte(addr);
-	MyI2C_Wait_Ack();
-	MyI2C_SendByte(data);
-	MyI2C_Wait_Ack();
-	MyI2C_Stop();
+	API_I2C_Start();
+	API_I2C_SendByte(devaddr);
+	API_I2C_Wait_Ack();
+	API_I2C_SendByte(addr);
+	API_I2C_Wait_Ack();
+	API_I2C_SendByte(data);
+	API_I2C_Wait_Ack();
+	API_I2C_Stop();
 }
 
 /*
@@ -161,19 +161,19 @@ void iicDevWrite(uint8_t devaddr, uint8_t addr, uint8_t len, uint8_t *wbuf)
 
 	BMP280_SelectI2CSpeed();
 
-	MyI2C_Start();
-	MyI2C_SendByte(devaddr);
-	MyI2C_Wait_Ack();
-	MyI2C_SendByte(addr);
-	MyI2C_Wait_Ack();
+	API_I2C_Start();
+	API_I2C_SendByte(devaddr);
+	API_I2C_Wait_Ack();
+	API_I2C_SendByte(addr);
+	API_I2C_Wait_Ack();
 
 	for (i = 0U; i < len; i++)
 	{
-		MyI2C_SendByte(wbuf[i]);
-		MyI2C_Wait_Ack();
+		API_I2C_SendByte(wbuf[i]);
+		API_I2C_Wait_Ack();
 	}
 
-	MyI2C_Stop();
+	API_I2C_Stop();
 }
 
 /*

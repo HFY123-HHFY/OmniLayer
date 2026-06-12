@@ -14,8 +14,8 @@
 
 /*app应用层*/
 #include "My_Usart/My_Usart.h"
-#include "My_I2c/My_I2c.h"
-#include "My_SPI/My_SPI.h"
+#include "API_I2C.h"
+#include "API_SPI.h"
 #include "PID/PID.h"
 #include "Control/Control.h"
 #include "Control_Task/Control_Task.h"
@@ -68,15 +68,15 @@ int main(void)
 	API_TIM_Init(API_TIM3, 1U); /* TIM3: 杂务节拍，每 1ms */
 
 /* 通信协议初始化 */
-	MyI2C_Init();						/* 软件 I2C 初始化 */
-	MySPI_Init();						/* 软件 SPI 初始化 */
-	// App_I2C_ScanOnce();				/* 开机执行一次 I2C 扫描 */
+	API_I2C_Init();						/* 软件 I2C 初始化 */
+	API_SPI_Init();						/* 软件 SPI 初始化 */
+	App_I2C_ScanOnce();					/* 开机执行一次 I2C 扫描 */
 	// App_SPI_TestOnce();				/* 开机执行一次 SPI 测试 */
 
 /*BSP硬件抽象层初始化*/
 	LED_Init(LED_LOW); // 初始化LED-低电平
 	KEY_Init(); // 初始化按键
-	OLED_Init(OLED_IF_SPI);		 /* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
+	OLED_Init(OLED_IF_SPI);		 		/* OLED_IF_I2C(4针) / OLED_IF_SPI(7针) */
 	MPU_Init();
 	uint8_t mpu6050_dma_int = mpu_dmp_init();
 	usart_printf(USART1, "mpu6050_dma_int= %d\r\n", mpu6050_dma_int);
@@ -168,9 +168,9 @@ int main(void)
 		}
 
 /* OLED测试 */
-		OLED_Clear();
+		// OLED_Clear();
 		OLED_Printf(0, 0, OLED_8X16, "%d", Timer_Bsp_t);
-		// OLED_Printf(0, 16, OLED_8X16, "%.1f  %.1f  %.1f", Pitch, Roll, Yaw);
+		OLED_Printf(0, 16, OLED_8X16, "%.1f  %.1f  %.1f", Pitch, Roll, Yaw);
 		OLED_Printf(0, 32, OLED_8X16, "L %d  R %d", Encoder1_Speed, Encoder2_Speed);
 		// OLED_Printf(0, 48, OLED_8X16, "Lo %d  Ro %d", (int)speed_loop.left.output, (int)speed_loop.right.output);
 		OLED_Update();

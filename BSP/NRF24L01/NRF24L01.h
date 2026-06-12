@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "My_SPI.h"
+#include "API_SPI.h"
 #include "BusRate.h"
 #include "NRF24L01_Define.h"
 
@@ -26,12 +26,7 @@ typedef struct
 	uint16_t cePin;
 } NRF24L01_CtrlConfig_t;
 
-/*
- * NRF24L01 绑定的软件 SPI 总线与速率
- * 默认使用 My_SPI2 + 1MHz
- */
-#define NRF24L01_SPI_BUS   My_SPI2
-#define NRF24L01_SPI_SPEED NRF24L01_SPI_SPEED_PROFILE
+/* NRF24L01 总线与速率: 统一在 SYSTEM/BusRate.h 集中配置 */
 
 /* 发送地址与发送数据包。 */
 extern uint8_t NRF24L01_TxAddress[NRF24L01_ADDR_WIDTH];
