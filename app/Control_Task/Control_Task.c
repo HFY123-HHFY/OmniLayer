@@ -16,10 +16,9 @@ volatile uint8_t print_task_flag = 0;
 /* 编码器节拍 */
 volatile uint8_t Encoder_flag = 0;
 
-/* 串口接收数据 */
-uint32_t USART_1_RX = 0;
-uint32_t USART_2_RX = 0;
-uint32_t USART_3_RX = 0;
+/* 串口数据包解析结果缓存（新包到达时自动刷新） */
+int16_t USART_Packet_Data[USART_PACKET_DATA_LEN] = {0};
+uint8_t USART_Packet_Count = 0;
 
 /*
  * 定时器回调函数：
@@ -101,6 +100,10 @@ void Control_Task_Housekeeping_Callback(API_TIM_Id_t id)
 	}
 }
 
+/*
+ * USART 中断回调协议解析：
+ * 协议格式：s12,-34,56e
+ */
 void Control_Task_USART_Callback(API_USART_Id_t id)
 {
 	uint32_t data;
@@ -112,15 +115,7 @@ void Control_Task_USART_Callback(API_USART_Id_t id)
 	{
 		if (id == API_USART1)
 		{
-			USART_1_RX = data;
-		}
-		else if (id == API_USART2)
-		{
-			USART_2_RX = data;
-		}
-		else if (id == API_USART3)
-		{
-			USART_3_RX = data;
+			usart_Dispose_Data(USART1, &USART_DataTypeStruct, (uint8_t)data);
 		}
 	}
 }

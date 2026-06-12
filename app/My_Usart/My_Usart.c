@@ -630,3 +630,31 @@ int16_t USART_Deal(USART_DataType *pData, int8_t index)
 
 	return (int16_t)pData->data[(uint8_t)index];
 }
+
+/* 测试示例 */
+/* 串口数据包解析测试：收到完整数据包(s12,-34,56e)后回传解析结果 */
+void USART_Test(void)
+{
+	if (USART_DataTypeStruct.state == 2U)
+	{
+		uint8_t i;
+		uint8_t count = USART_DataTypeStruct.count;
+		int16_t values[10];
+		for (i = 0U; i < count; i++)
+		{
+			values[i] = USART_Deal(&USART_DataTypeStruct, (int8_t)i);
+		}
+		USART_DataTypeStruct.state = 0U;
+
+		usart_printf(USART1, "Packet[%d]: ", count);
+		for (i = 0U; i < count; i++)
+		{
+			if (i > 0U)
+			{
+				usart_printf(USART1, ",");
+			}
+			usart_printf(USART1, "%d", values[i]);
+		}
+		usart_printf(USART1, "\r\n");
+	}
+}

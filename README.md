@@ -131,10 +131,6 @@ cmake --build --preset Debug
 ## 🚌 软件总线（I2C / SPI）
 
 - 采用 **API 协议 + Core 底层** 双分层架构：
-  - `API/API_I2C/` 和 `API/API_SPI/`：平台无关的协议逻辑（Start/Stop/SendByte/SwapByte...）
-  - `Core/{platform}/{platform}_soft_i2c.c` 和 `soft_spi.c`：平台相关的 GPIO 直接寄存器翻转+延时
-- 中间通过 `soft_i2c_hal.h` / `soft_spi_hal.h` 桥接，Core 按 CMake 条件编译。
-- BSP 设备多数只需调用 `API_I2C.h` / `API_SPI.h` 的标准函数；特殊时序设备（OLED 裸字节发送）可直达 HAL 层。
 - 总线速率和总线选择集中在 `SYSTEM/BusRate.h` 配置，新增设备/调速/换总线只需改一个文件。
 
 ## 🎯 中断优先级统一管理

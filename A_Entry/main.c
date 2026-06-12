@@ -154,6 +154,28 @@ int main(void)
 			PID_Speed_Control((float)(Encoder1_Speed), (float)(Encoder2_Speed)); /* 速度环 */
 		}
 
+/* 摄像头数据包接收示例：固定 3 个数据 s88,-93,104e */
+		if (USART_DataTypeStruct.state == 2U)
+		{
+			uint8_t i;
+			/* 1. 缓存解析结果到全局数组 */
+			USART_Packet_Count = USART_DataTypeStruct.count;
+			for (i = 0U; i < USART_Packet_Count; i++)
+			{
+				USART_Packet_Data[i] = USART_Deal(&USART_DataTypeStruct, (int8_t)i);
+			}
+			USART_DataTypeStruct.state = 0U;
+
+			/* 2. 校验数据完整性并读取 */
+			if (USART_Packet_Count == 3U)
+			{
+				int16_t cam_x = USART_Packet_Data[0];
+				int16_t cam_y = USART_Packet_Data[1];
+				int16_t cam_z = USART_Packet_Data[2];
+				usart_printf(USART1, "Cam X=%d, Y=%d, Z=%d\r\n", cam_x, cam_y, cam_z);
+			}
+		}
+
 /* 串口数据打印 */
 		if (print_task_flag != 0U)
 		{
@@ -162,7 +184,7 @@ int main(void)
 			// usart_printf(USART1, "P=%.1f, I=%.1f, D=%.1f\r\n", (double)speed_loop.left.P_out, (double)speed_loop.left.I_out, (double)speed_loop.left.D_out);
 			// usart_printf(USART1, "key: %lu\r\n", Key);
 			// usart_printf(USART1, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
-			usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
+			// usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
 			// usart_printf(USART2, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw); /* 无线串口 */
 			// usart_printf(USART1, "GyroX=%d GyroY=%d GyroZ=%d\r\n", gyrox, gyroy, gyroz);
 		}
