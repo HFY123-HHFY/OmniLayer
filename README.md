@@ -4,6 +4,10 @@
 
 当前支持/覆盖方向：STM32F103、STM32F407、TI MSPM0G3507。
 
+## ✈️ ⚡ 架构已在2个实际项目中得到验证:
+✈️ 四轴飞控项目:       [OmniFlight](https://github.com/HFY123-HHFY/OmniFlight.git)
+⚡电赛M0+内核控制项目: [OmniM0](https://github.com/HFY123-HHFY/OmniM0.git)
+
 ## 🚀 项目定位
 
 OmniLayer 的核心目标是把应用逻辑和芯片实现解耦，让工程可迁移、可扩展、可长期维护。

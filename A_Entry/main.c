@@ -86,7 +86,7 @@ int main(void)
 	// API_Encoder_Init(API_ENCODER_2); /* 编码器 2 初始化 */
 
 /* PID控制器初始化 */
-	PID_Speed_Init(); /* 速度环初始化 */
+	// PID_Speed_Init(); /* 速度环初始化 */
 	// PID_EncoderSpeed_Set(&speed_loop, 1.5f, 40.0f, 0.0f, 80.0f); /* 设置速度环 PID 参数与目标值 */
 
 	while (1)
@@ -185,7 +185,7 @@ int main(void)
 			// usart_printf(USART1, "key: %lu\r\n", Key);
 			// usart_printf(USART1, "Timer_Bsp_t: %lu\r\n", Timer_Bsp_t);
 			// usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw);
-			usart_printf(USART3, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw); /* 无线串口 */
+			usart_printf(USART1, "Pitch=%.2f Roll=%.2f Yaw=%.2f\r\n", Pitch, Roll, Yaw); /* 无线串口 */
 			// usart_printf(USART1, "GyroX=%d GyroY=%d GyroZ=%d\r\n", gyrox, gyroy, gyroz);
 		}
 
